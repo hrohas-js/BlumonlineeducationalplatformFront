@@ -1,0 +1,50 @@
+export type GlossaryAbbreviation = {
+  abbreviation: string
+  definition: string
+}
+
+export const glossaryAbbreviations: readonly GlossaryAbbreviation[] = [
+  { abbreviation: 'АД', definition: 'артериальное давление' },
+  { abbreviation: 'АК', definition: 'аминокислоты' },
+  { abbreviation: 'ААА', definition: 'ароматические аминокислоты' },
+  { abbreviation: 'АИЗ', definition: 'аутоиммунное заболевание' },
+  { abbreviation: 'АИМ', definition: 'аутоиммунный механизм' },
+  { abbreviation: 'АИТ', definition: 'аутоиммунный тиреоидит' },
+  { abbreviation: 'АЛТ', definition: 'аланинаминотрансфераза' },
+  { abbreviation: 'АНФ', definition: 'антинуклеарный фактор' },
+  { abbreviation: 'АСТ', definition: 'аспартатаминотрансфераза' },
+  { abbreviation: 'АПФ', definition: 'ангиотензин-превращающий фермент' },
+  { abbreviation: 'АТФ', definition: 'аденозинтрифосфат (митохондриальная энергия)' },
+  { abbreviation: 'АКТ', definition: 'Альфа-кетоглутарат' },
+  { abbreviation: 'ГГТП', definition: 'гамма-глютамилтранспептидаза' },
+  { abbreviation: 'ГЭБ', definition: 'гематоэнцефалический барьер' },
+  { abbreviation: 'ГЗТ', definition: 'гормональная заместительная терапия' },
+  { abbreviation: 'ДГЭА', definition: 'дегидроэпиандростерон' },
+  { abbreviation: 'ЖКТ', definition: 'желудочно-кишечный тракт' },
+  { abbreviation: 'КЩР', definition: 'кислотно-щелочное равновесие' },
+  { abbreviation: 'КФК', definition: 'креатинфосфат' },
+  { abbreviation: 'ЛДГ', definition: 'лактатдегидрогеназа' },
+  { abbreviation: 'ЛПВП', definition: 'липопротеины высокой плотности' },
+  { abbreviation: 'НБО', definition: 'наследственные болезни обмена' },
+  { abbreviation: 'НВЕ', definition: 'нейроваскуляторная единица' },
+  { abbreviation: 'ОАК', definition: 'общий анализ крови' },
+  { abbreviation: 'РФ', definition: 'ревматоидный фактор' },
+  { abbreviation: 'СД', definition: 'сахарный диабет' },
+  { abbreviation: 'СОЭ', definition: 'скорость оседания эритроцитов' },
+  { abbreviation: 'ТГ', definition: 'тиреоглобулин' },
+  { abbreviation: 'ХС', definition: 'холестерин' },
+  { abbreviation: 'ФНО', definition: 'фактор некроза опухоли' },
+  { abbreviation: 'ЦТК', definition: 'цикл трикарбоновых кислот (цикл Кребса)' },
+  { abbreviation: 'ЦМ', definition: 'цикл мочевины' },
+  { abbreviation: 'ЩЖ', definition: 'щитовидная железа' },
+  { abbreviation: 'ЩФ', definition: 'щелочная фосфатаза' },
+  { abbreviation: 'ЭКБ', definition: 'эозинофильный катионный белок' },
+  {
+    abbreviation: 'ЭПР тест',
+    definition:
+      'исследование транспортных свойств альбумина методом электронного парамагнитного резонанса',
+  },
+  { abbreviation: 'ВССА', definition: 'разветвленные аминокислоты' },
+  { abbreviation: 'HLA', definition: 'человеческий лейкоцитарный антиген' },
+  { abbreviation: 'NSE', definition: 'нейронспецифическая энолаза' },
+]

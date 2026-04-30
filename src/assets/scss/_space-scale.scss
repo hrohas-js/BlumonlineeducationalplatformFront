@@ -1,0 +1,28 @@
+// Shared spacing scale for utility classes and placeholders.
+// Keep in sync with :root --sp-* tokens declared in variables.scss.
+$space-scale: (
+  0: var(--sp-0),
+  4: var(--sp-4),
+  6: var(--sp-6),
+  8: var(--sp-8),
+  9: var(--sp-9),
+  10: var(--sp-10),
+  12: var(--sp-12),
+  15: var(--sp-15),
+  16: var(--sp-16),
+  17: var(--sp-17),
+  20: var(--sp-20),
+  24: var(--sp-24),
+  32: var(--sp-32),
+  38: var(--sp-38),
+  40: var(--sp-40),
+  50: var(--sp-50),
+  60: var(--sp-60),
+  64: var(--sp-64),
+  69: var(--sp-69),
+  72: var(--sp-72),
+  80: var(--sp-80),
+  86: var(--sp-86),
+  88: var(--sp-88),
+  99: var(--sp-99)
+);

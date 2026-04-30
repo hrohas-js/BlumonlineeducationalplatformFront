@@ -1,0 +1,21 @@
+/**
+ * main.scss — Глобальная точка входа для стилей
+ *
+ * Архитектурное решение (см. ARCHITECTURE_ANALYSIS.md §2):
+ * Этот файл импортируется один раз в src/main.ts.
+ * Порядок импортов повторяет css[] из nuxt.config.ts исходного проекта:
+ * 1. reset   — сброс браузерных стилей
+ * 2. variables — подключение :root CSS custom properties и @font-face
+ * 3. typography — utility-классы для текста
+ * 4. spacing    — margin utility-классы
+ * 5. padding    — padding utility-классы
+ *
+ * НЕ импортируй spacing.placeholders.scss и padding.placeholders.scss здесь —
+ * они инжектируются в каждый SFC автоматически через vite.config.ts additionalData.
+ */
+
+@import './reset.scss';
+@import './variables.scss';
+@import './typography.scss';
+@import './spacing.scss';
+@import './padding.scss';

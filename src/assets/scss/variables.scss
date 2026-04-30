@@ -1,0 +1,368 @@
+// ===== SCSS VARIABLES =====
+
+// Colors - SCSS Variables (Figma)
+$black: #010307;
+$black-300: rgba(1, 3, 7, 0.3);
+$gray: #178ef0;
+$bg: #f5f5f5;
+$input-bg: #f3f4f6;
+$white: #ffffff;
+$main: #21f017;
+$main-bg: #f5f5f5;
+$accent-cyan: #17f0e5;
+$accent-indigo: #1722f0;
+$accent-orange: #f07917;
+$accent-soft-blue: #8ec9f4;
+$modal-border: #1c274c;
+$text-primary: #00086b;
+$text-accent: #178ef0;
+$text-inverse: #ffffff;
+$error: #f00;
+$error-bg: #fdf1f1;
+$success: #16c92b;
+$success-bg: #f1fdf3;
+$divider: rgba(0, 0, 0, 0.1);
+$warning: #b07800;
+$warning-bg: #fff8e6;
+$info: #1a6fa8;
+$info-bg: #e8f4fd;
+$danger: #ff6b4a;
+$danger-hover: #ff5c39;
+$danger-active: #ff4d28;
+
+// Font family
+$font-family: "Montserrat", sans-serif;
+$font-family-secondary: "Inter", sans-serif;
+$font-family-headings: "Roboto", sans-serif;
+
+// Font weights
+$font-light: 300;
+$font-extra-light: 200;
+$font-regular: 400;
+$font-medium: 500;
+$font-semi-bold: 600;
+$font-bold: 700;
+$font-extra-bold: 800;
+
+// ===== CSS CUSTOM PROPERTIES =====
+// These can be used in components and will be available globally
+// Fluid size helper: calc(min + (max - min) * ((100vw - vwMin) / (vwMax - vwMin)))
+@function fluid-calc($min, $max, $vw-min: 1024px, $vw-max: 1920px) {
+  @return calc(#{$min} + (#{$max} - #{$min}) * ((100vw - #{$vw-min}) / (#{$vw-max} - #{$vw-min})));
+}
+
+:root {
+  // Colors
+  --black: #{$black};
+  --black-300: #{$black-300};
+  --gray: #{$gray};
+  --bg: #{$bg};
+  --input-bg: #{$input-bg};
+  --white: #{$white};
+  --main: #{$main};
+  --main-bg: #{$main-bg};
+  --accent-cyan: #{$accent-cyan};
+  --accent-indigo: #{$accent-indigo};
+  --accent-orange: #{$accent-orange};
+  --accent-soft-blue: #{$accent-soft-blue};
+  --modal-border: #{$modal-border};
+  --text-primary: #{$text-primary};
+  --text-accent: #{$text-accent};
+  --text-inverse: #{$text-inverse};
+  --error: #{$error};
+  --error-bg: #{$error-bg};
+  --success: #{$success};
+  --success-bg: #{$success-bg};
+  --divider: #{$divider};
+  --warning: #{$warning};
+  --warning-bg: #{$warning-bg};
+  --info: #{$info};
+  --info-bg: #{$info-bg};
+  --danger: #{$danger};
+  --danger-hover: #{$danger-hover};
+  --danger-active: #{$danger-active};
+  --obramlenie-v-imeni-uchenika: #f07917;
+  --obramlenie-inoe: #b842ef;
+  --dopolnitelnyy-tekst: #178ef0;
+  --fon-podvala: #ecf6ff;
+  --obramlenie-proekty: #0098a3;
+  --osnovnoy-tekst: #010307;
+  --osnovnoy-fon: #f5f5f5;
+  --fon-bloka: #fff;
+  --knopka: #178ef0;
+  --cvet-v-knopke: #fff;
+  --podcherkivanie-pri-navedenii: #178ef0;
+  --pole-vvoda: #f3f4f6;
+  --obramlenie-vse-materialy: #178ef0;
+  --obramlenie-kursy: #178ef0;
+  --zalivka-vse-materialy: #178ef0;
+  --zalivka-kursy: #178ef0;
+  --zalivka-proekty: #0098a3;
+  --zalivka-inoe: #b842ef;
+  --main-hover: #{darken($main, 5%)};
+  --main-active: #{darken($main, 10%)};
+  --main-bg-hover: #{darken($main-bg, 3%)};
+  --main-bg-active: #{darken($main-bg, 5%)};
+  --outline-hover: #{lighten($black, 95%)};
+  --outline-active: #{lighten($black, 90%)};
+  --secondary-hover-bg: #{lighten($gray, 45%)};
+  --secondary-active-bg: #{lighten($gray, 40%)};
+  --secondary-hover-color: #{darken($gray, 10%)};
+  --white-hover: #{lighten($main-bg, 2%)};
+  --disabled-bg: #{lighten($gray, 35%)};
+  --disabled-border: #{lighten($gray, 30%)};
+  
+  // Typography
+  --font-family: #{$font-family};
+  --second-family: #{$font-family-secondary};
+  --third-family: #{$font-family-headings};
+  --font-light: #{$font-light};
+  --font-extra-light: #{$font-extra-light};
+  --font-regular: #{$font-regular};
+  --font-medium: #{$font-medium};
+  --font-semi-bold: #{$font-semi-bold};
+  --font-bold: #{$font-bold};
+  --font-extra-bold: #{$font-extra-bold};
+
+  // Fluid font-size scale with calc()
+  // Viewport range: 1024px → 1920px
+  // Sizes below use px for consistent interpolation
+  --fs-xs: #{fluid-calc(12px, 13.6px)};
+  --fs-sm: #{fluid-calc(14px, 15.2px)};
+  --fs-base: #{fluid-calc(16px, 17.6px)};
+  --fs-lg: #{fluid-calc(18px, 20px)};
+  --fs-xl: #{fluid-calc(16px, 22px)}; // caps at 22px on desktop
+  --fs-2xl: #{fluid-calc(24px, 30px)};
+  --fs-3xl: #{fluid-calc(30px, 36px)};
+  --fs-4xl: #{fluid-calc(36px, 48px)};
+  --fs-15: 15px;
+  --fs-18: 18px;
+
+  // Fluid spacing scale with calc() matching margin utilities
+  // Viewport range: 1280px → 1920px
+  // Each step grows up to ~20% on wide screens
+  --sp-0: 0px;
+  --sp-4: #{fluid-calc(4px, 4.8px, 1280px, 1920px)};
+  --sp-6: #{fluid-calc(6px, 7.2px, 1280px, 1920px)};
+  --sp-8: #{fluid-calc(8px, 9.6px, 1280px, 1920px)};
+  --sp-9: #{fluid-calc(9px, 10.8px, 1280px, 1920px)};
+  --sp-10: #{fluid-calc(10px, 12px, 1280px, 1920px)};
+  --sp-12: #{fluid-calc(12px, 14.4px, 1280px, 1920px)};
+  --sp-15: #{fluid-calc(15px, 18px, 1280px, 1920px)};
+  --sp-16: #{fluid-calc(16px, 19.2px, 1280px, 1920px)};
+  --sp-17: 17px;
+  --sp-20: #{fluid-calc(20px, 24px, 1280px, 1920px)};
+  --sp-24: #{fluid-calc(24px, 28.8px, 1280px, 1920px)};
+  --sp-32: #{fluid-calc(32px, 38.4px, 1280px, 1920px)};
+  --sp-38: #{fluid-calc(38px, 45.6px, 1280px, 1920px)};
+  --sp-40: #{fluid-calc(40px, 48px, 1280px, 1920px)};
+  --sp-50: #{fluid-calc(50px, 60px, 1280px, 1920px)};
+  --sp-60: 30px;
+  --sp-64: #{fluid-calc(64px, 76.8px, 1280px, 1920px)};
+  --sp-69: 69px;
+  --sp-72: #{fluid-calc(72px, 86.4px, 1280px, 1920px)};
+  --sp-80: 80px;
+  --sp-86: 86px;
+  --sp-88: #{fluid-calc(88px, 105.6px, 1280px, 1920px)};
+  --sp-99: #{fluid-calc(99px, 118.8px, 1280px, 1920px)};
+
+  // Fixed sizes
+  --size-3: 3px;
+  --size-4: 4px;
+  --size-5: 5px;
+  --size-6: 6px;
+  --size-7: 7px;
+  --size-8: 8px;
+  --size-9: 9px;
+  --size-10: 10px;
+  --size-12: 12px;
+  --size-13: 13px;
+  --size-14: 14px;
+  --size-15: 15px;
+  --size-16: 16px;
+  --size-18: 18px;
+  --size-20: 20px;
+  --size-24: 24px;
+  --size-25: 25px;
+  --size-30: 30px;
+  --size-35: 35px;
+  --size-38: 38px;
+  --size-40: 40px;
+  --size-42: 42px;
+  --size-43: 43px;
+  --size-44: 44px;
+  --size-48: 48px;
+  --size-49: 49px;
+  --size-50: 50px;
+  --size-52: 52px;
+  --size-53: 53px;
+  --size-60: 60px;
+  --size-72: 72px;
+  --size-95: 95px;
+  --size-99: 99px;
+  --size-100: 100px;
+  --size-130: 130px;
+  --size-132: 132px;
+  --size-286: 286px;
+  --size-294: 294px;
+  --size-318: 318px;
+  --size-152: 152px;
+  --size-160: 160px;
+  --size-180: 180px;
+  --size-212: 212px;
+  --size-220: 220px;
+  --size-283: 283px;
+  --size-360: 360px;
+  --size-403: 403px;
+  --size-410: 410px;
+  --size-420: 420px;
+  --size-430: 430px;
+  --size-440: 440px;
+  --size-460: 460px;
+  --size-552: 552px;
+  --size-560: 560px;
+  --size-572: 572px;
+  --size-584: 584px;
+  --size-788: 788px;
+  --size-1024: 1024px;
+  --size-1100: 1100px;
+  --size-1148: 1148px;
+  --size-1280: 1280px;
+  --size-content-width: 84.6875%;
+
+  // Radius
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-10: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-20: 20px;
+  --radius-2xl: 24px;
+  --radius-pill: 50px;
+  --radius-round: 50%;
+  --radius-check: 3px;
+  --radius-input: 5px;
+  --radius-cloud-tail: 0px;
+
+  // Borders and focus rings
+  --border-1: 1px;
+  --border-2: 2px;
+  --border-1-5: 1.5px;
+  --focus-ring-2: 0 0 0 2px var(--text-accent);
+  --focus-ring-main: #{0 0 0 3px rgba($main, 0.2)};
+  --focus-ring-main-soft: #{0 0 0 3px rgba($main, 0.15)};
+  --focus-ring-soft-blue: 0 0 0 3px rgba(142, 201, 244, 0.35);
+  --focus-ring-error-soft: #{0 0 0 3px rgba($error, 0.15)};
+  --focus-ring-danger: #{0 0 0 3px rgba($danger, 0.2)};
+
+  // Shadows
+  --shadow-card: 0 2px 12px rgba(1, 3, 7, 0.06);
+  --shadow-notification: 0 4px 16px rgba(1, 3, 7, 0.1);
+
+  // Z-index
+  --z-header: 100;
+  --z-notification: 9999;
+
+  // Motion
+  --motion-shift-up-sm: translateY(-1px);
+  --motion-shift-none: translateY(0);
+  --motion-slide-in: translateX(var(--sp-20));
+
+  // Opacity
+  --opacity-muted: 0.6;
+  --opacity-full: 1;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --sp-60: #{fluid-calc(30px, 60px, 1024px, 1280px)};
+  }
+}
+
+@media (min-width: 1280px) {
+  :root {
+    --fs-xs: 12.46px;
+    --fs-sm: 14.34px;
+    --fs-base: 16.46px;
+    --fs-lg: 18.57px;
+    --fs-xl: 17.71px;
+    --fs-2xl: 25.71px;
+    --fs-3xl: 31.71px;
+    --fs-4xl: 39.43px;
+
+    --sp-4: 4px;
+    --sp-6: 6px;
+    --sp-8: 8px;
+    --sp-9: 9px;
+    --sp-10: 10px;
+    --sp-12: 12px;
+    --sp-15: 15px;
+    --sp-16: 16px;
+    --sp-17: 17px;
+    --sp-20: 20px;
+    --sp-24: 24px;
+    --sp-32: 32px;
+    --sp-38: 38px;
+    --sp-40: 40px;
+    --sp-50: 50px;
+    --sp-60: 60px;
+    --sp-64: 64px;
+    --sp-69: 69px;
+    --sp-72: 72px;
+    --sp-80: 80px;
+    --sp-86: 86px;
+    --sp-88: 88px;
+    --sp-99: 99px;
+  }
+}
+
+// ===== FONT SETUP =====
+// Шрифты подключаются через @fontsource в src/main.ts:
+//   @fontsource/inter/400.css            → Inter Regular (заголовки)
+//   @fontsource/montserrat/300.css       → Montserrat ExtraLight (основной текст)
+//   @fontsource/montserrat/600-italic.css→ Montserrat SemiBold Italic
+//   @fontsource/roboto/500.css           → Roboto Medium
+//   @fontsource/roboto/600.css           → Roboto SemiBold
+//   @fontsource/roboto/800.css           → Roboto ExtraBold
+// Vite автоматически копирует woff2-файлы из node_modules в dist/assets/.
+
+// ===== HELPER MIXINS =====
+@mixin font-inter($weight: 400) {
+  font-family: $font-family-headings;
+  font-weight: $weight;
+}
+
+@mixin font-main($weight: 400) {
+  font-family: $font-family;
+  font-weight: $weight;
+}
+
+@mixin font-secondary($weight: 500) {
+  font-family: $font-family-secondary;
+  font-weight: $weight;
+}
+
+// Удобные миксины для быстрого применения
+@mixin inter-light {
+  @include font-inter($font-light);
+}
+
+@mixin inter-regular {
+  @include font-inter($font-regular);
+}
+
+@mixin inter-medium {
+  @include font-inter($font-medium);
+}
+
+@mixin inter-semi-bold {
+  @include font-inter($font-semi-bold);
+}
+
+@mixin inter-bold {
+  @include font-inter($font-bold);
+}
+
+@mixin inter-extra-bold {
+  @include font-inter($font-extra-bold);
+}

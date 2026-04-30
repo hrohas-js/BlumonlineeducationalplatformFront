@@ -1,0 +1,34 @@
+// Padding utilities extracted to mirror margin utilities
+
+@import './space-scale';
+
+// Single-direction helpers
+@mixin u-padding-class($suffix, $prop, $value) {
+  .u-p#{$suffix}-#{$value} { padding-#{$prop}: map-get($space-scale, $value); }
+}
+
+// Bidirectional helpers (x, y)
+@mixin u-padding-bidir($suffix, $propA, $propB, $value) {
+  .u-p#{$suffix}-#{$value} {
+    padding-#{$propA}: map-get($space-scale, $value);
+    padding-#{$propB}: map-get($space-scale, $value);
+  }
+}
+
+// Generate classes from scale
+@each $k, $px in $space-scale {
+  // All sides
+  .u-p-#{$k} { padding: $px; }
+
+  // Axes
+  @include u-padding-bidir(x, left, right, $k);
+  @include u-padding-bidir(y, top, bottom, $k);
+
+  // Directions
+  @include u-padding-class(t, top, $k);
+  @include u-padding-class(r, right, $k);
+  @include u-padding-class(b, bottom, $k);
+  @include u-padding-class(l, left, $k);
+}
+
+

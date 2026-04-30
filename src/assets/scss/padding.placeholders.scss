@@ -1,0 +1,39 @@
+// Silent placeholders for padding utilities to use with @extend in SFCs
+// These generate no CSS by themselves when imported via additionalData
+
+@import './space-scale';
+
+// Generate placeholders from scale
+@each $k, $px in $space-scale {
+  %u-p-#{$k} {
+    padding: $px;
+  }
+  
+  %u-px-#{$k} {
+    padding-left: $px;
+    padding-right: $px;
+  }
+  
+  %u-py-#{$k} {
+    padding-top: $px;
+    padding-bottom: $px;
+  }
+  
+  %u-pt-#{$k} {
+    padding-top: $px;
+  }
+  
+  %u-pr-#{$k} {
+    padding-right: $px;
+  }
+  
+  %u-pb-#{$k} {
+    padding-bottom: $px;
+  }
+  
+  %u-pl-#{$k} {
+    padding-left: $px;
+  }
+}
+
+

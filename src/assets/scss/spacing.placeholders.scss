@@ -1,0 +1,30 @@
+// Silent placeholders for spacing utilities to use with @extend in SFCs
+// These generate no CSS by themselves when imported via additionalData
+
+@import './space-scale';
+
+// Helper to define a placeholder
+@mixin define-margin-placeholder($name, $rules...) {
+  %#{$name} {
+    @each $prop, $val in $rules {
+      #{$prop}: $val;
+    }
+  }
+}
+
+// Generate placeholders from scale
+@each $k, $px in $space-scale {
+  @include define-margin-placeholder(u-m-#{$k}, (margin, $px));
+  @include define-margin-placeholder(u-mx-#{$k}, (margin-left, $px), (margin-right, $px));
+  @include define-margin-placeholder(u-my-#{$k}, (margin-top, $px), (margin-bottom, $px));
+  @include define-margin-placeholder(u-mt-#{$k}, (margin-top, $px));
+  @include define-margin-placeholder(u-mr-#{$k}, (margin-right, $px));
+  @include define-margin-placeholder(u-mb-#{$k}, (margin-bottom, $px));
+  @include define-margin-placeholder(u-ml-#{$k}, (margin-left, $px));
+}
+
+// Specials
+%u-mx-auto { margin-left: auto; margin-right: auto; }
+%u-mt-n8 { margin-top: calc(var(--sp-8) * -1); }
+
+

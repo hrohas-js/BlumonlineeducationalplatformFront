@@ -1,0 +1,40 @@
+// Spacing utilities (margin only) extracted from common usage across the app
+
+@import './space-scale';
+
+// Single-direction helpers
+@mixin u-margin-class($suffix, $prop, $value) {
+  .u-m#{$suffix}-#{$value} { margin-#{$prop}: map-get($space-scale, $value); }
+}
+
+// Bidirectional helpers (x, y)
+@mixin u-margin-bidir($suffix, $propA, $propB, $value) {
+  .u-m#{$suffix}-#{$value} {
+    margin-#{$propA}: map-get($space-scale, $value);
+    margin-#{$propB}: map-get($space-scale, $value);
+  }
+}
+
+// Generate classes from scale
+@each $k, $px in $space-scale {
+  // All sides
+  .u-m-#{$k} { margin: $px; }
+
+  // Axes
+  @include u-margin-bidir(x, left, right, $k);
+  @include u-margin-bidir(y, top, bottom, $k);
+
+  // Directions
+  @include u-margin-class(t, top, $k);
+  @include u-margin-class(r, right, $k);
+  @include u-margin-class(b, bottom, $k);
+  @include u-margin-class(l, left, $k);
+}
+
+// Common special-cases
+.u-mx-auto { margin-left: auto; margin-right: auto; }
+
+// Negative margins (only for values observed in codebase)
+.u-mt-n8 { margin-top: calc(var(--sp-8) * -1); }
+
+
