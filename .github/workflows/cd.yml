@@ -55,14 +55,20 @@ jobs:
     steps:
       - name: SSH deploy
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT || 22 }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
+          envs: GHCR_USER,GHCR_TOKEN
           script: |
             set -euo pipefail
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             cd /root/BlumonlineeducationalplatformFront
             docker compose pull
             docker compose up -d
             docker image prune -f
+            docker logout ghcr.io
