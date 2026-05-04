@@ -12,7 +12,7 @@ import AppLayout from '@/components/layouts/AppLayout.vue'
           <span>Хм....</span>
           <span>Скоро исправим!</span>
         </h1>
-        <RouterLink class="not-found__home-link" to="/">На главную</RouterLink>
+        <RouterLink class="not-found__home-link" to="/profile">Перейти в профиль</RouterLink>
       </div>
     </div>
   </AppLayout>

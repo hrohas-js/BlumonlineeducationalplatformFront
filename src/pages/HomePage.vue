@@ -169,6 +169,18 @@ async function performLogout() {
   await router.push({ name: 'login' })
 }
 
+const onLearningCourseClick = (courseId: string) => {
+  // Mock-курс — нет реального продукта в API
+  if (isMockData.value) {
+    notify({
+      type: 'info',
+      message: 'Демо-данные: карточка станет интерактивной после подключения реальных курсов',
+    })
+    return
+  }
+  void router.push({ name: 'course', params: { productId: courseId } })
+}
+
 onMounted(loadCourses)
 
 watch(
@@ -235,6 +247,8 @@ watch(
                   :completed-topics="course.completedTopics"
                   :total-topics="course.totalTopics"
                   :access-until="course.accessUntil"
+                  class="home-learning__course-card"
+                  @click="onLearningCourseClick(course.id)"
                 >
                   <template #header="{ title, category, categoryLabel }">
                     <LearningCourseCardHeader :title="title" :category="category" :category-label="categoryLabel" />
@@ -684,6 +698,10 @@ watch(
   @media (max-width: 1023px) {
     margin-top: var(--sp-20);
   }
+}
+
+.home-learning__course-card {
+  cursor: pointer;
 }
 
 @media (min-width: 1024px) {

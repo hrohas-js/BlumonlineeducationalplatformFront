@@ -1,13 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import AppLayout from '@/components/layouts/AppLayout.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useNotification } from '@/composables/useNotification'
-import BaseButton from '@/components/atoms/BaseButton.vue'
-import BaseInput from '@/components/atoms/BaseInput.vue'
-import BaseCard from '@/components/molecules/BaseCard.vue'
 
-const router = useRouter()
 const authStore = useAuthStore()
 const { notify } = useNotification()
 
@@ -34,100 +30,249 @@ const handleSubmit = async () => {
   })
 }
 
-const goToLogin = () => {
-  void router.push({ name: 'login' })
+const handleResend = async () => {
+  if (!email.value.trim()) {
+    notify({ type: 'warning', message: 'Введите email' })
+    return
+  }
+  await handleSubmit()
 }
 </script>
 
 <template>
-  <div class="forgot-page">
-    <div class="forgot-page__content">
-      <BaseCard :shadow="true" padding="medium">
-        <form class="forgot-page__form" @submit.prevent="handleSubmit">
-          <h1 class="forgot-page__title">Восстановление пароля</h1>
+  <AppLayout>
+    <section class="reset-pwd">
+      <div class="reset-pwd__card">
+        <h1 class="reset-pwd__title">Сброс пароля</h1>
 
-          <p class="forgot-page__hint">
-            Введите email, и мы отправим ссылку для сброса пароля.
+        <div class="reset-pwd__mid">
+          <p class="reset-pwd__hint">
+            Введите email, указанный при регистрации.<br />
+            Мы отправим на него данные для смены пароля.
           </p>
 
-          <BaseInput
-            v-model="email"
-            label="E-mail"
-            type="email"
-            placeholder="Введите E-mail"
-            :disabled="sent"
-            required
-          />
+          <form class="reset-pwd__row" @submit.prevent="handleSubmit">
+            <label class="reset-pwd__label" for="reset-pwd-email">Введите ваш Email</label>
+            <input
+              id="reset-pwd-email"
+              v-model="email"
+              type="email"
+              class="reset-pwd__input"
+              :disabled="sent"
+              required
+            />
+          </form>
+        </div>
 
-          <BaseButton
-            variant="primary"
-            size="medium"
-            :text="sent ? 'Письмо отправлено' : 'Отправить ссылку'"
-            :loading="authStore.loading"
-            :disabled="sent"
-            :block="true"
-            type="submit"
-          />
+        <div class="reset-pwd__actions">
+          <button
+            type="button"
+            class="reset-pwd__submit"
+            :disabled="authStore.loading"
+            @click="handleSubmit"
+          >
+            Отправить
+          </button>
 
-          <p class="forgot-page__back">
-            <a @click.prevent="goToLogin">Вернуться ко входу</a>
-          </p>
-        </form>
-      </BaseCard>
-    </div>
-  </div>
+          <div class="reset-pwd__resend">
+            <span class="reset-pwd__resend-text">Не получили письмо?</span>
+            <button
+              type="button"
+              class="reset-pwd__resend-link"
+              :disabled="authStore.loading"
+              @click="handleResend"
+            >
+              Отправить повторно
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </AppLayout>
 </template>
 
 <style lang="scss" scoped>
-.forgot-page {
-  min-height: 100vh;
+.reset-pwd {
+  margin-top: var(--sp-40);
   display: flex;
-  align-items: center;
   justify-content: center;
-  background-color: var(--bg);
-  padding: var(--sp-24);
+  align-items: flex-start;
 
-  &__content {
+  &__card {
     width: 100%;
-    max-width: var(--size-560);
-  }
-
-  &__form {
+    max-width: 640px;
+    background: var(--fon-bloka);
+    border-radius: var(--radius-10);
+    padding: var(--sp-40) 106px;
     display: flex;
     flex-direction: column;
-    gap: var(--sp-20);
+    align-items: center;
+    gap: var(--sp-40);
+    box-sizing: border-box;
+
+    @media (max-width: 1023px) {
+      max-width: 380px;
+      border-radius: var(--radius-20);
+      padding: var(--sp-40) var(--sp-20);
+    }
   }
 
   &__title {
-    font-family: var(--font-family);
-    font-weight: 600;
-    font-size: var(--size-30);
-    color: var(--black);
     margin: 0;
+    font-family: var(--font-family);
+    font-weight: var(--font-semi-bold);
+    font-size: var(--size-25);
+    color: var(--text-accent);
+    text-align: center;
+
+    @media (max-width: 1023px) {
+      font-size: var(--size-20);
+    }
+  }
+
+  &__mid {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-20);
   }
 
   &__hint {
     margin: 0;
-    font-family: var(--font-family);
-    font-weight: 500;
+    font-family: var(--second-family);
+    font-weight: var(--font-medium);
     font-size: var(--size-15);
-    color: var(--black);
+    color: var(--osnovnoy-tekst);
+    text-align: center;
+    max-width: 386px;
+
+    @media (max-width: 1023px) {
+      font-size: var(--size-13);
+    }
   }
 
-  &__back {
-    text-align: center;
-    margin: 0;
+  &__row {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: var(--sp-20);
 
-    a {
-      font-family: var(--font-family);
-      font-weight: 600;
-      color: var(--text-accent);
-      text-decoration: none;
-      cursor: pointer;
+    @media (max-width: 1023px) {
+      gap: var(--size-15);
+    }
+  }
 
-      &:hover {
-        text-decoration: underline;
-      }
+  &__label {
+    font-family: var(--font-family);
+    font-weight: var(--font-semi-bold);
+    font-size: var(--size-15);
+    color: var(--osnovnoy-tekst);
+    text-align: right;
+    white-space: nowrap;
+
+    @media (max-width: 1023px) {
+      font-size: var(--size-10);
+    }
+  }
+
+  &__input {
+    flex: 1;
+    background: var(--pole-vvoda);
+    border: none;
+    border-radius: var(--radius-input);
+    padding: var(--sp-10);
+    font-family: var(--second-family);
+    font-weight: var(--font-medium);
+    font-size: var(--size-15);
+    color: var(--osnovnoy-tekst);
+    outline: none;
+
+    &:focus {
+      box-shadow: var(--focus-ring-soft-blue);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-20);
+  }
+
+  &__submit {
+    background: var(--knopka);
+    color: var(--cvet-v-knopke);
+    border: none;
+    border-radius: var(--radius-10);
+    padding: var(--sp-10) var(--sp-40);
+    font-family: var(--font-family);
+    font-weight: var(--font-semi-bold);
+    font-size: var(--size-25);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+
+    &:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--knopka) 92%, black);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    @media (max-width: 1023px) {
+      font-size: var(--size-15);
+    }
+  }
+
+  &__resend {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--size-10);
+  }
+
+  &__resend-text {
+    font-family: var(--second-family);
+    font-weight: var(--font-medium);
+    font-size: var(--size-15);
+    color: var(--osnovnoy-tekst);
+
+    @media (max-width: 1023px) {
+      font-size: var(--size-13);
+    }
+  }
+
+  &__resend-link {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-family: var(--second-family);
+    font-weight: var(--font-medium);
+    font-size: var(--size-15);
+    color: var(--text-accent);
+    text-decoration: none;
+
+    &:hover:not(:disabled) {
+      text-decoration: underline;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    @media (max-width: 1023px) {
+      font-size: var(--size-13);
     }
   }
 }

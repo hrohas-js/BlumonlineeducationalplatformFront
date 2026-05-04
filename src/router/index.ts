@@ -22,6 +22,10 @@ const AboutDoctorPage = () => import('@/pages/AboutDoctorPage.vue')
 const VerifyEmailPage = () => import('@/pages/VerifyEmailPage.vue')
 const ForgotPasswordPage = () => import('@/pages/ForgotPasswordPage.vue')
 const ResetPasswordPage = () => import('@/pages/ResetPasswordPage.vue')
+const CoursePage = () => import('@/pages/CoursePage.vue')
+const PaymentSuccessPage = () => import('@/pages/PaymentSuccessPage.vue')
+const PaymentFailPage = () => import('@/pages/PaymentFailPage.vue')
+const PaymentHistoryPage = () => import('@/pages/PaymentHistoryPage.vue')
 
 const routes: RouteRecordRaw[] = [
   {
@@ -47,6 +51,36 @@ const routes: RouteRecordRaw[] = [
     name: 'reset-password',
     component: ResetPasswordPage,
     meta: { requiresAuth: false },
+  },
+  {
+    path: '/courses/:productId',
+    name: 'course',
+    component: CoursePage,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/courses/:productId/lessons/:lessonId',
+    name: 'course-lesson',
+    component: CoursePage,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/payment/success',
+    name: 'payment-success',
+    component: PaymentSuccessPage,
+    meta: { requiresAuth: false },
+  },
+  {
+    path: '/payment/fail',
+    name: 'payment-fail',
+    component: PaymentFailPage,
+    meta: { requiresAuth: false },
+  },
+  {
+    path: '/payment-history',
+    name: 'payment-history',
+    component: PaymentHistoryPage,
+    meta: { requiresAuth: true },
   },
   {
     path: '/training-programs',

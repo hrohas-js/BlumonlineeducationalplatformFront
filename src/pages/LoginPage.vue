@@ -211,14 +211,17 @@ const handleSubmit = async () => {
   }
 
   // ── Карточка ─────────────────────────────────────────────────────────────
+  // Figma: 532×752, radius 10px, padding 60×49 desktop / 430-mobile radius 20px.
   .base-card {
     flex-shrink: 0;
-    width: var(--size-560);
+    width: 532px;
+    border-radius: var(--radius-10);
 
     @media (max-width: 48em) {
       width: 100%;
       max-width: var(--size-420);
       margin: 0 auto;
+      border-radius: var(--radius-20);
     }
   }
 
@@ -232,8 +235,9 @@ const handleSubmit = async () => {
     }
   }
 
+  // Figma: 60×49 padding (vertical × horizontal).
   :deep(.base-card__body) {
-    padding: var(--size-99) var(--size-49);
+    padding: var(--size-60) var(--size-49);
 
     @media (max-width: 48em) {
       padding: var(--sp-40) var(--sp-24);
@@ -249,11 +253,12 @@ const handleSubmit = async () => {
   }
 
   // ── Заголовок ─────────────────────────────────────────────────────────────
+  // Figma: Roboto SemiBold 35px desktop / 30px mobile.
   &__title {
-    font-family: var(--font-family);
-    font-weight: 600;
+    font-family: var(--third-family);
+    font-weight: var(--font-semi-bold);
     font-size: var(--size-35);
-    color: var(--black);
+    color: var(--osnovnoy-tekst);
     margin: 0;
     line-height: 1.1;
 
@@ -279,12 +284,12 @@ const handleSubmit = async () => {
     margin-top: var(--size-43);
   }
 
-  // Label
+  // Label — Figma: Roboto Medium 500 / 20px desk / 15px mobile.
   :deep(.base-input__label) {
-    font-family: var(--font-family);
-    font-weight: 500;
+    font-family: var(--third-family);
+    font-weight: var(--font-medium);
     font-size: var(--size-20);
-    color: var(--black);
+    color: var(--osnovnoy-tekst);
 
     @media (max-width: 48em) {
       font-size: var(--size-15);
@@ -402,11 +407,12 @@ const handleSubmit = async () => {
     }
   }
 
+  // Figma: Roboto Medium 500 / 20px desktop / 15px mobile.
   &__forgot {
-    font-family: var(--font-family);
-    font-weight: 500;
+    font-family: var(--third-family);
+    font-weight: var(--font-medium);
     font-size: var(--size-20);
-    color: var(--black);
+    color: var(--osnovnoy-tekst);
     text-decoration: none;
     white-space: nowrap;
 
@@ -420,28 +426,33 @@ const handleSubmit = async () => {
   }
 
   // ── Кнопка ────────────────────────────────────────────────────────────────
+  // Figma: radius 5px (--radius-input), Roboto SemiBold 25, fill #178EF0.
   :deep(.base-button_primary) {
-    background-color: var(--text-accent);
-    border-color: var(--text-accent);
-    font-family: var(--font-family);
-    font-weight: 600;
+    background-color: var(--knopka);
+    border-color: var(--knopka);
+    font-family: var(--third-family);
+    font-weight: var(--font-semi-bold);
     font-size: var(--size-25);
-    color: var(--white);
-    border-radius: var(--radius-sm);
+    color: var(--cvet-v-knopke);
+    border-radius: var(--radius-input);
     height: auto;
     padding: var(--size-15) 0;
     margin-top: var(--sp-60);
 
     &:hover:not(.base-button_disabled) {
-      background-color: color-mix(in srgb, var(--text-accent) 92%, black);
-      border-color: color-mix(in srgb, var(--text-accent) 92%, black);
+      background-color: color-mix(in srgb, var(--knopka) 92%, black);
+      border-color: color-mix(in srgb, var(--knopka) 92%, black);
       transform: none;
     }
 
     &:active:not(.base-button_disabled) {
-      background-color: color-mix(in srgb, var(--text-accent) 86%, black);
-      border-color: color-mix(in srgb, var(--text-accent) 86%, black);
+      background-color: color-mix(in srgb, var(--knopka) 86%, black);
+      border-color: color-mix(in srgb, var(--knopka) 86%, black);
       transform: none;
+    }
+
+    @media (max-width: 48em) {
+      font-size: var(--size-20);
     }
   }
 

@@ -2,8 +2,6 @@
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/components/layouts/AppLayout.vue'
-import BaseButton from '@/components/atoms/BaseButton.vue'
-import BaseInput from '@/components/atoms/BaseInput.vue'
 import { authService } from '@/services/api/endpoints/auth'
 import { useNotification } from '@/composables/useNotification'
 
@@ -73,64 +71,81 @@ onMounted(verify)
 
 <template>
   <AppLayout>
-    <div class="verify-email">
+    <section class="verify-email">
       <div class="verify-email__card">
-        <template v-if="status === 'pending'">
-          <h1 class="verify-email__title">Подтверждаем email…</h1>
-          <p class="verify-email__text">Пожалуйста, подождите.</p>
-        </template>
+        <h1 class="verify-email__title">
+          {{
+            status === 'success'
+              ? 'Email подтверждён'
+              : status === 'error'
+                ? 'Не удалось подтвердить'
+                : 'Подтверждаем email…'
+          }}
+        </h1>
 
-        <template v-else-if="status === 'success'">
-          <h1 class="verify-email__title">Email подтверждён</h1>
-          <p class="verify-email__text">
-            Ваш email успешно подтверждён. Теперь вы можете войти в аккаунт.
+        <div class="verify-email__mid">
+          <p v-if="status === 'pending'" class="verify-email__hint">
+            Пожалуйста, подождите.
           </p>
-          <BaseButton
-            class="verify-email__action"
-            variant="primary"
-            size="medium"
-            text="Перейти ко входу"
-            @click="goToLogin"
-          />
-        </template>
 
-        <template v-else>
-          <h1 class="verify-email__title">Не удалось подтвердить email</h1>
-          <p class="verify-email__text">{{ errorMessage }}</p>
-          <div class="verify-email__actions">
-            <BaseButton
-              variant="primary"
-              size="medium"
-              text="Попробовать снова"
-              @click="retry"
-            />
-            <BaseButton
-              variant="secondary"
-              size="medium"
-              text="Перейти ко входу"
-              @click="goToLogin"
-            />
-          </div>
+          <p v-else-if="status === 'success'" class="verify-email__hint">
+            Ваш email успешно подтверждён.<br />
+            Теперь вы можете войти в аккаунт.
+          </p>
 
-          <div class="verify-email__resend">
-            <p class="verify-email__resend-title">Запросить новое письмо подтверждения</p>
-            <BaseInput
+          <p v-else class="verify-email__hint verify-email__hint_error">
+            {{ errorMessage }}
+          </p>
+
+          <form
+            v-if="status === 'error'"
+            class="verify-email__row"
+            @submit.prevent="handleResend"
+          >
+            <label class="verify-email__label" for="verify-email-resend">
+              Введите ваш Email
+            </label>
+            <input
+              id="verify-email-resend"
               v-model="resendEmail"
               type="email"
-              label="E-mail"
-              placeholder="Введите E-mail аккаунта"
+              class="verify-email__input"
             />
-            <BaseButton
-              variant="outline"
-              size="medium"
-              text="Отправить повторно"
-              :loading="resendLoading"
+          </form>
+        </div>
+
+        <div class="verify-email__actions">
+          <button
+            v-if="status === 'success'"
+            type="button"
+            class="verify-email__submit"
+            @click="goToLogin"
+          >
+            Перейти ко входу
+          </button>
+
+          <template v-else-if="status === 'error'">
+            <button
+              type="button"
+              class="verify-email__submit"
+              :disabled="resendLoading"
               @click="handleResend"
-            />
-          </div>
-        </template>
+            >
+              Отправить
+            </button>
+
+            <div class="verify-email__sub">
+              <button type="button" class="verify-email__sub-link" @click="retry">
+                Попробовать снова
+              </button>
+              <button type="button" class="verify-email__sub-link" @click="goToLogin">
+                Перейти ко входу
+              </button>
+            </div>
+          </template>
+        </div>
       </div>
-    </div>
+    </section>
   </AppLayout>
 </template>
 
@@ -141,58 +156,163 @@ onMounted(verify)
   justify-content: center;
 
   &__card {
-    background: var(--white);
-    border-radius: var(--radius-20);
-    padding: var(--sp-40) var(--sp-60);
     width: 100%;
-    max-width: var(--size-560);
-    text-align: center;
+    max-width: 640px;
+    background: var(--fon-bloka);
+    border-radius: var(--radius-10);
+    padding: var(--sp-40) 106px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-40);
+    box-sizing: border-box;
+
+    @media (max-width: 1023px) {
+      max-width: 380px;
+      border-radius: var(--radius-20);
+      padding: var(--sp-40) var(--sp-20);
+    }
   }
 
   &__title {
     margin: 0;
     font-family: var(--font-family);
     font-weight: var(--font-semi-bold);
-    font-size: var(--size-35);
-    color: var(--black);
+    font-size: var(--size-25);
+    color: var(--text-accent);
+    text-align: center;
+
+    @media (max-width: 1023px) {
+      font-size: var(--size-20);
+    }
   }
 
-  &__text {
-    margin: var(--sp-20) 0 0;
-    font-family: var(--font-family);
-    font-weight: var(--font-medium);
-    font-size: var(--size-20);
-    color: var(--black);
-  }
-
-  &__action {
-    margin-top: var(--sp-40);
-  }
-
-  &__actions {
-    margin-top: var(--sp-40);
+  &__mid {
+    width: 100%;
     display: flex;
     flex-direction: column;
-    gap: var(--sp-20);
     align-items: center;
-  }
-
-  &__resend {
-    margin-top: var(--sp-40);
-    display: flex;
-    flex-direction: column;
     gap: var(--sp-20);
-    align-items: stretch;
-    text-align: left;
   }
 
-  &__resend-title {
+  &__hint {
     margin: 0;
+    font-family: var(--second-family);
+    font-weight: var(--font-medium);
+    font-size: var(--size-15);
+    color: var(--osnovnoy-tekst);
+    text-align: center;
+    max-width: 386px;
+
+    &_error {
+      color: var(--error);
+    }
+
+    @media (max-width: 1023px) {
+      font-size: var(--size-13);
+    }
+  }
+
+  &__row {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: var(--sp-20);
+
+    @media (max-width: 1023px) {
+      gap: var(--size-15);
+    }
+  }
+
+  &__label {
     font-family: var(--font-family);
     font-weight: var(--font-semi-bold);
     font-size: var(--size-15);
-    color: var(--black);
-    text-align: left;
+    color: var(--osnovnoy-tekst);
+    text-align: right;
+    white-space: nowrap;
+
+    @media (max-width: 1023px) {
+      font-size: var(--size-10);
+    }
+  }
+
+  &__input {
+    flex: 1;
+    background: var(--pole-vvoda);
+    border: none;
+    border-radius: var(--radius-input);
+    padding: var(--sp-10);
+    font-family: var(--second-family);
+    font-weight: var(--font-medium);
+    font-size: var(--size-15);
+    color: var(--osnovnoy-tekst);
+    outline: none;
+
+    &:focus {
+      box-shadow: var(--focus-ring-soft-blue);
+    }
+  }
+
+  &__actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-20);
+  }
+
+  &__submit {
+    background: var(--knopka);
+    color: var(--cvet-v-knopke);
+    border: none;
+    border-radius: var(--radius-10);
+    padding: var(--sp-10) var(--sp-40);
+    font-family: var(--font-family);
+    font-weight: var(--font-semi-bold);
+    font-size: var(--size-25);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+
+    &:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--knopka) 92%, black);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    @media (max-width: 1023px) {
+      font-size: var(--size-15);
+    }
+  }
+
+  &__sub {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--size-10);
+  }
+
+  &__sub-link {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-family: var(--second-family);
+    font-weight: var(--font-medium);
+    font-size: var(--size-15);
+    color: var(--text-accent);
+
+    &:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 1023px) {
+      font-size: var(--size-13);
+    }
   }
 }
 </style>

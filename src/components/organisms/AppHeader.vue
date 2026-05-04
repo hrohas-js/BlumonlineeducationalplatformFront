@@ -82,16 +82,18 @@ onUnmounted(() => {
 </template>
 
 <style lang="scss" scoped>
+// Figma: 1084×100, padding 20×40, gap 60, white bg, radius 20, no border.
+// Nav: Inter Regular 400 / 20px, color #010307, blue underline on hover.
+// Поддержка: 3px stroke #178EF0, radius 10px, padding 10, Inter Medium 500 / 20.
 .app-header {
   background-color: var(--white);
-  border-bottom: var(--border-1) solid var(--divider);
   position: static;
   z-index: var(--z-header);
   width: var(--size-content-width);
   max-width: var(--size-1148);
   margin: var(--sp-40) auto 0;
-  border-radius: var(--size-20);
-  padding: var(--sp-20) var(--sp-60);
+  border-radius: var(--radius-20);
+  padding: var(--sp-20) var(--sp-40);
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -104,6 +106,9 @@ onUnmounted(() => {
 
   &__logo-image {
     display: block;
+    width: var(--size-60);
+    height: var(--size-60);
+    object-fit: contain;
   }
 
   &__nav {
@@ -117,19 +122,18 @@ onUnmounted(() => {
     font-weight: var(--font-regular);
     font-size: var(--size-20);
     text-align: center;
-    color: var(--black);
+    color: var(--osnovnoy-tekst);
     text-decoration: none;
     padding: var(--sp-6) var(--sp-0);
     border-bottom: var(--border-2) solid transparent;
     transition: border-color 0.25s ease;
 
-
     &:hover {
-      border-bottom-color: var(--gray);
+      border-bottom-color: var(--podcherkivanie-pri-navedenii);
     }
 
     &.router-link-active {
-      border-bottom-color: var(--gray);
+      border-bottom-color: var(--podcherkivanie-pri-navedenii);
     }
   }
 
@@ -137,17 +141,15 @@ onUnmounted(() => {
     white-space: nowrap;
   }
 
-
-
   &__support-button {
     font-family: var(--second-family);
     font-weight: var(--font-medium);
     font-size: var(--size-20);
     white-space: nowrap;
     text-align: center;
-    color: var(--black);
+    color: var(--osnovnoy-tekst);
     background-color: transparent;
-    border: var(--size-3) solid var(--gray);
+    border: var(--size-3) solid var(--text-accent);
     border-radius: var(--radius-10);
     padding: var(--sp-10);
     cursor: pointer;
@@ -157,7 +159,7 @@ onUnmounted(() => {
     transition: background-color 0.25s ease, color 0.25s ease;
 
     &:hover {
-      background: var(--gray);
+      background: var(--text-accent);
       color: var(--white);
     }
   }

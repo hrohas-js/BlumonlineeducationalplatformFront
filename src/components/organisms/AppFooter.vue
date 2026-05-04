@@ -104,7 +104,7 @@ const instagramGradientId = 'app-footer-instagram-gradient'
       <section class="app-footer__links" aria-label="Основные документы">
         <a href="#" class="app-footer__link">#Новостная повестка</a>
         <a href="#" class="app-footer__link">#Маршрут знаний</a>
-        <a href="#" class="app-footer__link">#Партнерам</a>
+        <a href="#" class="app-footer__link">#Партнёрам</a>
       </section>
 
       <section class="app-footer__legal" aria-label="Юридическая информация">
