@@ -1,25 +1,16 @@
 /**
  * Auth Store — Doktor Blum
  *
- * Архитектурное решение (см. ARCHITECTURE_ANALYSIS.md §4):
- * Адаптация stores/auth.ts из mirror-frontend для plain Vue 3.
- * Ключевые отличия:
- * - Нет useCookie() / process.client (Nuxt) — только localStorage
- * - Нет navigateTo() (Nuxt) — используем router.push() из Vue Router
- * - Нет initializeAuth() через Nuxt plugin — вызывается из App.vue onMounted()
- *
- * Паттерн: Pinia setup-store (defineStore с функцией).
- * Все stores используют этот паттерн (см. ARCHITECTURE_ANALYSIS.md §4).
+ * Pinia setup-store. Хранит state, токены (access + refresh) в localStorage,
+ * проксирует все методы authService.
  */
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authService } from '@/services/api/endpoints/auth'
+import { TOKEN_STORAGE_KEY, REFRESH_TOKEN_STORAGE_KEY } from '@/services/axios'
 import type { User, RegisterData, LoginCredentials } from '@/types'
 import type { RegisterRequest, LoginApiResponse, RefreshTokenResponse } from '@/services/api/types'
 
-const TOKEN_STORAGE_KEY = 'auth-token'
-
-/** Текст плашки имени ученика на профиле и в «Моё обучение», если ФИО не задано */
 const studentNameBadgePlaceholder = 'Имя пользователя'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -48,34 +39,38 @@ export const useAuthStore = defineStore('auth', () => {
     ].filter((p): p is string => Boolean(p && p.length > 0))
 
     const joined = parts.join(' ').trim()
-    if (joined.length > 0) {
-      return joined
-    }
-    return studentNameBadgePlaceholder
+    return joined.length > 0 ? joined : studentNameBadgePlaceholder
   })
 
   const userEmail = computed((): string => user.value?.email || '')
 
-  // ===== PRIVATE HELPERS =====
-  function saveToken(t: string): void {
+  // ===== STORAGE HELPERS =====
+  function saveTokens(access: string, refresh?: string | null): void {
     try {
-      localStorage.setItem(TOKEN_STORAGE_KEY, t)
+      localStorage.setItem(TOKEN_STORAGE_KEY, access)
+      if (refresh) {
+        localStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, refresh)
+      }
     } catch (e) {
-      console.warn('[authStore] Failed to save token:', e)
+      console.warn('[authStore] Failed to save tokens:', e)
     }
   }
 
-  function loadToken(): string | null {
+  function loadTokens(): { access: string | null; refresh: string | null } {
     try {
-      return localStorage.getItem(TOKEN_STORAGE_KEY)
+      return {
+        access: localStorage.getItem(TOKEN_STORAGE_KEY),
+        refresh: localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY),
+      }
     } catch {
-      return null
+      return { access: null, refresh: null }
     }
   }
 
-  function clearToken(): void {
+  function clearStoredTokens(): void {
     try {
       localStorage.removeItem(TOKEN_STORAGE_KEY)
+      localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY)
     } catch {
       // ignore
     }
@@ -93,7 +88,7 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = null
     refreshToken.value = null
     error.value = null
-    clearToken()
+    clearStoredTokens()
   }
 
   // ===== ACTIONS =====
@@ -105,7 +100,7 @@ export const useAuthStore = defineStore('auth', () => {
     const result = await authService.login(credentials)
 
     if (result.success && result.data) {
-      const loginResponse = result.data as LoginApiResponse
+      const loginResponse = result.data
       const nextToken = resolveAccessToken(loginResponse)
 
       if (!nextToken) {
@@ -116,7 +111,7 @@ export const useAuthStore = defineStore('auth', () => {
 
       token.value = nextToken
       refreshToken.value = loginResponse.refresh_token
-      saveToken(nextToken)
+      saveTokens(nextToken, loginResponse.refresh_token)
       user.value = loginResponse.user
 
       loading.value = false
@@ -152,16 +147,24 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function logout() {
-    try {
-      await authService.logout()
-    } catch (e) {
-      console.error('[authStore] Logout error:', e)
+    if (refreshToken.value) {
+      try {
+        await authService.logout(refreshToken.value)
+      } catch (e) {
+        console.error('[authStore] Logout error:', e)
+      }
     }
 
     clearSession()
+  }
 
-    // В компоненте, вызывающем logout(), используй useRouter() для редиректа.
-    // Пример: const router = useRouter(); await authStore.logout(); router.push('/login')
+  async function logoutAll() {
+    try {
+      await authService.logoutAll()
+    } catch (e) {
+      console.error('[authStore] Logout-all error:', e)
+    }
+    clearSession()
   }
 
   async function fetchUser() {
@@ -179,17 +182,22 @@ export const useAuthStore = defineStore('auth', () => {
     loading.value = false
   }
 
-  /** Вызывается из App.vue onMounted() — инициализация auth при старте SPA */
   async function initializeAuth() {
-    const savedToken = loadToken()
-    if (savedToken) {
-      token.value = savedToken
+    const { access, refresh } = loadTokens()
+    if (access) {
+      token.value = access
+      refreshToken.value = refresh
       await fetchUser()
     }
   }
 
   async function refreshAccessToken() {
-    const result = await authService.refreshToken(refreshToken.value ?? undefined)
+    if (!refreshToken.value) {
+      clearSession()
+      return { success: false as const, error: 'Отсутствует refresh token' }
+    }
+
+    const result = await authService.refreshToken(refreshToken.value)
 
     if (!result.success || !result.data) {
       clearSession()
@@ -203,9 +211,54 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     token.value = nextToken
-    refreshToken.value = result.data.refresh_token ?? refreshToken.value
-    saveToken(nextToken)
+    const nextRefresh = result.data.refresh_token ?? refreshToken.value
+    refreshToken.value = nextRefresh
+    saveTokens(nextToken, nextRefresh)
     return { success: true as const, token: nextToken }
+  }
+
+  async function forgotPassword(email: string) {
+    loading.value = true
+    error.value = null
+    const result = await authService.forgotPassword(email)
+    loading.value = false
+    if (!result.success) {
+      error.value = result.error || 'Не удалось отправить письмо'
+      return { success: false, error: error.value }
+    }
+    return { success: true, message: result.data?.message }
+  }
+
+  async function resetPassword(token: string, newPassword: string) {
+    loading.value = true
+    error.value = null
+    const result = await authService.resetPassword(token, newPassword)
+    loading.value = false
+    if (!result.success) {
+      error.value = result.error || 'Не удалось сбросить пароль'
+      return { success: false, error: error.value }
+    }
+    return { success: true, message: result.data?.message }
+  }
+
+  async function changePassword(oldPassword: string, newPassword: string) {
+    loading.value = true
+    error.value = null
+    const result = await authService.changePassword(oldPassword, newPassword)
+    loading.value = false
+    if (!result.success) {
+      error.value = result.error || 'Не удалось изменить пароль'
+      return { success: false, error: error.value }
+    }
+    return { success: true, message: result.data?.message }
+  }
+
+  async function resendVerification(email: string) {
+    const result = await authService.resendVerification(email)
+    if (!result.success) {
+      return { success: false, error: result.error || 'Не удалось отправить письмо подтверждения' }
+    }
+    return { success: true, message: result.data?.message }
   }
 
   function clearError() {
@@ -229,9 +282,14 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     register,
     logout,
+    logoutAll,
     fetchUser,
     initializeAuth,
     refreshAccessToken,
+    forgotPassword,
+    resetPassword,
+    changePassword,
+    resendVerification,
     clearSession,
     clearError,
   }

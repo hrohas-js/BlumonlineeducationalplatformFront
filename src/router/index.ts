@@ -20,6 +20,8 @@ const NotFoundPage = () => import('@/pages/NotFoundPage.vue')
 const ContentStubPage = () => import('@/pages/ContentStubPage.vue')
 const AboutDoctorPage = () => import('@/pages/AboutDoctorPage.vue')
 const VerifyEmailPage = () => import('@/pages/VerifyEmailPage.vue')
+const ForgotPasswordPage = () => import('@/pages/ForgotPasswordPage.vue')
+const ResetPasswordPage = () => import('@/pages/ResetPasswordPage.vue')
 
 const routes: RouteRecordRaw[] = [
   {
@@ -32,6 +34,18 @@ const routes: RouteRecordRaw[] = [
     path: '/verify-email',
     name: 'verify-email',
     component: VerifyEmailPage,
+    meta: { requiresAuth: false },
+  },
+  {
+    path: '/forgot-password',
+    name: 'forgot-password',
+    component: ForgotPasswordPage,
+    meta: { requiresAuth: false },
+  },
+  {
+    path: '/reset-password',
+    name: 'reset-password',
+    component: ResetPasswordPage,
     meta: { requiresAuth: false },
   },
   {

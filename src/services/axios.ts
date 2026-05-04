@@ -3,13 +3,9 @@
  *
  * Архитектурное решение (см. ARCHITECTURE_ANALYSIS.md §4):
  * Зеркало plugins/axios.client.ts из mirror-frontend, адаптированное для
- * plain Vue 3 + Vite (без Nuxt). Ключевые отличия:
- * - Нет useNuxtApp(), useCookie() — только localStorage
- * - Нет process.client — браузер всегда клиент в SPA
- * - baseURL берётся из import.meta.env.VITE_API_BASE_URL
+ * plain Vue 3 + Vite. baseURL берётся из import.meta.env.VITE_API_BASE_URL.
  *
- * Экземпляр создаётся один раз и экспортируется.
- * Затем он предоставляется через src/plugins/axios.ts (app.provide).
+ * Хранение токенов — localStorage (singleton-ключи экспортируются в auth-стор).
  */
 import axios, {
   AxiosError,
@@ -19,7 +15,8 @@ import axios, {
 } from 'axios'
 import { AUTH_ENDPOINTS } from '@/services/api/endpoints/auth.contract'
 
-const TOKEN_STORAGE_KEY = 'auth-token'
+export const TOKEN_STORAGE_KEY = 'auth-token'
+export const REFRESH_TOKEN_STORAGE_KEY = 'auth-refresh-token'
 const LOGIN_ROUTE_PATH = '/login'
 
 interface RetryableRequestConfig extends InternalAxiosRequestConfig {
@@ -28,6 +25,7 @@ interface RetryableRequestConfig extends InternalAxiosRequestConfig {
 
 interface RefreshResponse {
   access_token?: string
+  refresh_token?: string
   token?: string
 }
 
@@ -45,7 +43,6 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`
     }
 
-    // Для FormData браузер сам выставит Content-Type с boundary
     if (config.data instanceof FormData) {
       delete config.headers['Content-Type']
     }
@@ -72,16 +69,30 @@ apiClient.interceptors.response.use(
     if (shouldHandleUnauthorized) {
       originalRequest._retry = true
 
+      const storedRefreshToken = localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY)
+      if (!storedRefreshToken) {
+        clearStoredTokens()
+        redirectToLoginIfNeeded()
+        return Promise.reject(error)
+      }
+
       try {
         const refreshClient = axios.create({
           baseURL: apiClient.defaults.baseURL,
           timeout: apiClient.defaults.timeout,
         })
-        const refreshResponse = await refreshClient.post<RefreshResponse>(AUTH_ENDPOINTS.refresh)
+        const refreshResponse = await refreshClient.post<RefreshResponse>(
+          AUTH_ENDPOINTS.refresh,
+          { refresh_token: storedRefreshToken }
+        )
         const nextToken = refreshResponse.data?.access_token ?? refreshResponse.data?.token
+        const nextRefreshToken = refreshResponse.data?.refresh_token
 
         if (nextToken) {
           localStorage.setItem(TOKEN_STORAGE_KEY, nextToken)
+          if (nextRefreshToken) {
+            localStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, nextRefreshToken)
+          }
           originalRequest.headers = originalRequest.headers ?? {}
           originalRequest.headers.Authorization = `Bearer ${nextToken}`
           return apiClient.request(originalRequest as AxiosRequestConfig)
@@ -90,12 +101,21 @@ apiClient.interceptors.response.use(
         console.error('Refresh token failed:', refreshError)
       }
 
-      localStorage.removeItem(TOKEN_STORAGE_KEY)
-      if (window.location.pathname !== LOGIN_ROUTE_PATH) {
-        window.location.assign(LOGIN_ROUTE_PATH)
-      }
+      clearStoredTokens()
+      redirectToLoginIfNeeded()
     }
 
     return Promise.reject(error)
   }
 )
+
+function clearStoredTokens() {
+  localStorage.removeItem(TOKEN_STORAGE_KEY)
+  localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY)
+}
+
+function redirectToLoginIfNeeded() {
+  if (window.location.pathname !== LOGIN_ROUTE_PATH) {
+    window.location.assign(LOGIN_ROUTE_PATH)
+  }
+}

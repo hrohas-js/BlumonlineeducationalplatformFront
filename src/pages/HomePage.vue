@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/components/layouts/AppLayout.vue'
 import HomeProfileInfoTableItem from '@/components/atoms/HomeProfileInfoTableItem.vue'
@@ -14,6 +14,10 @@ import ProfileDetailsForm from '@/components/organisms/ProfileDetailsForm.vue'
 import HomeGlossaryPanel from '@/components/organisms/HomeGlossaryPanel.vue'
 import type { ProfileSection } from '@/components/home/profile-menu.types'
 import { useAuthStore } from '@/stores/auth'
+import { useProductsStore } from '@/stores/products'
+import { usePaymentsStore } from '@/stores/payments'
+import { useNotification } from '@/composables/useNotification'
+import type { ProductResponse } from '@/services/api/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -38,10 +42,14 @@ const learningFilterTabs: { key: LearningMaterialsFilter; label: string; tone: '
 ]
 
 const authStore = useAuthStore()
+const productsStore = useProductsStore()
+const paymentsStore = usePaymentsStore()
+const { notify } = useNotification()
 
 const activeSection = computed(() => route.params.section as ProfileSection)
 
-const learningCourses = ref<LearningPanelCourse[]>([
+/** Фолбэк-данные, если my-courses пуст или API недоступен. */
+const mockLearningCourses: LearningPanelCourse[] = [
   {
     id: 'course-1',
     title: 'Курс из 5 тем',
@@ -69,7 +77,45 @@ const learningCourses = ref<LearningPanelCourse[]>([
     totalTopics: 8,
     accessUntil: '15.06.2026',
   },
-])
+]
+
+function mapProductTypeToCategory(productType: string): 'courses' | 'projects' | 'other' {
+  const t = productType.toLowerCase()
+  if (t.includes('project') || t.includes('проект')) return 'projects'
+  if (t.includes('course') || t.includes('курс')) return 'courses'
+  return 'other'
+}
+
+function formatDeadline(iso: string | null): string | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  return d.toLocaleDateString('ru-RU')
+}
+
+function toLearningPanelCourse(p: ProductResponse): LearningPanelCourse {
+  const progress = productsStore.progressByProductId[p.id]
+  return {
+    id: p.id,
+    title: p.title,
+    description: p.description ?? '',
+    category: mapProductTypeToCategory(p.product_type),
+    completedTopics: progress?.completed_lessons ?? 0,
+    totalTopics: progress?.total_lessons ?? 0,
+    accessUntil: formatDeadline(progress?.deadline ?? null),
+  }
+}
+
+const realLearningCourses = computed<LearningPanelCourse[]>(() =>
+  productsStore.myCourses.map(toLearningPanelCourse)
+)
+
+/** Если real пуст — показываем мок (по запросу UX'а до прод-данных). */
+const learningCourses = computed<LearningPanelCourse[]>(() =>
+  realLearningCourses.value.length > 0 ? realLearningCourses.value : mockLearningCourses
+)
+
+const isMockData = computed(() => realLearningCourses.value.length === 0)
 
 const materialsFilter = ref<LearningMaterialsFilter>('all')
 
@@ -90,14 +136,48 @@ const goToLearningSection = () => {
   setSection('learning')
 }
 
-const onRenewalPaymentClick = (courseId: string) => {
-  void courseId
+const onRenewalPaymentClick = async (courseId: string) => {
+  // Mock-курс — нет реального product_id под Robokassa, отлуп
+  if (isMockData.value) {
+    notify({
+      type: 'info',
+      message: 'Демо-данные: оплата будет доступна когда подключим реальные курсы',
+    })
+    return
+  }
+  const result = await paymentsStore.renew(courseId)
+  if (!result.success || !result.data) {
+    notify({ type: 'error', message: result.error || 'Не удалось создать платёж' })
+    return
+  }
+  window.location.assign(result.data.payment_url)
 }
+
+async function loadCourses() {
+  const result = await productsStore.fetchMyCourses()
+  if (!result.success) {
+    // Не шумим уведомлением — просто оставим mock
+    console.warn('[home] fetchMyCourses failed, falling back to mock:', result.error)
+    return
+  }
+  void productsStore.fetchAllProgress()
+}
+
+async function performLogout() {
+  await authStore.logout()
+  productsStore.reset()
+  await router.push({ name: 'login' })
+}
+
+onMounted(loadCourses)
 
 watch(
   () => route.params.section,
-  () => {
+  (section) => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
+    if (section === 'logout') {
+      void performLogout()
+    }
   },
 )
 </script>
@@ -270,8 +350,8 @@ watch(
           </article>
 
           <article v-else key="logout" class="home-profile__panel">
-            <h1 class="home-profile__panel-title">Выйти</h1>
-            <p class="home-profile__panel-text">Функциональность выхода будет добавлена позже.</p>
+            <h1 class="home-profile__panel-title">Выходим из аккаунта…</h1>
+            <p class="home-profile__panel-text">Завершаем сессию.</p>
           </article>
         </Transition>
 

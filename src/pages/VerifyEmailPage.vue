@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/components/layouts/AppLayout.vue'
 import BaseButton from '@/components/atoms/BaseButton.vue'
+import BaseInput from '@/components/atoms/BaseInput.vue'
 import { authService } from '@/services/api/endpoints/auth'
 import { useNotification } from '@/composables/useNotification'
 
@@ -14,6 +15,8 @@ const { notify } = useNotification()
 
 const status = ref<Status>('pending')
 const errorMessage = ref<string>('')
+const resendEmail = ref('')
+const resendLoading = ref(false)
 
 const verify = async () => {
   const raw = route.query.token
@@ -44,6 +47,25 @@ const goToLogin = () => {
 
 const retry = () => {
   void verify()
+}
+
+const handleResend = async () => {
+  const trimmed = resendEmail.value.trim()
+  if (!trimmed) {
+    notify({ type: 'warning', message: 'Введите email' })
+    return
+  }
+  resendLoading.value = true
+  const result = await authService.resendVerification(trimmed)
+  resendLoading.value = false
+  if (!result.success) {
+    notify({ type: 'error', message: result.error || 'Не удалось отправить письмо' })
+    return
+  }
+  notify({
+    type: 'success',
+    message: result.data?.message || 'Письмо отправлено повторно. Проверьте почту.',
+  })
 }
 
 onMounted(verify)
@@ -87,6 +109,23 @@ onMounted(verify)
               size="medium"
               text="Перейти ко входу"
               @click="goToLogin"
+            />
+          </div>
+
+          <div class="verify-email__resend">
+            <p class="verify-email__resend-title">Запросить новое письмо подтверждения</p>
+            <BaseInput
+              v-model="resendEmail"
+              type="email"
+              label="E-mail"
+              placeholder="Введите E-mail аккаунта"
+            />
+            <BaseButton
+              variant="outline"
+              size="medium"
+              text="Отправить повторно"
+              :loading="resendLoading"
+              @click="handleResend"
             />
           </div>
         </template>
@@ -136,6 +175,24 @@ onMounted(verify)
     flex-direction: column;
     gap: var(--sp-20);
     align-items: center;
+  }
+
+  &__resend {
+    margin-top: var(--sp-40);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-20);
+    align-items: stretch;
+    text-align: left;
+  }
+
+  &__resend-title {
+    margin: 0;
+    font-family: var(--font-family);
+    font-weight: var(--font-semi-bold);
+    font-size: var(--size-15);
+    color: var(--black);
+    text-align: left;
   }
 }
 </style>

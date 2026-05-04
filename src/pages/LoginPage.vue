@@ -4,7 +4,7 @@
  * Переключение между режимами login и register через mode ref.
  */
 import { ref, onMounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useNotification } from '@/composables/useNotification'
 import BaseButton from '@/components/atoms/BaseButton.vue'
@@ -143,7 +143,9 @@ const handleSubmit = async () => {
               <input v-model="rememberMe" type="checkbox" />
               <span>Запомнить меня</span>
             </label>
-            <a href="#" class="login-page__forgot">Забыли пароль?</a>
+            <RouterLink :to="{ name: 'forgot-password' }" class="login-page__forgot">
+              Забыли пароль?
+            </RouterLink>
           </div>
 
           <BaseButton
