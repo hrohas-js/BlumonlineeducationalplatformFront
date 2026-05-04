@@ -19,6 +19,7 @@ const LoginPage = () => import('@/pages/LoginPage.vue')
 const NotFoundPage = () => import('@/pages/NotFoundPage.vue')
 const ContentStubPage = () => import('@/pages/ContentStubPage.vue')
 const AboutDoctorPage = () => import('@/pages/AboutDoctorPage.vue')
+const VerifyEmailPage = () => import('@/pages/VerifyEmailPage.vue')
 
 const routes: RouteRecordRaw[] = [
   {
@@ -26,6 +27,12 @@ const routes: RouteRecordRaw[] = [
     name: 'login',
     component: LoginPage,
     meta: { requiresGuest: true },
+  },
+  {
+    path: '/verify-email',
+    name: 'verify-email',
+    component: VerifyEmailPage,
+    meta: { requiresAuth: false },
   },
   {
     path: '/training-programs',

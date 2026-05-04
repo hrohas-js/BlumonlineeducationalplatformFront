@@ -25,6 +25,7 @@ import type {
   LoginByPhoneRequest,
   LoginByPhoneResponse,
   RefreshTokenResponse,
+  VerifyEmailRequest,
   ApiServiceResponse,
 } from '../types'
 import { AUTH_ENDPOINTS } from './auth.contract'
@@ -108,6 +109,16 @@ export const authService = {
       return api.post<RefreshTokenResponse>(AUTH_ENDPOINTS.refresh)
     }
 
-    return api.post<RefreshTokenResponse>(AUTH_ENDPOINTS.refresh, { refreshToken })
+    return api.post<RefreshTokenResponse>(AUTH_ENDPOINTS.refresh, { refresh_token: refreshToken })
+  },
+
+  /**
+   * Подтверждение email по токену из письма
+   * POST /api/v1/auth/verify-email
+   */
+  async verifyEmail(token: string): ApiServiceResponse<User> {
+    const api = useApi()
+    const body: VerifyEmailRequest = { token }
+    return api.post<User>(AUTH_ENDPOINTS.verifyEmail, body)
   },
 }
