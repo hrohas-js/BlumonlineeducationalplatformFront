@@ -26,6 +26,7 @@ const CoursePage = () => import('@/pages/CoursePage.vue')
 const PaymentSuccessPage = () => import('@/pages/PaymentSuccessPage.vue')
 const PaymentFailPage = () => import('@/pages/PaymentFailPage.vue')
 const PaymentHistoryPage = () => import('@/pages/PaymentHistoryPage.vue')
+const AdminPage = () => import('@/pages/AdminPage.vue')
 
 const routes: RouteRecordRaw[] = [
   {
@@ -115,6 +116,12 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/',
     redirect: '/profile',
+  },
+  {
+    path: '/admin',
+    name: 'admin',
+    component: AdminPage,
+    meta: { requiresAuth: false },
   },
   {
     path: `/:section(${HOME_SECTION_PATH_RE})`,
