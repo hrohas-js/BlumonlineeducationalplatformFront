@@ -154,6 +154,16 @@ async function loadCourses() {
   void productsStore.fetchAllProgress()
 }
 
+/** Проверка GET /api/v1/products при открытии раздела «Моё обучение». */
+async function verifyProductsList() {
+  const result = await productsStore.fetchProductsList()
+  if (result.success) {
+    console.info('[learning] products.list OK:', result.data)
+  } else {
+    console.warn('[learning] products.list failed:', result.error)
+  }
+}
+
 async function performLogout() {
   await authStore.logout()
   productsStore.reset()
@@ -231,7 +241,12 @@ const onLearningTopicComplete = (topicId: string, completed: boolean) => {
   }
 }
 
-onMounted(loadCourses)
+onMounted(() => {
+  void loadCourses()
+  if (activeSection.value === 'learning') {
+    void verifyProductsList()
+  }
+})
 
 watch(
   () => route.params.section,
@@ -242,6 +257,9 @@ watch(
     }
     if (section !== 'learning') {
       resetLearningDrillDown()
+    }
+    if (section === 'learning') {
+      void verifyProductsList()
     }
   },
 )

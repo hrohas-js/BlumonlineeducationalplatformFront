@@ -11,6 +11,7 @@ import type {
   ProductResponse,
   ProductProgressResponse,
   ProductDetailResponse,
+  ProductsQuery,
 } from '@/services/api/types'
 
 export const useProductsStore = defineStore('products', () => {
@@ -25,6 +26,14 @@ export const useProductsStore = defineStore('products', () => {
   const hasCourses = computed(() => myCourses.value.length > 0)
 
   // ===== ACTIONS =====
+
+  async function fetchProductsList(query?: ProductsQuery) {
+    const result = await productsService.list(query)
+    if (result.success && result.data) {
+      return { success: true as const, data: result.data }
+    }
+    return { success: false as const, error: result.error || 'Не удалось загрузить список продуктов' }
+  }
 
   async function fetchMyCourses() {
     loading.value = true
@@ -92,6 +101,7 @@ export const useProductsStore = defineStore('products', () => {
     loading,
     error,
     hasCourses,
+    fetchProductsList,
     fetchMyCourses,
     fetchProgress,
     fetchAllProgress,
