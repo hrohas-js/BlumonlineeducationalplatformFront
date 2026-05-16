@@ -4,7 +4,6 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/components/layouts/AppLayout.vue'
 import AdminMaterialsStudentsToolbar from '@/components/organisms/AdminMaterialsStudentsToolbar.vue'
 import {
-  ADMIN_MATERIAL_SECTION_LIST,
   ADMIN_STUDENTS_SCOPE_ALL,
   getAdminStudentsScopeTitle,
   isAdminMaterialSectionId,

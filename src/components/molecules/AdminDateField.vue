@@ -16,7 +16,7 @@ interface Props {
   center?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   label: undefined,
   min: undefined,
   invalid: false,

@@ -15,7 +15,7 @@ interface Props {
   rounded?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   shadow: true,
   padding: 'medium',
   rounded: true,
