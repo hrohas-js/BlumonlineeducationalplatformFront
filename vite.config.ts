@@ -8,16 +8,16 @@
  *   Это позволяет использовать $main, @include inter-medium, @extend %u-mt-16
  *   в <style lang="scss" scoped> без ручных @import.
  */
+import path from 'node:path'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import { resolve } from 'path'
 
 export default defineConfig({
   plugins: [vue()],
 
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src'),
+      '@': path.resolve(process.cwd(), 'src'),
     },
   },
 

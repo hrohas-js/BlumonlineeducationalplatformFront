@@ -115,6 +115,8 @@ function clearStoredTokens() {
 }
 
 function redirectToLoginIfNeeded() {
+  if (import.meta.env.DEV) return
+
   if (window.location.pathname !== LOGIN_ROUTE_PATH) {
     window.location.assign(LOGIN_ROUTE_PATH)
   }

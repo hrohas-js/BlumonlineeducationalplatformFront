@@ -1,0 +1,382 @@
+<script setup lang="ts">
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import AppLayout from '@/components/layouts/AppLayout.vue'
+import BaseButton from '@/components/atoms/BaseButton.vue'
+import HomeProfileInfoTableItem from '@/components/atoms/HomeProfileInfoTableItem.vue'
+import AdminTopicNotificationCheckbox from '@/components/atoms/AdminTopicNotificationCheckbox.vue'
+import AdminProductEditBreadcrumbs from '@/components/molecules/AdminProductEditBreadcrumbs.vue'
+import AdminDateField from '@/components/molecules/AdminDateField.vue'
+import {
+  deadlineRuLabelToIso,
+  isoDateToRuLabel,
+  isRuDeadlineFormat,
+} from '@/utils/adminDateInput'
+import { getAdminMaterialSectionTitle, isAdminMaterialSectionId } from '@/constants/adminMaterials'
+
+const route = useRoute()
+const router = useRouter()
+
+const sectionId = computed(() => route.params.sectionId as string)
+
+const isAllowedSection = computed(
+  () => isAdminMaterialSectionId(sectionId.value) && sectionId.value !== 'archive',
+)
+
+watch(
+  isAllowedSection,
+  (ok) => {
+    if (!ok) {
+      void router.replace({ name: 'admin' })
+    }
+  },
+  { immediate: true },
+)
+
+const folderBreadcrumbLabel = computed(() => {
+  if (!isAdminMaterialSectionId(sectionId.value)) return ''
+  const title = getAdminMaterialSectionTitle(sectionId.value)
+  return title ? `Папка «${title}»` : ''
+})
+
+const breadcrumbItems = computed(() => [
+  { label: folderBreadcrumbLabel.value, to: { name: 'admin' as const } },
+  { label: 'Создание нового продукта' },
+])
+
+const formTitle = ref('')
+const formDescription = ref('')
+const formDeadlineRu = ref('')
+
+interface TopicFieldRow {
+  id: string
+  title: string
+}
+
+const topicRows = ref<TopicFieldRow[]>([{ id: crypto.randomUUID(), title: '' }])
+const notifyAllStudents = ref(false)
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
+
+const deadlineIso = computed({
+  get() {
+    const raw = formDeadlineRu.value.trim()
+    if (!raw) return ''
+    if (isRuDeadlineFormat(raw)) return deadlineRuLabelToIso(raw) || ''
+    if (ISO_DATE.test(raw)) return raw
+    return ''
+  },
+  set(v: string) {
+    const t = v.trim()
+    if (!t) {
+      formDeadlineRu.value = ''
+      return
+    }
+    const ru = isoDateToRuLabel(t)
+    formDeadlineRu.value = ru || t
+  },
+})
+
+const notifyCheckboxId = 'admin-material-product-create-notify-all'
+
+const onAddTopic = () => {
+  topicRows.value.push({ id: crypto.randomUUID(), title: '' })
+}
+
+const onSubmit = () => {
+  /* до API */
+}
+
+const onTopicTitleInput = (id: string, value: string) => {
+  topicRows.value = topicRows.value.map((row) => (row.id === id ? { ...row, title: value } : row))
+}
+</script>
+
+<template>
+  <AppLayout>
+    <section v-if="isAllowedSection" class="admin-material-product-create-page">
+      <div class="admin-material-product-create-page__panel">
+        <HomeProfileInfoTableItem
+          class="admin-material-product-create-page__badge"
+          label="Имя админа"
+          tone="#178ef0"
+          is-student-name
+        />
+
+        <AdminProductEditBreadcrumbs :items="breadcrumbItems" />
+
+        <hr class="admin-material-product-create-page__rule" />
+
+        <div class="admin-material-product-create-page__form">
+          <div class="admin-material-product-create-page__field-row">
+            <label class="admin-material-product-create-page__label" for="admin-material-product-create-title">
+              Название:
+            </label>
+            <input
+              id="admin-material-product-create-title"
+              v-model="formTitle"
+              class="admin-material-product-create-page__control admin-material-product-create-page__control_text"
+              type="text"
+              autocomplete="off"
+            />
+          </div>
+
+          <div class="admin-material-product-create-page__field-row">
+            <label
+              class="admin-material-product-create-page__label"
+              for="admin-material-product-create-description"
+            >
+              Краткое описание:
+            </label>
+            <textarea
+              id="admin-material-product-create-description"
+              v-model="formDescription"
+              class="admin-material-product-create-page__control admin-material-product-create-page__control_area"
+              rows="3"
+              autocomplete="off"
+            />
+          </div>
+
+          <div
+            v-for="topicRow in topicRows"
+            :key="topicRow.id"
+            class="admin-material-product-create-page__field-row"
+          >
+            <label class="admin-material-product-create-page__label" :for="`topic-${topicRow.id}`">
+              Тема:
+            </label>
+            <input
+              :id="`topic-${topicRow.id}`"
+              :value="topicRow.title"
+              class="admin-material-product-create-page__control admin-material-product-create-page__control_text"
+              type="text"
+              autocomplete="off"
+              @input="onTopicTitleInput(topicRow.id, ($event.target as HTMLInputElement).value)"
+            />
+          </div>
+
+          <div class="admin-material-product-create-page__add-topic-row">
+            <button type="button" class="admin-material-product-create-page__add-topic" @click="onAddTopic">
+              Добавить тему
+            </button>
+          </div>
+
+          <div class="admin-material-product-create-page__field-row">
+            <label class="admin-material-product-create-page__label" for="admin-material-product-create-deadline-input">
+              Срок доступа (общий):
+            </label>
+            <AdminDateField
+              v-model="deadlineIso"
+              fluid
+              input-id="admin-material-product-create-deadline-input"
+            />
+          </div>
+
+          <div
+            class="admin-material-product-create-page__field-row admin-material-product-create-page__field-row_notify"
+          >
+            <AdminTopicNotificationCheckbox
+              v-model="notifyAllStudents"
+              :input-id="notifyCheckboxId"
+            />
+            <span class="admin-material-product-create-page__notify-text">Уведомить всех учеников</span>
+          </div>
+        </div>
+
+        <div class="admin-material-product-create-page__submit-wrap">
+          <BaseButton variant="outline" size="medium" text="Создать" @click="onSubmit" />
+        </div>
+      </div>
+    </section>
+  </AppLayout>
+</template>
+
+<style lang="scss" scoped>
+.admin-material-product-create-page {
+  margin-top: var(--sp-40);
+
+  &__panel {
+    border-radius: var(--radius-20);
+    background-color: var(--fon-bloka);
+    padding: var(--sp-40) var(--sp-50);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-20);
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  &__badge {
+    align-self: flex-start;
+  }
+
+  &__rule {
+    margin: var(--sp-10) 0 0;
+    border: none;
+    border-top: var(--border-2) solid var(--black);
+    width: 100%;
+    height: 0;
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--sp-20);
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin-top: var(--sp-10);
+  }
+
+  &__field-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--sp-20);
+    width: 100%;
+    max-width: min(540px, 100%);
+    box-sizing: border-box;
+
+    &_notify {
+      justify-content: flex-end;
+      flex-wrap: nowrap;
+      margin-top: var(--sp-6);
+      gap: var(--sp-10);
+      align-items: center;
+    }
+  }
+
+  &__add-topic-row {
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
+    max-width: min(540px, 100%);
+    box-sizing: border-box;
+  }
+
+  &__label {
+    @include font-main(600);
+    flex-shrink: 0;
+    font-size: var(--size-25);
+    line-height: normal;
+    color: var(--black);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  &__control {
+    box-sizing: border-box;
+    width: 250px;
+    max-width: 100%;
+    border: var(--border-2) solid rgb(1 3 7 / 0.2);
+    border-radius: var(--radius-10);
+    background-color: var(--white);
+    font-family: var(--font-family);
+    font-size: var(--size-18);
+    color: var(--black);
+    padding: 8px var(--sp-10);
+
+    &:focus {
+      outline: none;
+      box-shadow: var(--focus-ring-main);
+    }
+
+    &_text {
+      min-height: 40px;
+    }
+
+    &_area {
+      min-height: 90px;
+      resize: vertical;
+    }
+  }
+
+  &__add-topic {
+    @include font-main(600);
+    width: 250px;
+    max-width: 100%;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: none;
+    font-size: var(--size-25);
+    line-height: normal;
+    color: var(--black);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    text-align: right;
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: var(--focus-ring-main);
+      border-radius: var(--radius-sm);
+    }
+
+    &:hover {
+      opacity: 0.85;
+    }
+  }
+
+  &__notify-text {
+    @include font-main(600);
+    font-size: var(--size-25);
+    line-height: normal;
+    color: var(--black);
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  &__submit-wrap {
+    margin-top: var(--sp-20);
+    align-self: center;
+    width: auto;
+    display: flex;
+    justify-content: center;
+  }
+
+  @media (max-width: 1023px) {
+    &__panel {
+      padding: var(--sp-24);
+    }
+
+    &__field-row {
+      flex-direction: column;
+      align-items: stretch;
+
+      &_notify {
+        flex-direction: row;
+        justify-content: flex-start;
+      }
+    }
+
+    &__label {
+      text-align: left;
+      width: 100%;
+      white-space: normal;
+    }
+
+    &__control {
+      width: 100%;
+    }
+
+    &__add-topic-row {
+      justify-content: stretch;
+    }
+
+    &__add-topic {
+      width: 100%;
+      text-align: center;
+    }
+  }
+
+  /* AdminDateField внутри col 250px */
+  &__field-row :deep(.admin-date-field.fluid),
+  &__field-row :deep(.admin-date-field) {
+    width: 250px;
+    max-width: 100%;
+  }
+}
+</style>

@@ -19,7 +19,11 @@ const { notifications, dismiss } = useNotification()
 
 <template>
   <div id="app">
-    <RouterView />
+    <RouterView v-slot="{ Component, route }">
+      <Transition name="app-route" mode="out-in">
+        <component :is="Component" :key="route.fullPath" />
+      </Transition>
+    </RouterView>
     <NotificationContainer :notifications="notifications" @dismiss="dismiss" />
   </div>
 </template>
@@ -27,5 +31,30 @@ const { notifications, dismiss } = useNotification()
 <style>
 #app {
   min-height: 100vh;
+}
+
+.app-route-enter-active,
+.app-route-leave-active {
+  transition:
+    opacity 0.28s ease,
+    transform 0.28s ease;
+}
+
+.app-route-enter-from,
+.app-route-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-route-enter-active,
+  .app-route-leave-active {
+    transition-duration: 0.01ms;
+  }
+
+  .app-route-enter-from,
+  .app-route-leave-to {
+    transform: none;
+  }
 }
 </style>

@@ -27,6 +27,15 @@ const PaymentSuccessPage = () => import('@/pages/PaymentSuccessPage.vue')
 const PaymentFailPage = () => import('@/pages/PaymentFailPage.vue')
 const PaymentHistoryPage = () => import('@/pages/PaymentHistoryPage.vue')
 const AdminPage = () => import('@/pages/AdminPage.vue')
+const AdminMaterialsStudentsPage = () => import('@/pages/AdminMaterialsStudentsPage.vue')
+const AdminStudentFolderLessonsAccessPage = () => import('@/pages/AdminStudentFolderLessonsAccessPage.vue')
+const AdminStudentProductTopicsPage = () => import('@/pages/AdminStudentProductTopicsPage.vue')
+const AdminStudentProfilePage = () => import('@/pages/AdminStudentProfilePage.vue')
+const AdminMaterialProductEditPage = () => import('@/pages/AdminMaterialProductEditPage.vue')
+const AdminMaterialProductCreatePage = () => import('@/pages/AdminMaterialProductCreatePage.vue')
+const AdminMaterialProductTopicEditPage = () => import('@/pages/AdminMaterialProductTopicEditPage.vue')
+const AdminMaterialProductTopicNotificationsPage = () =>
+  import('@/pages/AdminMaterialProductTopicNotificationsPage.vue')
 
 const routes: RouteRecordRaw[] = [
   {
@@ -118,6 +127,54 @@ const routes: RouteRecordRaw[] = [
     redirect: '/profile',
   },
   {
+    path: '/admin/materials/:sectionId/students/:studentId/folder/:materialSectionKey/lessons-access/:sourceProductId',
+    name: 'admin-student-folder-lessons-access',
+    component: AdminStudentFolderLessonsAccessPage,
+    meta: { requiresAuth: false },
+  },
+  {
+    path: '/admin/materials/:sectionId/students/:studentId/product/:materialSectionKey/:productId/topics',
+    name: 'admin-student-product-topics',
+    component: AdminStudentProductTopicsPage,
+    meta: { requiresAuth: false },
+  },
+  {
+    path: '/admin/materials/:sectionId/students/:studentId',
+    name: 'admin-materials-student-profile',
+    component: AdminStudentProfilePage,
+    meta: { requiresAuth: false },
+  },
+  {
+    path: '/admin/materials/:sectionId/students',
+    name: 'admin-materials-students',
+    component: AdminMaterialsStudentsPage,
+    meta: { requiresAuth: false },
+  },
+  {
+    path: '/admin/materials/:sectionId/product/create',
+    name: 'admin-material-product-create',
+    component: AdminMaterialProductCreatePage,
+    meta: { requiresAuth: false },
+  },
+  {
+    path: '/admin/materials/:sectionId/product/:productId/edit/topic/:topicId/notifications',
+    name: 'admin-material-product-topic-notifications',
+    component: AdminMaterialProductTopicNotificationsPage,
+    meta: { requiresAuth: false },
+  },
+  {
+    path: '/admin/materials/:sectionId/product/:productId/edit/topic/:topicId',
+    name: 'admin-material-product-topic-edit',
+    component: AdminMaterialProductTopicEditPage,
+    meta: { requiresAuth: false },
+  },
+  {
+    path: '/admin/materials/:sectionId/product/:productId/edit',
+    name: 'admin-material-product-edit',
+    component: AdminMaterialProductEditPage,
+    meta: { requiresAuth: false },
+  },
+  {
     path: '/admin',
     name: 'admin',
     component: AdminPage,
@@ -147,6 +204,8 @@ export const router = createRouter({
 
 // ===== ROUTE GUARD =====
 router.beforeEach((to) => {
+  if (import.meta.env.DEV) return
+
   const authStore = useAuthStore()
   const isAuthenticated = authStore.isAuthenticated || !!authStore.token
 

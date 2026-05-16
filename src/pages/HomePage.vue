@@ -10,9 +10,18 @@ import LearningCourseCardDescription from '@/components/organisms/LearningCourse
 import LearningCourseCardFooter from '@/components/organisms/LearningCourseCardFooter.vue'
 import LearningCourseCardHeader from '@/components/organisms/LearningCourseCardHeader.vue'
 import LearningCourseCardProgress from '@/components/organisms/LearningCourseCardProgress.vue'
+import LearningCourseOverviewPanel from '@/components/organisms/LearningCourseOverviewPanel.vue'
+import LearningTopicStudyPanel from '@/components/organisms/LearningTopicStudyPanel.vue'
+import LearningProductBadge from '@/components/molecules/LearningProductBadge.vue'
 import ProfileDetailsForm from '@/components/organisms/ProfileDetailsForm.vue'
 import HomeGlossaryPanel from '@/components/organisms/HomeGlossaryPanel.vue'
 import type { ProfileSection } from '@/components/home/profile-menu.types'
+import type { LearningCourseDetail, LearningViewMode } from '@/types/learning-course'
+import {
+  getMockLearningCourseDetail,
+  getMockLearningCourseDetailForTopic,
+  getMockLearningPanelCourses,
+} from '@/utils/learningCourseMock'
 import { useAuthStore } from '@/stores/auth'
 import { useProductsStore } from '@/stores/products'
 import { usePaymentsStore } from '@/stores/payments'
@@ -49,35 +58,7 @@ const { notify } = useNotification()
 const activeSection = computed(() => route.params.section as ProfileSection)
 
 /** Фолбэк-данные, если my-courses пуст или API недоступен. */
-const mockLearningCourses: LearningPanelCourse[] = [
-  {
-    id: 'course-1',
-    title: 'Курс из 5 тем',
-    description: '"Карманный справочник" по препаратам и их взаимодействиям',
-    category: 'courses',
-    completedTopics: 10,
-    totalTopics: 100,
-    accessUntil: '01.01.2027',
-  },
-  {
-    id: 'project-1',
-    title: 'Практический проект: разбор клинического случая',
-    description: 'Серия заданий по сбору анамнеза и постановке предварительного диагноза',
-    category: 'projects',
-    completedTopics: 7,
-    totalTopics: 20,
-    accessUntil: null,
-  },
-  {
-    id: 'other-1',
-    title: 'Материалы для самоподготовки',
-    description: 'Дополнительные лекции и чек-листы вне основной программы курса',
-    category: 'other',
-    completedTopics: 5,
-    totalTopics: 8,
-    accessUntil: '15.06.2026',
-  },
-]
+const mockLearningCourses: LearningPanelCourse[] = getMockLearningPanelCourses()
 
 function mapProductTypeToCategory(productType: string): 'courses' | 'projects' | 'other' {
   const t = productType.toLowerCase()
@@ -118,6 +99,16 @@ const learningCourses = computed<LearningPanelCourse[]>(() =>
 const isMockData = computed(() => realLearningCourses.value.length === 0)
 
 const materialsFilter = ref<LearningMaterialsFilter>('all')
+
+const learningView = ref<LearningViewMode>('list')
+const selectedCourseId = ref<string | null>(null)
+const selectedTopicId = ref<string | null>(null)
+const activeTopicId = ref<string | null>(null)
+const selectedCourseDetail = ref<LearningCourseDetail | null>(null)
+
+const showLearningCourseHeader = computed(
+  () => learningView.value === 'course' || learningView.value === 'topic',
+)
 
 const filteredLearningCourses = computed(() => {
   if (materialsFilter.value === 'all') {
@@ -169,16 +160,75 @@ async function performLogout() {
   await router.push({ name: 'login' })
 }
 
-const onLearningCourseClick = (courseId: string) => {
-  // Mock-курс — нет реального продукта в API
+function resetLearningDrillDown() {
+  learningView.value = 'list'
+  selectedCourseId.value = null
+  selectedTopicId.value = null
+  activeTopicId.value = null
+  selectedCourseDetail.value = null
+}
+
+const onStudyClick = (courseId: string) => {
   if (isMockData.value) {
-    notify({
-      type: 'info',
-      message: 'Демо-данные: карточка станет интерактивной после подключения реальных курсов',
-    })
+    const detail = getMockLearningCourseDetail(courseId)
+    if (!detail) {
+      notify({ type: 'info', message: 'Демо-курс не найден' })
+      return
+    }
+    selectedCourseId.value = courseId
+    selectedTopicId.value = null
+    activeTopicId.value = null
+    selectedCourseDetail.value = detail
+    learningView.value = 'course'
     return
   }
   void router.push({ name: 'course', params: { productId: courseId } })
+}
+
+function openTopicStudy(topicId: string) {
+  if (!selectedCourseId.value) return
+  activeTopicId.value = topicId
+  const detail = getMockLearningCourseDetailForTopic(selectedCourseId.value, topicId)
+  if (!detail) return
+  selectedTopicId.value = topicId
+  selectedCourseDetail.value = detail
+  learningView.value = 'topic'
+}
+
+const onLearningTopicSelect = (topicId: string) => {
+  if (!selectedCourseId.value) return
+
+  if (learningView.value === 'course' && activeTopicId.value !== topicId) {
+    activeTopicId.value = topicId
+    return
+  }
+
+  openTopicStudy(topicId)
+}
+
+const onLearningNextTopic = (topicId: string) => {
+  openTopicStudy(topicId)
+}
+
+const onLearningBack = () => {
+  if (learningView.value === 'topic' && selectedCourseId.value) {
+    const detail = getMockLearningCourseDetail(selectedCourseId.value)
+    if (detail) {
+      selectedCourseDetail.value = detail
+      selectedTopicId.value = null
+      learningView.value = 'course'
+      return
+    }
+  }
+  resetLearningDrillDown()
+}
+
+const onLearningTopicComplete = (topicId: string, completed: boolean) => {
+  if (!selectedCourseDetail.value) return
+  const topic = selectedCourseDetail.value.topics.find((t) => t.id === topicId)
+  if (topic) {
+    topic.isCompleted = completed
+  }
 }
 
 onMounted(loadCourses)
@@ -189,6 +239,9 @@ watch(
     window.scrollTo({ top: 0, behavior: 'smooth' })
     if (section === 'logout') {
       void performLogout()
+    }
+    if (section !== 'learning') {
+      resetLearningDrillDown()
     }
   },
 )
@@ -214,7 +267,12 @@ watch(
             key="learning"
             class="home-profile__panel home-profile__panel_learning"
           >
-            <HomeProfileInfoTableItem :label="authStore.studentNameBadgeLabel" tone="#178ef0" is-student-name />
+            <HomeProfileInfoTableItem
+              v-if="learningView === 'list'"
+              :label="authStore.studentNameBadgeLabel"
+              tone="#178ef0"
+              is-student-name
+            />
 
             <template v-if="!hasLearningCourses">
               <div class="home-profile__learning-empty">
@@ -226,7 +284,36 @@ watch(
             </template>
 
             <template v-else>
-              <div class="home-profile__learning-filters" role="navigation" aria-label="Фильтр материалов">
+              <button
+                v-if="learningView !== 'list'"
+                type="button"
+                class="home-learning__back"
+                @click="onLearningBack"
+              >
+                ← Назад
+              </button>
+
+              <header
+                v-if="showLearningCourseHeader && selectedCourseDetail"
+                class="home-learning__header"
+              >
+                <HomeProfileInfoTableItem
+                  :label="authStore.studentNameBadgeLabel"
+                  tone="#178ef0"
+                  is-student-name
+                />
+                <LearningProductBadge
+                  :title="selectedCourseDetail.title"
+                  :category="selectedCourseDetail.category"
+                />
+              </header>
+
+              <div
+                v-if="learningView === 'list'"
+                class="home-profile__learning-filters"
+                role="navigation"
+                aria-label="Фильтр материалов"
+              >
                 <HomeProfileInfoTableItem
                   v-for="tab in learningFilterTabs"
                   :key="tab.key"
@@ -237,7 +324,7 @@ watch(
                 />
               </div>
 
-              <div class="home-learning__courses">
+              <div v-if="learningView === 'list'" class="home-learning__courses">
                 <LearningCourseCard
                   v-for="course in filteredLearningCourses"
                   :key="course.id"
@@ -248,7 +335,6 @@ watch(
                   :total-topics="course.totalTopics"
                   :access-until="course.accessUntil"
                   class="home-learning__course-card"
-                  @click="onLearningCourseClick(course.id)"
                 >
                   <template #header="{ title, category, categoryLabel }">
                     <LearningCourseCardHeader :title="title" :category="category" :category-label="categoryLabel" />
@@ -267,10 +353,28 @@ watch(
                   </template>
 
                   <template #footer="{ accessLabel }">
-                    <LearningCourseCardFooter :access-label="accessLabel" />
+                    <LearningCourseCardFooter
+                      :access-label="accessLabel"
+                      @button-click="onStudyClick(course.id)"
+                    />
                   </template>
                 </LearningCourseCard>
               </div>
+
+              <LearningCourseOverviewPanel
+                v-else-if="learningView === 'course' && selectedCourseDetail"
+                :course="selectedCourseDetail"
+                :active-topic-id="activeTopicId"
+                @select-topic="onLearningTopicSelect"
+              />
+
+              <LearningTopicStudyPanel
+                v-else-if="learningView === 'topic' && selectedCourseDetail && selectedTopicId"
+                :course="selectedCourseDetail"
+                :selected-topic-id="selectedTopicId"
+                @next-topic="onLearningNextTopic"
+                @complete-topic="onLearningTopicComplete"
+              />
             </template>
           </article>
 
@@ -689,6 +793,31 @@ watch(
   opacity: var(--opacity-full);
 }
 
+.home-learning__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-20);
+  margin-top: var(--sp-20);
+}
+
+.home-learning__back {
+  align-self: flex-start;
+  margin-top: var(--sp-20);
+  border: none;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-family);
+  font-weight: var(--font-medium);
+  font-size: var(--size-15);
+  color: var(--dopolnitelnyy-tekst);
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
 .home-learning__courses {
   margin-top: var(--sp-40);
   display: flex;
@@ -701,7 +830,7 @@ watch(
 }
 
 .home-learning__course-card {
-  cursor: pointer;
+  cursor: default;
 }
 
 @media (min-width: 1024px) {
