@@ -17,16 +17,29 @@ import { AxiosInstanceKey } from '@/plugins/axios'
 import { apiClient } from '@/services/axios'
 import type { ApiResult } from '@/services/api/types'
 
-/** FastAPI / OpenAPI: detail может быть строкой, массивом объектов { loc, msg, type } или вложенным */
-function extractApiErrorMessage(error: unknown, fallback: string): string {
+interface ApiErrorBody {
+  detail?: unknown
+  message?: string
+  error?: { code?: string; message?: string }
+}
+
+function extractApiError(error: unknown, fallback: string): { message: string; code: string | null } {
   if (error && typeof error === 'object' && 'response' in error) {
-    const ax = error as AxiosError<{ detail?: unknown; message?: string }>
+    const ax = error as AxiosError<ApiErrorBody>
     const data = ax.response?.data
+    if (data?.error && typeof data.error === 'object') {
+      const code = typeof data.error.code === 'string' ? data.error.code : null
+      const message =
+        typeof data.error.message === 'string' && data.error.message.length
+          ? data.error.message
+          : fallback
+      return { message, code }
+    }
     if (data && typeof data.message === 'string' && data.message.length) {
-      return data.message
+      return { message: data.message, code: null }
     }
     const d = data?.detail
-    if (typeof d === 'string' && d.length) return d
+    if (typeof d === 'string' && d.length) return { message: d, code: null }
     if (Array.isArray(d)) {
       const parts = d
         .map((item) => {
@@ -37,11 +50,11 @@ function extractApiErrorMessage(error: unknown, fallback: string): string {
           return ''
         })
         .filter(Boolean)
-      if (parts.length) return parts.join('; ')
+      if (parts.length) return { message: parts.join('; '), code: null }
     }
   }
-  if (error instanceof Error) return error.message
-  return fallback
+  if (error instanceof Error) return { message: error.message, code: null }
+  return { message: fallback, code: null }
 }
 
 export const useApi = () => {
@@ -55,11 +68,11 @@ export const useApi = () => {
   ): Promise<ApiResult<T>> => {
     try {
       const response = await request()
-      return { data: response.data, error: null, success: true }
+      return { data: response.data, error: null, errorCode: null, success: true }
     } catch (error: unknown) {
       console.error(errorMessage, error)
-      const message = extractApiErrorMessage(error, errorMessage)
-      return { data: null, error: message, success: false }
+      const { message, code } = extractApiError(error, errorMessage)
+      return { data: null, error: message, errorCode: code, success: false }
     }
   }
 
@@ -78,12 +91,28 @@ export const useApi = () => {
   const del = <T>(url: string, config?: AxiosRequestConfig) =>
     apiCall<T>(() => $api.delete(url, config), `DELETE ${url} failed`)
 
+  const uploadFile = async <T>(
+    url: string,
+    file: File,
+    fieldName = 'file',
+    method: 'post' | 'put' = 'post'
+  ): Promise<ApiResult<T>> => {
+    const form = new FormData()
+    form.append(fieldName, file)
+    const request =
+      method === 'put'
+        ? () => $api.put<T>(url, form)
+        : () => $api.post<T>(url, form)
+    return apiCall<T>(request, `${method.toUpperCase()} ${url} failed`)
+  }
+
   return {
     get,
     post,
     put,
     patch,
     delete: del,
+    uploadFile,
     /** Прямой доступ к axios instance для сложных сценариев (FormData upload) */
     raw: $api,
   }

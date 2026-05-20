@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/components/layouts/AppLayout.vue'
 import HomeProfileInfoTableItem from '@/components/atoms/HomeProfileInfoTableItem.vue'
@@ -8,104 +8,207 @@ import AdminLabeledControlRow from '@/components/molecules/AdminLabeledControlRo
 import AdminTopicEditMaterialsSection from '@/components/organisms/AdminTopicEditMaterialsSection.vue'
 import AdminTopicEditVideosSection from '@/components/organisms/AdminTopicEditVideosSection.vue'
 import type { AdminTopicEditMaterialFileMock, AdminTopicEditVideoMock } from '@/utils/adminMaterialCatalog'
+import { useAdminStore } from '@/stores/admin'
+import { adminService } from '@/services/api/endpoints/admin'
 import {
-  getProductTopicsList,
-  getTopicEditContent,
-  resolveAdminMaterialProductTopic,
-  setTopicEditContent,
-} from '@/utils/adminMaterialCatalog'
+  getAdminMaterialSectionTitle,
+  isAdminMaterialSectionId,
+  type AdminMaterialSectionId,
+} from '@/constants/adminMaterials'
+import { useNotification } from '@/composables/useNotification'
 
 const route = useRoute()
 const router = useRouter()
+const adminStore = useAdminStore()
+const { notify } = useNotification()
 
-const resolved = computed(() =>
-  resolveAdminMaterialProductTopic(
-    route.params.sectionId as string,
-    route.params.productId as string,
-    route.params.topicId as string,
-  ),
-)
+const sectionId = computed(() => route.params.sectionId as string)
+const productId = computed(() => route.params.productId as string)
+const topicId = computed(() => route.params.topicId as string)
 
 const lessonTitle = ref('')
 const materialFiles = ref<AdminTopicEditMaterialFileMock[]>([])
 const videos = ref<AdminTopicEditVideoMock[]>([])
+const loading = ref(true)
+const saving = ref(false)
+const primaryLessonId = ref<string | null>(null)
+
+const productDetail = computed(() => adminStore.productDetails[productId.value] ?? null)
+
+const moduleData = computed(() =>
+  productDetail.value?.modules.find((m) => m.id === topicId.value) ?? null,
+)
+
+function mapFilesFromLesson() {
+  const mod = moduleData.value
+  if (!mod || mod.lessons.length === 0) {
+    materialFiles.value = []
+    videos.value = [{ id: 'v1', title: 'Видео 1', timecodeEnabled: false, videoSrc: '' }]
+    primaryLessonId.value = null
+    return
+  }
+  const lesson = [...mod.lessons].sort((a, b) => a.order_index - b.order_index)[0]
+  primaryLessonId.value = lesson.id
+  lessonTitle.value = mod.title
+  materialFiles.value = lesson.files.map((f) => ({
+    id: f.id,
+    fileName: f.file_name,
+  }))
+  videos.value = [
+    {
+      id: lesson.id,
+      title: lesson.title,
+      timecodeEnabled: false,
+      videoSrc: lesson.video_url ?? '',
+      fileName: lesson.video_url ? 'video' : undefined,
+    },
+  ]
+}
+
+async function load() {
+  if (!isAdminMaterialSectionId(sectionId.value)) {
+    void router.replace({ name: 'admin' })
+    return
+  }
+  loading.value = true
+  const result = await adminStore.fetchProductDetail(productId.value)
+  loading.value = false
+  if (!result.success) {
+    notify({ type: 'error', message: result.error || 'Не удалось загрузить курс' })
+    void router.replace({ name: 'admin' })
+    return
+  }
+  if (!moduleData.value) {
+    void router.replace({
+      name: 'admin-material-product-edit',
+      params: { sectionId: sectionId.value, productId: productId.value },
+    })
+    return
+  }
+  mapFilesFromLesson()
+}
+
+onMounted(() => {
+  void load()
+})
+
+watch([productId, topicId], () => {
+  void load()
+})
+
+const sectionTitle = computed(() =>
+  isAdminMaterialSectionId(sectionId.value)
+    ? getAdminMaterialSectionTitle(sectionId.value as AdminMaterialSectionId)
+    : '',
+)
 
 const breadcrumbItems = computed(() => {
-  const r = resolved.value
-  if (!r) return []
+  const p = productDetail.value
+  if (!p || !moduleData.value) return []
+  const topics = [...(p.modules ?? [])]
+    .sort((a, b) => a.order_index - b.order_index)
+    .map((m) => ({ id: m.id, title: m.title, accessUntil: '—' }))
   return [
-    { label: `Папка «${r.section.title}»`, to: { name: 'admin' as const } },
+    { label: `Папка «${sectionTitle.value}»`, to: { name: 'admin' as const } },
     {
-      label: `Редактирование тем «${r.card.title}»`,
+      label: `Редактирование тем «${p.title}»`,
       to: {
         name: 'admin-material-product-edit' as const,
-        params: { sectionId: r.section.sectionId, productId: r.card.id },
+        params: { sectionId: sectionId.value, productId: productId.value },
       },
       topicsMenu: {
-        sectionId: r.section.sectionId,
-        productId: r.card.id,
-        topics: getProductTopicsList(r.card.id, r.card.edit.topics),
-        activeTopicId: r.topic.id,
+        sectionId: sectionId.value,
+        productId: productId.value,
+        topics,
+        activeTopicId: topicId.value,
       },
     },
-    { label: r.topic.title },
+    { label: moduleData.value.title },
   ]
 })
 
-watch(
-  resolved,
-  (r) => {
-    if (!r) {
-      const sectionId = route.params.sectionId as string | undefined
-      const productId = route.params.productId as string | undefined
-      if (sectionId && productId) {
-        void router.replace({
-          name: 'admin-material-product-edit',
-          params: { sectionId, productId },
-        })
-      } else {
-        void router.replace({ name: 'admin' })
-      }
-      return
-    }
-    lessonTitle.value = r.topic.title
-    const content = getTopicEditContent(r.card.id, r.topic.id, r.topic.title)
-    materialFiles.value = content.materialFiles.map((f) => ({ ...f }))
-    videos.value = content.videos.map((v) => ({ ...v }))
-  },
-  { immediate: true },
-)
-
 const goBackToProduct = () => {
-  const r = resolved.value
-  if (!r) return
   void router.push({
     name: 'admin-material-product-edit',
-    params: { sectionId: r.section.sectionId, productId: r.card.id },
+    params: { sectionId: sectionId.value, productId: productId.value },
   })
 }
 
-const onSave = () => {
-  const r = resolved.value
-  if (!r) return
-  setTopicEditContent(r.card.id, r.topic.id, {
-    materialFiles: materialFiles.value.map((f) => ({ ...f })),
-    videos: videos.value.map((v) => ({ ...v })),
+const ensureLesson = async (): Promise<string | null> => {
+  if (primaryLessonId.value) return primaryLessonId.value
+  const result = await adminService.createLesson(topicId.value, {
+    title: lessonTitle.value.trim() || 'Урок 1',
+    description: '',
   })
-  /* до API */
+  if (!result.success || !result.data) {
+    notify({ type: 'error', message: result.error || 'Не удалось создать урок' })
+    return null
+  }
+  primaryLessonId.value = result.data.id
+  await adminStore.fetchProductDetail(productId.value)
+  return result.data.id
+}
+
+const onVideoFileSelected = async ({ file }: { videoId: string; file: File }) => {
+  const lessonId = await ensureLesson()
+  if (!lessonId) return
+  const result = await adminService.uploadLessonVideo(lessonId, file)
+  if (!result.success || !result.data) {
+    notify({ type: 'error', message: result.error || 'Не удалось загрузить видео' })
+    return
+  }
+  notify({ type: 'success', message: 'Видео загружено' })
+  await load()
+}
+
+const onMaterialUpload = async (file: File) => {
+  const lessonId = await ensureLesson()
+  if (!lessonId) return
+  const result = await adminService.uploadLessonFile(lessonId, file)
+  if (!result.success) {
+    notify({ type: 'error', message: result.error || 'Не удалось загрузить файл' })
+    return
+  }
+  notify({ type: 'success', message: 'Файл загружен' })
+  await load()
 }
 
 const onAddVideo = () => {
   videos.value = [
     ...videos.value,
-    { id: `v-${Date.now()}`, title: '', timecodeEnabled: false },
+    {
+      id: crypto.randomUUID(),
+      title: `Видео ${videos.value.length + 1}`,
+      timecodeEnabled: false,
+      videoSrc: '',
+    },
   ]
+}
+
+const onSave = async () => {
+  const lessonId = await ensureLesson()
+  if (!lessonId) return
+  saving.value = true
+  await adminService.updateModule(topicId.value, {
+    title: lessonTitle.value.trim() || moduleData.value?.title,
+  })
+  const result = await adminService.updateLesson(lessonId, {
+    title: lessonTitle.value.trim() || 'Урок',
+    description: '',
+  })
+  saving.value = false
+  if (!result.success) {
+    notify({ type: 'error', message: result.error || 'Не удалось сохранить' })
+    return
+  }
+  notify({ type: 'success', message: 'Сохранено' })
+  await load()
 }
 </script>
 
 <template>
   <AppLayout>
-    <section v-if="resolved" class="admin-material-product-topic-edit-page">
+    <section v-if="!loading && moduleData" class="admin-material-product-topic-edit-page">
       <div class="admin-material-product-topic-edit-page__panel">
         <HomeProfileInfoTableItem
           class="admin-material-product-topic-edit-page__badge"
@@ -118,26 +221,32 @@ const onAddVideo = () => {
 
         <hr class="admin-material-product-topic-edit-page__rule" />
 
-        <div class="admin-material-product-topic-edit-page__lesson">
-          <AdminLabeledControlRow label="Название урока" narrow-control>
-            <input v-model="lessonTitle" class="admin-labeled-control-row__input" type="text" autocomplete="off" />
-          </AdminLabeledControlRow>
-        </div>
+        <AdminLabeledControlRow v-model="lessonTitle" label="Название темы:" control-type="input" />
 
-        <AdminTopicEditMaterialsSection v-model:files="materialFiles" />
+        <AdminTopicEditVideosSection
+          v-model:videos="videos"
+          @add-video="onAddVideo"
+          @video-file-selected="onVideoFileSelected"
+        />
 
-        <AdminTopicEditVideosSection v-model:videos="videos" @add-video="onAddVideo" />
+        <AdminTopicEditMaterialsSection v-model:files="materialFiles" @material-upload="onMaterialUpload" />
 
-        <div class="admin-material-product-topic-edit-page__footer">
-          <button type="button" class="admin-material-product-topic-edit-page__footer-btn" @click="onSave">
-            Сохранить
+        <div class="admin-material-product-topic-edit-page__actions">
+          <button type="button" class="admin-material-product-topic-edit-page__back" @click="goBackToProduct">
+            Назад
           </button>
-          <button type="button" class="admin-material-product-topic-edit-page__footer-btn" @click="goBackToProduct">
-            Отмена
+          <button
+            type="button"
+            class="admin-material-product-topic-edit-page__save"
+            :disabled="saving"
+            @click="onSave"
+          >
+            {{ saving ? 'Сохраняем…' : 'Сохранить' }}
           </button>
         </div>
       </div>
     </section>
+    <p v-else-if="loading" class="admin-material-product-topic-edit-page__loading">Загружаем…</p>
   </AppLayout>
 </template>
 
@@ -145,76 +254,45 @@ const onAddVideo = () => {
 .admin-material-product-topic-edit-page {
   margin-top: var(--sp-40);
 
+  &__loading {
+    margin: var(--sp-40);
+    text-align: center;
+  }
+
   &__panel {
     border-radius: var(--radius-20);
     background-color: var(--fon-bloka);
     padding: var(--sp-40) var(--sp-50);
     display: flex;
     flex-direction: column;
-    gap: var(--sp-40);
-    max-width: 1084px;
-    margin-left: auto;
-    margin-right: auto;
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  &__badge {
-    align-self: flex-start;
+    gap: var(--sp-24);
   }
 
   &__rule {
-    width: 100%;
-    max-width: 1084px;
     margin: 0;
     border: none;
-    border-top: 1px solid rgba(1, 3, 7, 0.12);
+    border-top: var(--border-2) solid var(--black);
   }
 
-  &__lesson {
-    width: 100%;
-    max-width: 1084px;
-  }
-
-  &__footer {
+  &__actions {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
     gap: var(--sp-20);
-    width: 100%;
-    max-width: 1084px;
-    margin-left: auto;
-    margin-right: auto;
+    justify-content: flex-end;
   }
 
-  &__footer-btn {
-    margin: 0;
-    padding: 10px;
-    border: 1px solid #010307;
-    border-radius: var(--radius-10);
-    background-color: var(--white);
+  &__back,
+  &__save {
     font-family: var(--font-family);
-    font-weight: var(--font-semi-bold);
-    font-size: var(--size-20);
-    line-height: normal;
-    color: #010307;
+    font-size: var(--size-15);
     cursor: pointer;
-    box-sizing: border-box;
-
-    &:focus-visible {
-      outline: none;
-      box-shadow: var(--focus-ring-main);
-    }
-
-    &:hover {
-      filter: brightness(0.98);
-    }
+    border: none;
+    background: none;
+    color: var(--text-accent);
   }
 
-  @media (max-width: 1023px) {
-    &__panel {
-      padding: var(--sp-24);
-    }
+  &__save:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 }
 </style>

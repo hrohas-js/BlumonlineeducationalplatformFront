@@ -10,6 +10,7 @@ import { authService } from '@/services/api/endpoints/auth'
 import { TOKEN_STORAGE_KEY, REFRESH_TOKEN_STORAGE_KEY } from '@/services/axios'
 import type { User, RegisterData, LoginCredentials } from '@/types'
 import type { RegisterRequest, LoginApiResponse, RefreshTokenResponse } from '@/services/api/types'
+import { normalizeUser } from '@/utils/normalizeUser'
 
 const studentNameBadgePlaceholder = 'Имя пользователя'
 
@@ -43,6 +44,12 @@ export const useAuthStore = defineStore('auth', () => {
   })
 
   const userEmail = computed((): string => user.value?.email || '')
+
+  const isAdmin = computed((): boolean => user.value?.role === 'admin')
+
+  function setUserFromApi(raw: User | Record<string, unknown>): void {
+    user.value = normalizeUser(raw)
+  }
 
   // ===== STORAGE HELPERS =====
   function saveTokens(access: string, refresh?: string | null): void {
@@ -112,7 +119,7 @@ export const useAuthStore = defineStore('auth', () => {
       token.value = nextToken
       refreshToken.value = loginResponse.refresh_token
       saveTokens(nextToken, loginResponse.refresh_token)
-      user.value = loginResponse.user
+      setUserFromApi(loginResponse.user)
 
       loading.value = false
       return { success: true }
@@ -120,7 +127,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     error.value = result.error || 'Ошибка входа'
     loading.value = false
-    return { success: false, error: error.value }
+    return { success: false, error: error.value, errorCode: result.errorCode }
   }
 
   async function register(userData: RegisterData) {
@@ -174,8 +181,12 @@ export const useAuthStore = defineStore('auth', () => {
     const result = await authService.getCurrentUser()
 
     if (result.success && result.data) {
-      user.value = result.data
-    } else if (result.error?.includes('401') || result.error?.includes('Unauthorized')) {
+      setUserFromApi(result.data)
+    } else if (
+      result.errorCode === 'invalid_token' ||
+      result.error?.includes('401') ||
+      result.error?.includes('Unauthorized')
+    ) {
       clearSession()
     }
 
@@ -278,6 +289,7 @@ export const useAuthStore = defineStore('auth', () => {
     studentNameBadgePlaceholder,
     studentNameBadgeLabel,
     userEmail,
+    isAdmin,
     // Actions
     login,
     register,
@@ -292,5 +304,6 @@ export const useAuthStore = defineStore('auth', () => {
     resendVerification,
     clearSession,
     clearError,
+    setUserFromApi,
   }
 })

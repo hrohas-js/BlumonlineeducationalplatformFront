@@ -3,12 +3,14 @@ import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/components/layouts/AppLayout.vue'
 import { authService } from '@/services/api/endpoints/auth'
+import { useAuthStore } from '@/stores/auth'
 import { useNotification } from '@/composables/useNotification'
 
 type Status = 'pending' | 'success' | 'error'
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 const { notify } = useNotification()
 
 const status = ref<Status>('pending')
@@ -29,7 +31,8 @@ const verify = async () => {
   status.value = 'pending'
   const result = await authService.verifyEmail(token)
 
-  if (result.success) {
+  if (result.success && result.data) {
+    authStore.setUserFromApi(result.data)
     status.value = 'success'
     notify({ type: 'success', message: 'Email успешно подтверждён' })
     return

@@ -6,6 +6,7 @@ const videos = defineModel<AdminTopicEditVideoMock[]>('videos', { required: true
 
 interface Emits {
   (e: 'add-video'): void
+  (e: 'video-file-selected', payload: { videoId: string; file: File }): void
 }
 
 const emit = defineEmits<Emits>()
@@ -34,6 +35,7 @@ const onDelete = (videoId: string) => {
         v-model:timecode-enabled="v.timecodeEnabled"
         v-model:video-src="v.videoSrc"
         @delete-video="onDelete(v.id)"
+        @file-selected="(file) => emit('video-file-selected', { videoId: v.id, file })"
       />
     </div>
     <div class="admin-topic-edit-videos-section__add-wrap">

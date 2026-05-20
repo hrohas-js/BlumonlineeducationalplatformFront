@@ -11,14 +11,18 @@ import {
   isAdminStudentsSectionParam,
   type AdminMaterialSectionId,
 } from '@/constants/adminMaterials'
-import {
-  getMockStudentProfileProducts,
-  resolveAdminStudentRow,
-} from '@/utils/adminMockStudents'
+import { resolveAdminStudentRow } from '@/utils/adminMockStudents'
+import type { AdminStudentProfileProductRow } from '@/utils/adminMockStudents'
+import { useAdminStore } from '@/stores/admin'
+import { deadlineRuLabelToIso } from '@/utils/adminDateInput'
+import { useNotification } from '@/composables/useNotification'
 import type { StudentAccessStatusValue } from '@/components/organisms/AdminStudentAccessStatusModal.vue'
 
 const route = useRoute()
 const router = useRouter()
+const adminStore = useAdminStore()
+const { notify } = useNotification()
+const profileProductsBySection = ref<Record<string, AdminStudentProfileProductRow[]>>({})
 
 const sectionId = computed(() => route.params.sectionId as string)
 const studentId = computed(() => route.params.studentId as string)
@@ -29,6 +33,16 @@ const validatedScope = computed(() =>
 
 const student = computed(() => {
   if (!validatedScope.value) return null
+  const agg = adminStore.findAggregatedStudent(validatedScope.value, studentId.value)
+  if (agg) {
+    return {
+      id: agg.user_id,
+      name: agg.name,
+      email: agg.email,
+      productsCount: agg.productIds.length,
+      avatarUrl: null,
+    }
+  }
   return resolveAdminStudentRow(validatedScope.value, studentId.value)
 })
 
@@ -53,12 +67,25 @@ function productAccessCompositeKey(sectionKey: AdminMaterialSectionId, productId
 
 const productDeadlineLabels = ref<Record<string, string>>({})
 
+async function loadProfileProducts() {
+  if (!studentId.value) return
+  const map: Record<string, AdminStudentProfileProductRow[]> = {}
+  for (const s of ADMIN_MATERIAL_SECTION_LIST) {
+    map[s.id] = await adminStore.getStudentProfileProducts(studentId.value, s.id)
+  }
+  profileProductsBySection.value = map
+}
+
+watch(studentId, () => {
+  void loadProfileProducts()
+}, { immediate: true })
+
 const profileSections = computed(() =>
   ADMIN_MATERIAL_SECTION_LIST.map((s) => ({
     sectionKey: s.id,
     title: s.title,
     borderColor: ADMIN_MATERIAL_SECTION_BORDER_COLORS[s.id],
-    products: getMockStudentProfileProducts(studentId.value, s.id).map((p) => ({
+    products: (profileProductsBySection.value[s.id] ?? []).map((p) => ({
       ...p,
       deadlineLabel:
         productDeadlineLabels.value[productAccessCompositeKey(s.id, p.id)] ?? p.deadlineLabel,
@@ -91,15 +118,59 @@ const onAccessModalClose = () => {
   accessModalSectionKey.value = null
 }
 
-const onAccessModalSave = (payload: { status: StudentAccessStatusValue; notifyByEmail: boolean }) => {
+const onAccessModalSave = async (payload: {
+  status: StudentAccessStatusValue
+  notifyByEmail: boolean
+}) => {
   const sk = accessModalSectionKey.value
   const pid = accessModalProductId.value
-  if (sk && pid) {
-    const key = productAccessCompositeKey(sk, pid)
-    productAccessStatuses.value = { ...productAccessStatuses.value, [key]: payload.status }
-  }
+  if (!sk || !pid) return
+  const key = productAccessCompositeKey(sk, pid)
   void payload.notifyByEmail
-  /* до API: статус доступа к продукту и уведомление ученика */
+
+  if (payload.status === 'deleted') {
+    const result = await adminStore.revokeAccess(studentId.value, pid)
+    if (!result.success) {
+      notify({ type: 'error', message: result.error || 'Не удалось отозвать доступ' })
+      return
+    }
+    productAccessStatuses.value = { ...productAccessStatuses.value, [key]: 'deleted' }
+    notify({ type: 'success', message: 'Доступ отозван' })
+    await loadProfileProducts()
+    onAccessModalClose()
+    return
+  }
+
+  if (payload.status === 'active') {
+    const result = await adminStore.grantAccess(studentId.value, {
+      product_id: pid,
+      access_type: 'immediate',
+    })
+    if (!result.success) {
+      notify({ type: 'error', message: result.error || 'Не удалось выдать доступ' })
+      return
+    }
+    productAccessStatuses.value = { ...productAccessStatuses.value, [key]: 'active' }
+    notify({ type: 'success', message: 'Доступ выдан' })
+    await loadProfileProducts()
+    onAccessModalClose()
+    return
+  }
+
+  if (payload.status === 'paused') {
+    const result = await adminStore.grantManualAccess(studentId.value, pid)
+    if (!result.success) {
+      notify({ type: 'error', message: result.error || 'Не удалось изменить доступ' })
+      return
+    }
+    productAccessStatuses.value = { ...productAccessStatuses.value, [key]: 'paused' }
+    notify({ type: 'success', message: 'Доступ обновлён' })
+    onAccessModalClose()
+    return
+  }
+
+  productAccessStatuses.value = { ...productAccessStatuses.value, [key]: payload.status }
+  onAccessModalClose()
 }
 
 const deadlineModalOpen = ref(false)
@@ -125,14 +196,28 @@ const onDeadlineModalClose = () => {
   deadlineModalCurrentLabel.value = ''
 }
 
-const onDeadlineModalSave = (payload: { newDeadlineDisplay: string }) => {
+const onDeadlineModalSave = async (payload: { newDeadlineDisplay: string }) => {
   const sk = deadlineModalSectionKey.value
   const pid = deadlineModalProductId.value
-  if (sk && pid) {
-    const key = productAccessCompositeKey(sk, pid)
-    productDeadlineLabels.value = { ...productDeadlineLabels.value, [key]: payload.newDeadlineDisplay }
+  if (!sk || !pid) return
+  const iso = deadlineRuLabelToIso(payload.newDeadlineDisplay)
+  if (!iso) {
+    notify({ type: 'warning', message: 'Укажите дату в формате ДД.ММ.ГГГГ' })
+    return
   }
-  /* до API: общий дедлайн по продукту */
+  const result = await adminStore.updateDeadline(studentId.value, pid, `${iso}T00:00:00Z`)
+  if (!result.success) {
+    notify({ type: 'error', message: result.error || 'Не удалось обновить дедлайн' })
+    return
+  }
+  const key = productAccessCompositeKey(sk, pid)
+  productDeadlineLabels.value = {
+    ...productDeadlineLabels.value,
+    [key]: payload.newDeadlineDisplay,
+  }
+  notify({ type: 'success', message: 'Дедлайн обновлён' })
+  await loadProfileProducts()
+  onDeadlineModalClose()
 }
 </script>
 

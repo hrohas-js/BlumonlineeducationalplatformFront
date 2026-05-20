@@ -5,6 +5,12 @@ import { isAllowedTopicMaterialFileName } from '@/utils/adminMaterialCatalog'
 
 const files = defineModel<AdminTopicEditMaterialFileMock[]>('files', { required: true })
 
+interface Emits {
+  (e: 'material-upload', file: File): void
+}
+
+const emit = defineEmits<Emits>()
+
 const isEditing = ref(false)
 const draftFiles = ref<AdminTopicEditMaterialFileMock[]>([])
 const addFileError = ref('')
@@ -48,6 +54,7 @@ const onFileInputChange = (event: Event) => {
     ...draftFiles.value,
     { id: `mf-${Date.now()}`, fileName: file.name },
   ]
+  emit('material-upload', file)
   addFileError.value = ''
   input.value = ''
 }

@@ -10,14 +10,16 @@ import {
   isAdminStudentsSectionParam,
   type AdminStudentsSectionScope,
 } from '@/constants/adminMaterials'
-import {
-  getAllMockAdminStudentRows,
-  mockStudentsForAdminSection,
-  type AdminStudentRow,
-} from '@/utils/adminMockStudents'
+import type { AdminStudentRow } from '@/utils/adminMockStudents'
+import { useAdminStore } from '@/stores/admin'
+import { adminService } from '@/services/api/endpoints/admin'
+import { useNotification } from '@/composables/useNotification'
 
 const route = useRoute()
 const router = useRouter()
+const adminStore = useAdminStore()
+const { notify } = useNotification()
+const loading = ref(true)
 
 const sectionId = computed(() => route.params.sectionId as string)
 const validatedStudentsScope = computed<AdminStudentsSectionScope | null>(() =>
@@ -29,13 +31,16 @@ const sortAscending = ref(true)
 const declaredUserCount = ref<number | null>(null)
 
 const sourceRows = computed<AdminStudentRow[]>(() => {
-  if (sectionId.value === ADMIN_STUDENTS_SCOPE_ALL) {
-    return getAllMockAdminStudentRows()
-  }
-  if (isAdminMaterialSectionId(sectionId.value)) {
-    return mockStudentsForAdminSection(sectionId.value)
-  }
-  return []
+  const scope = validatedStudentsScope.value
+  if (!scope) return []
+  const aggregated = adminStore.aggregatedStudents[scope] ?? []
+  return aggregated.map((r) => ({
+    id: r.user_id,
+    name: r.name,
+    email: r.email,
+    productsCount: r.productIds.length,
+    avatarUrl: null,
+  }))
 })
 
 const filteredRows = computed(() => {
@@ -70,12 +75,28 @@ const readDeclaredCountFromHistory = () => {
   }
 }
 
+async function loadStudents() {
+  loading.value = true
+  const scope = validatedStudentsScope.value
+  if (!scope) {
+    loading.value = false
+    return
+  }
+  if (scope === ADMIN_STUDENTS_SCOPE_ALL) {
+    await adminStore.aggregateAllSections()
+  } else if (isAdminMaterialSectionId(scope)) {
+    await adminStore.aggregateStudentsForSection(scope)
+  }
+  loading.value = false
+}
+
 onMounted(() => {
   if (sectionId.value === ADMIN_STUDENTS_SCOPE_ALL) {
     declaredUserCount.value = null
   } else {
     readDeclaredCountFromHistory()
   }
+  void loadStudents()
 })
 
 watch(sectionId, (id) => {
@@ -88,6 +109,7 @@ watch(sectionId, (id) => {
   } else {
     readDeclaredCountFromHistory()
   }
+  void loadStudents()
 })
 
 const toggleNameSort = () => {
@@ -98,8 +120,30 @@ const onAddStudent = () => {
   /* до API добавления ученика */
 }
 
-const onExportXlsx = () => {
-  /* до API выгрузки */
+const onExportXlsx = async () => {
+  const scope = validatedStudentsScope.value
+  if (!scope || scope === ADMIN_STUDENTS_SCOPE_ALL) {
+    notify({ type: 'info', message: 'Выберите секцию с продуктами для экспорта CSV' })
+    return
+  }
+  if (!isAdminMaterialSectionId(scope)) return
+  await adminStore.fetchProductsForSection(scope)
+  const products = adminStore.productsBySection[scope] ?? []
+  if (products.length === 0) {
+    notify({ type: 'warning', message: 'Нет продуктов для экспорта' })
+    return
+  }
+  const result = await adminService.exportStudentsCsv(products[0].id)
+  if (!result.success || !result.data) {
+    notify({ type: 'error', message: result.error || 'Не удалось выгрузить' })
+    return
+  }
+  const url = URL.createObjectURL(result.data)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `students-${products[0].id}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
 }
 </script>
 

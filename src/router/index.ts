@@ -36,6 +36,7 @@ const AdminMaterialProductCreatePage = () => import('@/pages/AdminMaterialProduc
 const AdminMaterialProductTopicEditPage = () => import('@/pages/AdminMaterialProductTopicEditPage.vue')
 const AdminMaterialProductTopicNotificationsPage = () =>
   import('@/pages/AdminMaterialProductTopicNotificationsPage.vue')
+const AdminPaymentsPage = () => import('@/pages/AdminPaymentsPage.vue')
 
 const routes: RouteRecordRaw[] = [
   {
@@ -66,13 +67,13 @@ const routes: RouteRecordRaw[] = [
     path: '/courses/:productId',
     name: 'course',
     component: CoursePage,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, requiresVerifiedEmail: true },
   },
   {
     path: '/courses/:productId/lessons/:lessonId',
     name: 'course-lesson',
     component: CoursePage,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, requiresVerifiedEmail: true },
   },
   {
     path: '/payment/success',
@@ -130,55 +131,61 @@ const routes: RouteRecordRaw[] = [
     path: '/admin/materials/:sectionId/students/:studentId/folder/:materialSectionKey/lessons-access/:sourceProductId',
     name: 'admin-student-folder-lessons-access',
     component: AdminStudentFolderLessonsAccessPage,
-    meta: { requiresAuth: false },
+    meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
     path: '/admin/materials/:sectionId/students/:studentId/product/:materialSectionKey/:productId/topics',
     name: 'admin-student-product-topics',
     component: AdminStudentProductTopicsPage,
-    meta: { requiresAuth: false },
+    meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
     path: '/admin/materials/:sectionId/students/:studentId',
     name: 'admin-materials-student-profile',
     component: AdminStudentProfilePage,
-    meta: { requiresAuth: false },
+    meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
     path: '/admin/materials/:sectionId/students',
     name: 'admin-materials-students',
     component: AdminMaterialsStudentsPage,
-    meta: { requiresAuth: false },
+    meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
     path: '/admin/materials/:sectionId/product/create',
     name: 'admin-material-product-create',
     component: AdminMaterialProductCreatePage,
-    meta: { requiresAuth: false },
+    meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
     path: '/admin/materials/:sectionId/product/:productId/edit/topic/:topicId/notifications',
     name: 'admin-material-product-topic-notifications',
     component: AdminMaterialProductTopicNotificationsPage,
-    meta: { requiresAuth: false },
+    meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
     path: '/admin/materials/:sectionId/product/:productId/edit/topic/:topicId',
     name: 'admin-material-product-topic-edit',
     component: AdminMaterialProductTopicEditPage,
-    meta: { requiresAuth: false },
+    meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
     path: '/admin/materials/:sectionId/product/:productId/edit',
     name: 'admin-material-product-edit',
     component: AdminMaterialProductEditPage,
-    meta: { requiresAuth: false },
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: '/admin/payments',
+    name: 'admin-payments',
+    component: AdminPaymentsPage,
+    meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
     path: '/admin',
     name: 'admin',
     component: AdminPage,
-    meta: { requiresAuth: false },
+    meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
     path: `/:section(${HOME_SECTION_PATH_RE})`,
@@ -203,17 +210,42 @@ export const router = createRouter({
 })
 
 // ===== ROUTE GUARD =====
-router.beforeEach((to) => {
-  if (import.meta.env.DEV) return
-
+router.beforeEach(async (to) => {
   const authStore = useAuthStore()
-  const isAuthenticated = authStore.isAuthenticated || !!authStore.token
+  const hasToken = !!authStore.token
+
+  if (hasToken && !authStore.user) {
+    await authStore.fetchUser()
+  }
+
+  const isAuthenticated = authStore.isAuthenticated || hasToken
 
   if (to.meta.requiresAuth && !isAuthenticated) {
-    return { name: 'login' }
+    return { name: 'login', query: { redirect: to.fullPath } }
   }
 
   if (to.meta.requiresGuest && isAuthenticated) {
     return { name: 'home-section', params: { section: 'profile' } }
+  }
+
+  if (to.meta.requiresAdmin) {
+    if (!authStore.isAdmin) {
+      return { name: 'home-section', params: { section: 'profile' } }
+    }
+  }
+
+  if (to.meta.requiresVerifiedEmail && authStore.user && !authStore.user.email_verified) {
+    return { name: 'verify-email', query: { redirect: to.fullPath } }
+  }
+
+  const learningSections = ['learning', 'renewal'] as const
+  if (
+    to.name === 'home-section' &&
+    typeof to.params.section === 'string' &&
+    (learningSections as readonly string[]).includes(to.params.section) &&
+    authStore.user &&
+    !authStore.user.email_verified
+  ) {
+    return { name: 'verify-email' }
   }
 })

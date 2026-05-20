@@ -14,15 +14,18 @@ import {
 } from '@/constants/adminMaterials'
 import { deadlineRuLabelToIso, formatLocalDateForInput } from '@/utils/adminDateInput'
 import {
-  getMockProductTopics,
-  getMockStudentProfileProducts,
   resolveAdminStudentRow,
-  resolveMockProductTitle,
   type AdminTopicGradeStatus,
+  type AdminProductTopicRow,
 } from '@/utils/adminMockStudents'
+import { useAdminStore } from '@/stores/admin'
+import { useNotification } from '@/composables/useNotification'
 
 const route = useRoute()
 const router = useRouter()
+const adminStore = useAdminStore()
+const { notify } = useNotification()
+const topicSource = ref<AdminProductTopicRow[]>([])
 
 const sectionId = computed(() => route.params.sectionId as string)
 const studentId = computed(() => route.params.studentId as string)
@@ -39,6 +42,10 @@ const validatedMaterialSection = computed<AdminMaterialSectionId | null>(() =>
 
 const student = computed(() => {
   if (!validatedScope.value) return null
+  const agg = adminStore.findAggregatedStudent(validatedScope.value, studentId.value)
+  if (agg) {
+    return { id: agg.user_id, name: agg.name, email: agg.email, productsCount: agg.productIds.length }
+  }
   return resolveAdminStudentRow(validatedScope.value, studentId.value)
 })
 
@@ -54,18 +61,33 @@ const sectionBreadcrumbTitle = computed(() => {
   return ADMIN_MATERIAL_SECTION_TITLES[k]
 })
 
-const productTitle = computed(() => {
-  const k = validatedMaterialSection.value
-  if (!k) return ''
-  return resolveMockProductTitle(studentId.value, k, productId.value) ?? ''
-})
+const productTitle = computed(() => adminStore.productDetails[productId.value]?.title ?? '')
 
-const topicSource = computed(() => {
-  const k = validatedMaterialSection.value
+async function loadTopics() {
   const pid = productId.value
-  if (!k || !pid.trim()) return []
-  return getMockProductTopics(k, pid)
-})
+  if (!pid) return
+  const detail = await adminStore.fetchProductDetail(pid)
+  if (!detail.success || !detail.data) return
+  const studentsRes = await adminStore.fetchStudentsForProduct(pid)
+  const studentRow = studentsRes.success
+    ? studentsRes.data?.find((s) => s.user_id === studentId.value)
+    : undefined
+  topicSource.value = [...detail.data.modules]
+    .sort((a, b) => a.order_index - b.order_index)
+    .map((m) => ({
+      id: m.id,
+      title: m.title,
+      deadlineLabel: studentRow?.deadline
+        ? new Date(studentRow.deadline).toLocaleDateString('ru-RU')
+        : null,
+      gradeStatus: (studentRow?.is_completed ? 'passed' : 'neutral') as AdminTopicGradeStatus,
+      topicEnabled: true,
+    }))
+}
+
+watch([productId, studentId], () => {
+  void loadTopics()
+}, { immediate: true })
 
 const minDateForDateInput = computed(() => formatLocalDateForInput(new Date()))
 
@@ -94,12 +116,9 @@ watch(
 )
 
 function isProductInStudentProfile(): boolean {
-  const scope = validatedScope.value
-  const mat = validatedMaterialSection.value
-  const sid = studentId.value
   const pid = productId.value
-  if (!scope || !mat || !sid || !pid.trim()) return false
-  return getMockStudentProfileProducts(sid, mat).some((p) => p.id === pid)
+  if (!pid.trim()) return false
+  return Boolean(adminStore.productDetails[pid])
 }
 
 watch(
@@ -110,7 +129,9 @@ watch(
       void router.replace({ name: 'admin' })
       return
     }
-    const row = resolveAdminStudentRow(sid, stid)
+    const row =
+      adminStore.findAggregatedStudent(sid, stid) ??
+      resolveAdminStudentRow(sid, stid)
     if (!row) {
       void router.replace({ name: 'admin-materials-students', params: { sectionId: sid } })
       return

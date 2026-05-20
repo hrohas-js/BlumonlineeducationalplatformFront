@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/components/layouts/AppLayout.vue'
 import AdminProductEditGeneralSection from '@/components/organisms/AdminProductEditGeneralSection.vue'
@@ -9,21 +9,23 @@ import AdminProductActiveExtensionsSection from '@/components/organisms/AdminPro
 import AdminProductOtherSettingsSection from '@/components/organisms/AdminProductOtherSettingsSection.vue'
 import type { AdminProductTopicMenuAction } from '@/components/organisms/AdminProductTopicMenuModal.vue'
 import type { AdminMaterialActiveExtensionMock, AdminMaterialProductTopicRow } from '@/utils/adminMaterialCatalog'
+import { useAdminStore } from '@/stores/admin'
+import { adminService } from '@/services/api/endpoints/admin'
 import {
-  buildCopiedTopicTitle,
-  cloneTopicEditContent,
-  createTopicId,
-  removeTopicEditContent,
-  resolveAdminMaterialProduct,
-  setSessionProductTopics,
-} from '@/utils/adminMaterialCatalog'
+  getAdminMaterialSectionTitle,
+  isAdminMaterialSectionId,
+  type AdminMaterialSectionId,
+} from '@/constants/adminMaterials'
+import { useNotification } from '@/composables/useNotification'
 
 const route = useRoute()
 const router = useRouter()
+const adminStore = useAdminStore()
+const { notify } = useNotification()
 
-const resolved = computed(() =>
-  resolveAdminMaterialProduct(route.params.sectionId as string, route.params.productId as string),
-)
+const sectionId = computed(() => route.params.sectionId as string)
+const productId = computed(() => route.params.productId as string)
+const loading = ref(true)
 
 const formTitle = ref('')
 const formDescription = ref('')
@@ -33,50 +35,61 @@ const folderLabel = ref('')
 const topics = ref<AdminMaterialProductTopicRow[]>([])
 const activeExtensions = ref<AdminMaterialActiveExtensionMock[]>([])
 const paymentLink = ref('')
+const productImageInput = ref<HTMLInputElement | null>(null)
 
-watch(
-  resolved,
-  (r) => {
-    if (!r) {
-      void router.replace({ name: 'admin' })
-      return
-    }
-    formTitle.value = r.card.title
-    formDescription.value = r.card.edit.description
-    formDeadline.value = r.card.deadlineSuffix
-    breadcrumbProductTitle.value = r.card.title
-    folderLabel.value = `Папка «${r.section.title}»`
-    topics.value = [...r.card.edit.topics]
-    setSessionProductTopics(r.card.id, topics.value)
-    activeExtensions.value = [...r.card.edit.activeExtensions]
-    paymentLink.value = ''
-  },
-  { immediate: true },
+const sectionTitle = computed(() =>
+  isAdminMaterialSectionId(sectionId.value)
+    ? getAdminMaterialSectionTitle(sectionId.value as AdminMaterialSectionId)
+    : '',
 )
 
-watch(
-  topics,
-  (list) => {
-    const productId = route.params.productId as string | undefined
-    if (productId) {
-      setSessionProductTopics(productId, list)
-    }
-  },
-  { deep: true },
-)
+const productDetail = computed(() => adminStore.productDetails[productId.value] ?? null)
+
+async function loadProduct() {
+  if (!isAdminMaterialSectionId(sectionId.value)) {
+    void router.replace({ name: 'admin' })
+    return
+  }
+  loading.value = true
+  const result = await adminStore.fetchProductDetail(productId.value)
+  loading.value = false
+  if (!result.success || !result.data) {
+    notify({ type: 'error', message: result.error || 'Продукт не найден' })
+    void router.replace({ name: 'admin' })
+    return
+  }
+  const p = result.data
+  formTitle.value = p.title
+  formDescription.value = p.description ?? ''
+  formDeadline.value = ''
+  breadcrumbProductTitle.value = p.title
+  folderLabel.value = `Папка «${sectionTitle.value}»`
+  topics.value = [...p.modules]
+    .sort((a, b) => a.order_index - b.order_index)
+    .map((m) => ({
+      id: m.id,
+      title: m.title,
+      accessUntil: '—',
+    }))
+  activeExtensions.value = []
+}
+
+onMounted(() => {
+  void loadProduct()
+})
+
+watch(productId, () => {
+  void loadProduct()
+})
 
 const editingBreadcrumbLabel = computed(
   () => `Общее редактирование «${breadcrumbProductTitle.value}»`,
 )
 
-const breadcrumbItems = computed(() => {
-  const r = resolved.value
-  if (!r) return []
-  return [
-    { label: `Папка «${r.section.title}»`, to: { name: 'admin' as const } },
-    { label: editingBreadcrumbLabel.value },
-  ]
-})
+const breadcrumbItems = computed(() => [
+  { label: folderLabel.value, to: { name: 'admin' as const } },
+  { label: editingBreadcrumbLabel.value },
+])
 
 const extensionTopicOptions = computed(() => [
   { id: 'all', label: 'Все темы' },
@@ -87,81 +100,89 @@ const onCancel = () => {
   void router.back()
 }
 
-const onSave = () => {
-  /* до API */
+const onSave = async () => {
+  const result = await adminStore.updateProduct(productId.value, {
+    title: formTitle.value.trim(),
+    description: formDescription.value.trim(),
+  })
+  if (!result.success) {
+    notify({ type: 'error', message: result.error || 'Не удалось сохранить' })
+    return
+  }
+  notify({ type: 'success', message: 'Продукт сохранён' })
+  breadcrumbProductTitle.value = formTitle.value
 }
 
-const onCreateTopic = () => {
-  /* до API */
+const onCreateTopic = async () => {
+  const title = 'Новая тема'
+  const result = await adminStore.createModule(productId.value, { title, description: '' })
+  if (!result.success || !result.data) {
+    notify({ type: 'error', message: result.error || 'Не удалось создать тему' })
+    return
+  }
+  topics.value = [
+    ...topics.value,
+    { id: result.data.id, title: result.data.title, accessUntil: '—' },
+  ]
 }
 
 const onExtensionCreate = () => {
-  /* до API */
+  notify({ type: 'info', message: 'Продления настраиваются через оплату на стороне Robokassa' })
 }
 
-const onExtensionSelectTopic = (_payload: { topicId: string }) => {
-  /* до API */
-}
-
-const onExtensionSelectDuration = (_payload: { durationId: string }) => {
-  /* до API */
-}
+const onExtensionSelectTopic = (_payload: { topicId: string }) => {}
+const onExtensionSelectDuration = (_payload: { durationId: string }) => {}
 
 const onActiveExtensionDelete = (id: string) => {
   activeExtensions.value = activeExtensions.value.filter((item) => item.id !== id)
 }
 
 const onTopicEditClick = (topicId: string) => {
-  const sectionId = route.params.sectionId as string
-  const productId = route.params.productId as string
   void router.push({
     name: 'admin-material-product-topic-edit',
-    params: { sectionId, productId, topicId },
+    params: {
+      sectionId: sectionId.value,
+      productId: productId.value,
+      topicId,
+    },
   })
 }
 
-const onTopicMenuAction = ({
+const onTopicMenuAction = async ({
   topicId,
   action,
 }: {
   topicId: string
   action: AdminProductTopicMenuAction
 }) => {
-  const productId = route.params.productId as string
-
   if (action === 'delete') {
+    const result = await adminService.deleteModule(topicId)
+    if (!result.success) {
+      notify({ type: 'error', message: result.error || 'Не удалось удалить тему' })
+      return
+    }
     topics.value = topics.value.filter((topic) => topic.id !== topicId)
-    removeTopicEditContent(productId, topicId)
+    await loadProduct()
     return
   }
 
   if (action === 'copy') {
-    const sourceIndex = topics.value.findIndex((topic) => topic.id === topicId)
-    if (sourceIndex === -1) return
-
-    const source = topics.value[sourceIndex]
-    const newTopic: AdminMaterialProductTopicRow = {
-      id: createTopicId(productId),
-      title: buildCopiedTopicTitle(source.title),
-      accessUntil: source.accessUntil,
+    const result = await adminService.copyModule(topicId, {
+      target_product_id: productId.value,
+    })
+    if (!result.success || !result.data) {
+      notify({ type: 'error', message: result.error || 'Не удалось скопировать тему' })
+      return
     }
-
-    cloneTopicEditContent(productId, source.id, source.title, newTopic.id)
-
-    const next = [...topics.value]
-    next.splice(sourceIndex + 1, 0, newTopic)
-    topics.value = next
+    await loadProduct()
     return
   }
 
   if (action === 'notifications') {
-    const sectionId = route.params.sectionId as string
-    const productId = route.params.productId as string
     void router.push({
       name: 'admin-material-product-topic-notifications',
-      params: { sectionId, productId, topicId },
+      params: { sectionId: sectionId.value, productId: productId.value, topicId },
     })
-    return
   }
 }
 
@@ -176,11 +197,47 @@ const onTopicDeadlineSave = ({
     topic.id === topicId ? { ...topic, accessUntil } : topic,
   )
 }
+
+const onDeleteProduct = async () => {
+  if (!window.confirm('Удалить продукт безвозвратно?')) return
+  const result = await adminStore.deleteProduct(productId.value)
+  if (!result.success) {
+    notify({ type: 'error', message: result.error || 'Не удалось удалить' })
+    return
+  }
+  notify({ type: 'success', message: 'Продукт удалён' })
+  void router.push({ name: 'admin' })
+}
+
+const onUploadImage = () => {
+  productImageInput.value?.click()
+}
+
+const onImageSelected = async (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  const result = await adminService.uploadProductImage(productId.value, file)
+  if (!result.success) {
+    notify({ type: 'error', message: result.error || 'Не удалось загрузить изображение' })
+    return
+  }
+  notify({ type: 'success', message: 'Изображение загружено' })
+  await loadProduct()
+  input.value = ''
+}
 </script>
 
 <template>
   <AppLayout>
-    <section v-if="resolved" class="admin-material-product-edit-page">
+    <section v-if="!loading && productDetail" class="admin-material-product-edit-page">
+      <input
+        ref="productImageInput"
+        type="file"
+        accept="image/*"
+        class="admin-material-product-edit-page__file-input"
+        @change="onImageSelected"
+      />
       <div class="admin-material-product-edit-page__panel">
         <AdminProductEditGeneralSection
           v-model:title="formTitle"
@@ -193,6 +250,10 @@ const onTopicDeadlineSave = ({
           @save="onSave"
           @cancel="onCancel"
         />
+
+        <button type="button" class="admin-material-product-edit-page__upload" @click="onUploadImage">
+          Загрузить обложку
+        </button>
 
         <AdminProductTopicsSection
           :topics="topics"
@@ -216,15 +277,39 @@ const onTopicDeadlineSave = ({
           @delete-click="onActiveExtensionDelete"
         />
 
-        <AdminProductOtherSettingsSection @move-archive="() => {}" @delete-product="() => {}" />
+        <AdminProductOtherSettingsSection @move-archive="() => {}" @delete-product="onDeleteProduct" />
       </div>
     </section>
+    <p v-else-if="loading" class="admin-material-product-edit-page__loading">Загружаем…</p>
   </AppLayout>
 </template>
 
 <style lang="scss" scoped>
 .admin-material-product-edit-page {
   margin-top: var(--sp-40);
+
+  &__file-input {
+    display: none;
+  }
+
+  &__upload {
+    align-self: flex-start;
+    background: none;
+    border: none;
+    color: var(--text-accent);
+    cursor: pointer;
+    font-family: var(--font-family);
+    font-size: var(--size-15);
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  &__loading {
+    margin: var(--sp-40);
+    text-align: center;
+  }
 
   &__panel {
     border-radius: var(--radius-20);

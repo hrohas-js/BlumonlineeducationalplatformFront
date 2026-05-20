@@ -17,6 +17,8 @@ import type { User } from '@/types'
 export interface ApiResult<T> {
   data: T | null
   error: string | null
+  /** Код ошибки API (`error.code` из API.md). */
+  errorCode: string | null
   success: boolean
 }
 
@@ -300,4 +302,143 @@ export interface ContentAccessLogResponse {
 export interface PaginationParams {
   page?: number
   limit?: number
+}
+
+// ===== ADMIN =====
+
+export interface AdminProductsQuery {
+  product_type?: string
+  is_published?: boolean
+  skip?: number
+  limit?: number
+}
+
+export interface AdminProductCreateRequest {
+  product_type: string
+  title: string
+  description: string
+  price: number | string
+  is_published?: boolean
+}
+
+export interface AdminProductUpdateRequest {
+  title?: string
+  description?: string
+  price?: number | string
+  is_published?: boolean
+}
+
+export interface AdminProductListResponse {
+  items: ProductResponse[]
+  total: number
+  skip: number
+  limit: number
+}
+
+export interface AdminModuleCreateRequest {
+  title: string
+  description?: string
+}
+
+export interface AdminModuleUpdateRequest {
+  title?: string
+  description?: string
+}
+
+export interface AdminLessonCreateRequest {
+  title: string
+  description?: string
+  video_url?: string
+}
+
+export interface AdminLessonUpdateRequest {
+  title?: string
+  description?: string
+  video_url?: string
+}
+
+export interface AdminModuleReorderItem {
+  module_id: string
+  order_index: number
+}
+
+export interface AdminLessonReorderItem {
+  lesson_id: string
+  order_index: number
+}
+
+export interface AdminModuleReorderRequest {
+  modules: AdminModuleReorderItem[]
+}
+
+export interface AdminLessonReorderRequest {
+  lessons: AdminLessonReorderItem[]
+}
+
+export interface AdminModuleCopyRequest {
+  target_product_id: string
+}
+
+export interface AdminLessonCopyRequest {
+  target_module_id: string
+}
+
+export interface AdminFileUploadResponse {
+  file_url: string
+  file_name: string
+  file_size: number
+  file_type: string
+}
+
+export type AdminAccessType = 'immediate' | 'delayed' | 'manual'
+
+export interface AdminGrantAccessRequest {
+  product_id: string
+  access_type: AdminAccessType
+  delay_days?: number
+  deadline?: string
+}
+
+export interface AdminDeadlineUpdateRequest {
+  deadline: string
+}
+
+export interface AdminStudentItem {
+  user_id: string
+  email: string
+  first_name: string
+  last_name: string
+  access_type: AdminAccessType | string
+  access_granted_at: string | null
+  deadline: string | null
+  is_completed: boolean
+  progress_percent: number
+}
+
+export interface AdminStudentsListResponse {
+  items: AdminStudentItem[]
+  total: number
+  skip?: number
+  limit?: number
+}
+
+export interface AdminPaymentsQuery {
+  status_filter?: string
+  limit?: number
+  offset?: number
+}
+
+export interface AdminPaymentItem {
+  id: string
+  product_id?: string
+  amount: number | string
+  status: string
+  payment_type?: string
+  created_at: string
+  user_email?: string
+}
+
+export interface AdminPaymentsListResponse {
+  payments: AdminPaymentItem[]
+  total: number
 }

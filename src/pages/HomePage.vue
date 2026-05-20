@@ -91,12 +91,16 @@ const realLearningCourses = computed<LearningPanelCourse[]>(() =>
   productsStore.myCourses.map(toLearningPanelCourse)
 )
 
-/** Если real пуст — показываем мок (по запросу UX'а до прод-данных). */
-const learningCourses = computed<LearningPanelCourse[]>(() =>
-  realLearningCourses.value.length > 0 ? realLearningCourses.value : mockLearningCourses
-)
+/** В dev при пустом API — демо-курсы; в production только реальные данные. */
+const learningCourses = computed<LearningPanelCourse[]>(() => {
+  if (realLearningCourses.value.length > 0) return realLearningCourses.value
+  if (import.meta.env.DEV) return mockLearningCourses
+  return []
+})
 
-const isMockData = computed(() => realLearningCourses.value.length === 0)
+const isMockData = computed(
+  () => import.meta.env.DEV && realLearningCourses.value.length === 0 && mockLearningCourses.length > 0,
+)
 
 const materialsFilter = ref<LearningMaterialsFilter>('all')
 
@@ -154,15 +158,6 @@ async function loadCourses() {
   void productsStore.fetchAllProgress()
 }
 
-/** Проверка GET /api/v1/products при открытии раздела «Моё обучение». */
-async function verifyProductsList() {
-  const result = await productsStore.fetchProductsList()
-  if (result.success) {
-    console.info('[learning] products.list OK:', result.data)
-  } else {
-    console.warn('[learning] products.list failed:', result.error)
-  }
-}
 
 async function performLogout() {
   await authStore.logout()
@@ -243,9 +238,6 @@ const onLearningTopicComplete = (topicId: string, completed: boolean) => {
 
 onMounted(() => {
   void loadCourses()
-  if (activeSection.value === 'learning') {
-    void verifyProductsList()
-  }
 })
 
 watch(
@@ -259,7 +251,7 @@ watch(
       resetLearningDrillDown()
     }
     if (section === 'learning') {
-      void verifyProductsList()
+      void loadCourses()
     }
   },
 )

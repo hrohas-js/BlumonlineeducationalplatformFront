@@ -10,6 +10,9 @@
 // ===== USER =====
 
 export interface User {
+  /** Основной идентификатор (API: `id`). */
+  id: string
+  /** Алиас для совместимости (`id` и `user_id` совпадают). */
   user_id: string
   email: string
   first_name: string

@@ -28,17 +28,3 @@ export const PAYMENT_ENDPOINTS = {
   fail: '/api/v1/payments/fail',
 } as const
 
-export const PROTECTED_CONTENT_ENDPOINTS = {
-  videoToken: '/api/v1/protected-content/video/token',
-  videoVerify: '/api/v1/protected-content/video/verify',
-  videoPlayerConfig: '/api/v1/protected-content/video/player-config',
-  videoStreamInfo: (videoId: string) =>
-    `/api/v1/protected-content/video/stream-info/${videoId}`,
-  hlsKey: (videoId: string) =>
-    `/api/v1/protected-content/video/hls-key/${videoId}`,
-  signedUrl: '/api/v1/protected-content/signed-url',
-  verifySignedUrl: '/api/v1/protected-content/verify-signed-url',
-  securityHeaders: '/api/v1/protected-content/security-headers',
-  logAccess: '/api/v1/protected-content/log-access',
-  reportSuspicious: '/api/v1/protected-content/report-suspicious-activity',
-} as const

@@ -8,6 +8,7 @@ const videoSrc = defineModel<string | undefined>('videoSrc')
 
 interface Emits {
   (e: 'delete-video'): void
+  (e: 'file-selected', file: File): void
 }
 
 const emit = defineEmits<Emits>()
@@ -83,6 +84,7 @@ async function onFileInputChange(event: Event) {
       return
     }
     videoSrc.value = URL.createObjectURL(file)
+    emit('file-selected', file)
     if (!title.value.trim()) {
       title.value = file.name.replace(/\.[^.]+$/, '')
     }

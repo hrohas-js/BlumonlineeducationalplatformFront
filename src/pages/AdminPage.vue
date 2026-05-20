@@ -1,19 +1,70 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter, RouterLink } from 'vue-router'
 import AppLayout from '@/components/layouts/AppLayout.vue'
 import BaseButton from '@/components/atoms/BaseButton.vue'
 import HomeProfileInfoTableItem from '@/components/atoms/HomeProfileInfoTableItem.vue'
 import AdminMaterialsCategorySection from '@/components/organisms/AdminMaterialsCategorySection.vue'
-import { MOCK_ADMIN_CATEGORY_SECTIONS, type AdminCategorySectionConfig } from '@/utils/adminMaterialCatalog'
+import {
+  ADMIN_MATERIAL_SECTION_LIST,
+  type AdminMaterialSectionId,
+} from '@/constants/adminMaterials'
+import { useAdminStore } from '@/stores/admin'
+import { useAuthStore } from '@/stores/auth'
+import { buildSectionConfig } from '@/utils/adminCatalogAdapter'
+import type { AdminCategorySectionConfig } from '@/utils/adminMaterialCatalog'
+import { useNotification } from '@/composables/useNotification'
 
 const router = useRouter()
+const adminStore = useAdminStore()
+const authStore = useAuthStore()
+const { notify } = useNotification()
 
-const adminCategorySections = MOCK_ADMIN_CATEGORY_SECTIONS
+const loading = ref(true)
+const sectionConfigs = ref<AdminCategorySectionConfig[]>([])
+
+const adminDisplayName = computed(() => authStore.studentNameBadgeLabel)
+
+async function loadSections() {
+  loading.value = true
+  const configs: AdminCategorySectionConfig[] = []
+  for (const section of ADMIN_MATERIAL_SECTION_LIST) {
+    if (section.id === 'archive') {
+      configs.push(
+        buildSectionConfig(section.id, [], undefined, adminStore.productDetails)
+      )
+      continue
+    }
+    const agg = await adminStore.aggregateStudentsForSection(section.id as AdminMaterialSectionId)
+    const products = adminStore.productsBySection[section.id] ?? []
+    configs.push(
+      buildSectionConfig(
+        section.id,
+        products,
+        agg.success ? agg.data : undefined,
+        adminStore.productDetails
+      )
+    )
+  }
+  sectionConfigs.value = configs
+  loading.value = false
+}
+
+onMounted(() => {
+  void loadSections()
+})
 
 const onEditMaterialCard = (sectionId: string, cardId: string) => {
   void router.push({
     name: 'admin-material-product-edit',
     params: { sectionId, productId: cardId },
+  })
+}
+
+const onCreateProduct = (sectionId: string) => {
+  void router.push({
+    name: 'admin-material-product-create',
+    params: { sectionId },
   })
 }
 
@@ -24,19 +75,34 @@ const onOpenStudents = (section: AdminCategorySectionConfig) => {
     state: { usersCount: section.usersCount },
   })
 }
+
+const onRefresh = () => {
+  void loadSections().then(() => notify({ type: 'success', message: 'Список обновлён' }))
+}
 </script>
 
 <template>
   <AppLayout>
     <section class="admin-page">
       <div class="admin-page__panel">
-        <HomeProfileInfoTableItem label="Имя админа" tone="#178ef0" is-student-name />
+        <HomeProfileInfoTableItem :label="adminDisplayName" tone="#178ef0" is-student-name />
 
-        <h1 class="admin-page__title">Рабочие материалы</h1>
+        <div class="admin-page__toolbar">
+          <h1 class="admin-page__title">Рабочие материалы</h1>
+          <div class="admin-page__toolbar-actions">
+            <RouterLink :to="{ name: 'admin-payments' }" class="admin-page__link">
+              Платежи
+            </RouterLink>
+            <button type="button" class="admin-page__link" @click="onRefresh">Обновить</button>
+          </div>
+        </div>
 
-        <ul class="admin-page__list">
+        <p v-if="loading" class="admin-page__loading">Загружаем материалы…</p>
+        <p v-else-if="adminStore.error" class="admin-page__error">{{ adminStore.error }}</p>
+
+        <ul v-else class="admin-page__list">
           <AdminMaterialsCategorySection
-            v-for="section in adminCategorySections"
+            v-for="section in sectionConfigs"
             :key="section.sectionId"
             :section-id="section.sectionId"
             :title="section.title"
@@ -51,8 +117,13 @@ const onOpenStudents = (section: AdminCategorySectionConfig) => {
         </ul>
 
         <div class="admin-page__create-folder">
-          <BaseButton class="admin-page__create-folder-button" variant="outline" size="medium">
-            Создать новую папку
+          <BaseButton
+            class="admin-page__create-folder-button"
+            variant="outline"
+            size="medium"
+            @click="onCreateProduct('courses')"
+          >
+            Создать продукт (курсы)
           </BaseButton>
         </div>
       </div>
@@ -70,13 +141,53 @@ const onOpenStudents = (section: AdminCategorySectionConfig) => {
     padding: var(--sp-40) var(--sp-50);
   }
 
+  &__toolbar {
+    margin-top: var(--sp-20);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-16);
+  }
+
   &__title {
-    margin: var(--sp-20) 0 0;
+    margin: 0;
     font-family: var(--font-family);
     font-weight: var(--font-semi-bold);
     font-size: var(--size-40);
-    text-align: center;
     color: var(--black);
+  }
+
+  &__toolbar-actions {
+    display: flex;
+    gap: var(--sp-16);
+  }
+
+  &__link {
+    font-family: var(--font-family);
+    font-weight: var(--font-medium);
+    font-size: var(--size-15);
+    color: var(--text-accent);
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  &__loading,
+  &__error {
+    margin-top: var(--sp-40);
+    text-align: center;
+    font-family: var(--font-family);
+    font-size: var(--size-15);
+  }
+
+  &__error {
+    color: var(--error);
   }
 
   &__list {

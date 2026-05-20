@@ -7,7 +7,6 @@ import LearningProductBadge from '@/components/molecules/LearningProductBadge.vu
 import LearningCourseOverviewPanel from '@/components/organisms/LearningCourseOverviewPanel.vue'
 import LearningTopicStudyPanel from '@/components/organisms/LearningTopicStudyPanel.vue'
 import { productsService } from '@/services/api/endpoints/products'
-import { protectedContentService } from '@/services/api/endpoints/protected-content'
 import { useAuthStore } from '@/stores/auth'
 import { useNotification } from '@/composables/useNotification'
 import { findTopicByLessonId, mapProductToLearningDetail } from '@/utils/mapProductToLearningDetail'
@@ -69,30 +68,13 @@ async function loadProduct() {
 }
 
 async function loadVideoForLesson(lessonId: string, videoUrl: string | null | undefined) {
-  if (!videoUrl) return
+  if (!videoUrl?.trim()) return
   if (videoSrcByLessonId.value[lessonId]) return
 
   videoLoadingByLessonId.value = { ...videoLoadingByLessonId.value, [lessonId]: true }
   videoErrorByLessonId.value = { ...videoErrorByLessonId.value, [lessonId]: '' }
-
-  if (/^https?:\/\//i.test(videoUrl)) {
-    videoSrcByLessonId.value = { ...videoSrcByLessonId.value, [lessonId]: videoUrl }
-    videoLoadingByLessonId.value = { ...videoLoadingByLessonId.value, [lessonId]: false }
-    return
-  }
-
-  const result = await protectedContentService.getSignedUrl(videoUrl, productId.value, 60)
+  videoSrcByLessonId.value = { ...videoSrcByLessonId.value, [lessonId]: videoUrl.trim() }
   videoLoadingByLessonId.value = { ...videoLoadingByLessonId.value, [lessonId]: false }
-
-  if (result.success && result.data) {
-    videoSrcByLessonId.value = { ...videoSrcByLessonId.value, [lessonId]: result.data.signed_url }
-    return
-  }
-
-  videoErrorByLessonId.value = {
-    ...videoErrorByLessonId.value,
-    [lessonId]: result.error || 'Не удалось получить ссылку на видео',
-  }
 }
 
 async function loadVideosForTopic(topicId: string | null) {

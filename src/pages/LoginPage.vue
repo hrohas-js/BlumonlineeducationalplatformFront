@@ -55,6 +55,11 @@ const handleLogin = async () => {
   })
 
   if (!result.success) {
+    if ('errorCode' in result && result.errorCode === 'email_not_verified') {
+      notify({ type: 'warning', message: 'Подтвердите email перед входом' })
+      void router.push({ name: 'verify-email' })
+      return
+    }
     notify({ type: 'error', message: result.error || 'Не удалось выполнить вход' })
     return
   }

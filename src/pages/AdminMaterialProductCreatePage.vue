@@ -12,10 +12,20 @@ import {
   isoDateToRuLabel,
   isRuDeadlineFormat,
 } from '@/utils/adminDateInput'
-import { getAdminMaterialSectionTitle, isAdminMaterialSectionId } from '@/constants/adminMaterials'
+import {
+  getAdminMaterialSectionTitle,
+  isAdminMaterialSectionId,
+  type AdminMaterialSectionId,
+} from '@/constants/adminMaterials'
+import { useAdminStore } from '@/stores/admin'
+import { sectionIdToProductType } from '@/utils/adminProductType'
+import { useNotification } from '@/composables/useNotification'
 
 const route = useRoute()
 const router = useRouter()
+const adminStore = useAdminStore()
+const { notify } = useNotification()
+const submitting = ref(false)
 
 const sectionId = computed(() => route.params.sectionId as string)
 
@@ -83,8 +93,39 @@ const onAddTopic = () => {
   topicRows.value.push({ id: crypto.randomUUID(), title: '' })
 }
 
-const onSubmit = () => {
-  /* до API */
+const onSubmit = async () => {
+  if (!isAdminMaterialSectionId(sectionId.value)) return
+  const title = formTitle.value.trim()
+  if (!title) {
+    notify({ type: 'warning', message: 'Укажите название продукта' })
+    return
+  }
+  submitting.value = true
+  const productType = sectionIdToProductType(sectionId.value as AdminMaterialSectionId)
+  const created = await adminStore.createProduct({
+    product_type: productType,
+    title,
+    description: formDescription.value.trim(),
+    price: 0,
+    is_published: false,
+  })
+  if (!created.success || !created.data) {
+    submitting.value = false
+    notify({ type: 'error', message: created.error || 'Не удалось создать продукт' })
+    return
+  }
+  const newProductId = created.data.id
+  for (const row of topicRows.value) {
+    const topicTitle = row.title.trim()
+    if (!topicTitle) continue
+    await adminStore.createModule(newProductId, { title: topicTitle, description: '' })
+  }
+  submitting.value = false
+  notify({ type: 'success', message: 'Продукт создан' })
+  void router.push({
+    name: 'admin-material-product-edit',
+    params: { sectionId: sectionId.value, productId: newProductId },
+  })
 }
 
 const onTopicTitleInput = (id: string, value: string) => {
