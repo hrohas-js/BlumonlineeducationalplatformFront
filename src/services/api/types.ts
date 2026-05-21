@@ -442,3 +442,66 @@ export interface AdminPaymentsListResponse {
   payments: AdminPaymentItem[]
   total: number
 }
+
+// ===== ADMIN NOTIFICATIONS (TODO: API) =====
+
+export type AdminNotificationMailingStatusApi = 'completed' | 'pending' | 'failed'
+
+export interface AdminNotificationMailingItem {
+  id: string
+  subject: string
+  product_id: string
+  product_title?: string
+  topic_id: string
+  topic_title?: string
+  sent_count: number
+  sent_at: string
+  status: AdminNotificationMailingStatusApi
+}
+
+export interface AdminNotificationsListQuery {
+  product_id?: string
+  topic_id?: string
+  skip?: number
+  limit?: number
+}
+
+export interface AdminNotificationsListResponse {
+  items: AdminNotificationMailingItem[]
+  total: number
+}
+
+export interface AdminNotificationRecipientsQuery {
+  product_id: string
+  topic_id: string
+  skip?: number
+  limit?: number
+}
+
+export interface AdminNotificationRecipientItem {
+  id: string
+  name: string
+  email: string
+}
+
+export interface AdminNotificationRecipientsResponse {
+  items: AdminNotificationRecipientItem[]
+  total: number
+}
+
+export interface AdminNotificationSendRequest {
+  product_id: string
+  topic_id: string
+  recipient_ids: string[]
+  send_at: string
+  subject: string
+  body: string
+  template_id?: string
+}
+
+export interface AdminNotificationTemplateItem {
+  id: string
+  label: string
+  subject: string
+  body: string
+}

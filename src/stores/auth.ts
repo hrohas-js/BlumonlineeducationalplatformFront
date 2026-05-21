@@ -10,6 +10,7 @@ import { authService } from '@/services/api/endpoints/auth'
 import { TOKEN_STORAGE_KEY, REFRESH_TOKEN_STORAGE_KEY } from '@/services/axios'
 import type { User, RegisterData, LoginCredentials } from '@/types'
 import type { RegisterRequest, LoginApiResponse, RefreshTokenResponse } from '@/services/api/types'
+import { canAccessAdmin } from '@/utils/adminAccess'
 import { normalizeUser } from '@/utils/normalizeUser'
 
 const studentNameBadgePlaceholder = 'Имя пользователя'
@@ -45,7 +46,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const userEmail = computed((): string => user.value?.email || '')
 
-  const isAdmin = computed((): boolean => user.value?.role === 'admin')
+  const isAdmin = computed((): boolean => canAccessAdmin(user.value))
 
   function setUserFromApi(raw: User | Record<string, unknown>): void {
     user.value = normalizeUser(raw)

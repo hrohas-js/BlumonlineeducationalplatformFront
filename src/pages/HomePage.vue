@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/components/layouts/AppLayout.vue'
 import HomeProfileInfoTableItem from '@/components/atoms/HomeProfileInfoTableItem.vue'
 import HomeProfileMenu from '@/components/home/HomeProfileMenu.vue'
@@ -158,6 +158,21 @@ async function loadCourses() {
   void productsStore.fetchAllProgress()
 }
 
+watch(
+  () => route.query.admin_denied,
+  (denied) => {
+    if (denied !== '1') return
+    notify({
+      type: 'warning',
+      message:
+        'Нет доступа к админке: нужна учётная запись с role=admin. В npm run dev доступ включён автоматически — перезапустите dev-сервер.',
+    })
+    const { admin_denied: _removed, ...restQuery } = route.query
+    void router.replace({ query: restQuery })
+  },
+  { immediate: true },
+)
+
 
 async function performLogout() {
   await authStore.logout()
@@ -268,6 +283,13 @@ watch(
             class="home-profile__panel home-profile__panel_profile"
           >
             <HomeProfileInfoTableItem :label="authStore.studentNameBadgeLabel" tone="#178ef0" is-student-name />
+            <RouterLink
+              v-if="authStore.isAdmin"
+              :to="{ name: 'admin' }"
+              class="home-profile__admin-link"
+            >
+              Админка →
+            </RouterLink>
             <HomeProfileAvatarPanel />
             <ProfileDetailsForm />
           </article>
@@ -517,6 +539,19 @@ watch(
     display: flex;
     @media (max-width: 1024px) {
       flex-direction: column;
+    }
+  }
+
+  &__admin-link {
+    align-self: flex-start;
+    font-family: var(--font-family);
+    font-weight: var(--font-medium);
+    font-size: var(--size-15);
+    color: var(--text-accent);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
     }
   }
 

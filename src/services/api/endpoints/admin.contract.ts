@@ -28,4 +28,10 @@ export const ADMIN_ENDPOINTS = {
   paymentsSuccessful: '/api/v1/admin/payments/successful',
   paymentsPending: '/api/v1/admin/payments/pending',
   paymentsByUserEmail: (email: string) => `/api/v1/admin/payments/user/${encodeURIComponent(email)}`,
+  /** TODO: подключить после согласования контракта API */
+  notifications: '/api/v1/admin/notifications',
+  notificationById: (id: string) => `/api/v1/admin/notifications/${id}`,
+  notificationRecipients: '/api/v1/admin/notifications/recipients',
+  notificationSend: '/api/v1/admin/notifications/send',
+  notificationTemplates: '/api/v1/admin/notifications/templates',
 } as const

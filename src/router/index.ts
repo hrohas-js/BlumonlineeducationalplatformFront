@@ -37,6 +37,7 @@ const AdminMaterialProductTopicEditPage = () => import('@/pages/AdminMaterialPro
 const AdminMaterialProductTopicNotificationsPage = () =>
   import('@/pages/AdminMaterialProductTopicNotificationsPage.vue')
 const AdminPaymentsPage = () => import('@/pages/AdminPaymentsPage.vue')
+const AdminNotificationsPage = () => import('@/pages/AdminNotificationsPage.vue')
 
 const routes: RouteRecordRaw[] = [
   {
@@ -182,6 +183,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
+    path: '/admin/notifications',
+    name: 'admin-notifications',
+    component: AdminNotificationsPage,
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
     path: '/admin',
     name: 'admin',
     component: AdminPage,
@@ -230,7 +237,11 @@ router.beforeEach(async (to) => {
 
   if (to.meta.requiresAdmin) {
     if (!authStore.isAdmin) {
-      return { name: 'home-section', params: { section: 'profile' } }
+      return {
+        name: 'home-section',
+        params: { section: 'profile' },
+        query: { admin_denied: '1' },
+      }
     }
   }
 

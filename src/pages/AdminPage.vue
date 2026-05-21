@@ -93,6 +93,9 @@ const onRefresh = () => {
             <RouterLink :to="{ name: 'admin-payments' }" class="admin-page__link">
               Платежи
             </RouterLink>
+            <RouterLink :to="{ name: 'admin-notifications' }" class="admin-page__link">
+              Уведомления
+            </RouterLink>
             <button type="button" class="admin-page__link" @click="onRefresh">Обновить</button>
           </div>
         </div>
