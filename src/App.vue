@@ -11,26 +11,46 @@
  * - Layout применяется на уровне страницы через <AppLayout>
  * - initializeAuth() выполняется в bootstrap/auth.ts из main.ts
  */
+import { computed } from 'vue'
 import { useNotification } from '@/composables/useNotification'
+import { useAuthStore } from '@/stores/auth'
 import NotificationContainer from '@/components/ui/NotificationContainer.vue'
 
 const { notifications, dismiss } = useNotification()
+const authStore = useAuthStore()
+const showBootLoader = computed(() => !authStore.sessionInitialized)
 </script>
 
 <template>
-  <div id="app">
-    <RouterView v-slot="{ Component, route }">
-      <Transition name="app-route" mode="out-in">
-        <component :is="Component" :key="route.fullPath" />
-      </Transition>
-    </RouterView>
-    <NotificationContainer :notifications="notifications" @dismiss="dismiss" />
+  <div id="app-root">
+    <div v-if="showBootLoader" class="app-boot-loader" aria-live="polite" aria-busy="true">
+      Загрузка…
+    </div>
+    <template v-else>
+      <RouterView v-slot="{ Component, route }">
+        <Transition name="app-route" mode="out-in">
+          <component :is="Component" :key="route.fullPath" />
+        </Transition>
+      </RouterView>
+      <NotificationContainer :notifications="notifications" @dismiss="dismiss" />
+    </template>
   </div>
 </template>
 
 <style>
+#app-root,
 #app {
   min-height: 100vh;
+}
+
+.app-boot-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 1rem;
+  color: #4a5568;
 }
 
 .app-route-enter-active,

@@ -8,7 +8,20 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <div class="app-boot-loader" aria-live="polite" aria-busy="true">Загрузка…</div>
+    </div>
+    <style>
+      .app-boot-loader {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        font-family: Inter, system-ui, sans-serif;
+        font-size: 1rem;
+        color: #4a5568;
+      }
+    </style>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

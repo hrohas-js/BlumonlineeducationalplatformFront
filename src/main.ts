@@ -53,10 +53,16 @@ app.component('FontAwesomeIcon', FontAwesomeIcon)
 app.use(pinia)
 app.use(axiosPlugin)
 app.use(router)
-bootstrapAuthSession(pinia)
-  .catch((error) => {
+
+async function startApp() {
+  try {
+    await bootstrapAuthSession(pinia)
+    await router.isReady()
+  } catch (error) {
     console.error('[bootstrapAuthSession] Failed to initialize auth session:', error)
-  })
-  .finally(() => {
-    app.mount('#app')
-  })
+    await router.isReady()
+  }
+  app.mount('#app')
+}
+
+void startApp()

@@ -6,15 +6,16 @@
  * В plain Vue 3 используем явный createRouter() с createWebHistory().
  *
  * Секции личного кабинета: `/:section` с параметром из PROFILE_SECTIONS.
- * Корень `/` — на `/admin` или `/profile` по роли (см. resolvePostAuthRoute).
+ * Корень `/` — редирект в guard через resolveRootRoute (токен → /admin|/profile, иначе /login).
  *
  * Route Guard: beforeEach проверяет авторизацию для защищённых маршрутов.
  */
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { HOME_SECTION_PATH_RE } from '@/components/home/profile-menu.types'
 import { useAuthStore } from '@/stores/auth'
-import { resolvePostAuthRoute } from '@/utils/postAuthRoute'
+import { resolvePostAuthRoute, resolveRootRoute } from '@/utils/postAuthRoute'
 
+const RootEntryPage = () => import('@/pages/RootEntryPage.vue')
 const HomePage = () => import('@/pages/HomePage.vue')
 const LoginPage = () => import('@/pages/LoginPage.vue')
 const NotFoundPage = () => import('@/pages/NotFoundPage.vue')
@@ -130,8 +131,8 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'root',
-    // Фактический редирект — в beforeEach (resolvePostAuthRoute); здесь fallback для типов и guard-off.
-    redirect: '/login',
+    component: RootEntryPage,
+    meta: { isRootEntry: true },
   },
   {
     path: '/admin/materials',
@@ -236,29 +237,17 @@ export const router = createRouter({
 // ===== ROUTE GUARD =====
 router.beforeEach(async (to) => {
   const authStore = useAuthStore()
-  const hasToken = !!authStore.token
+  await authStore.ensureSessionLoaded()
 
-  if (hasToken && !authStore.user) {
-    await authStore.fetchUser()
+  if (to.name === 'root' || to.meta.isRootEntry) {
+    return resolveRootRoute(authStore)
   }
 
-  const isAuthenticated = authStore.isAuthenticated || hasToken
-
-  if (to.meta.requiresAuth && !isAuthenticated) {
+  if (to.meta.requiresAuth && !authStore.isSessionValid()) {
     return { name: 'login', query: { redirect: to.fullPath } }
   }
 
-  const cameFromRoot =
-    to.path === '/' || to.redirectedFrom?.path === '/' || to.redirectedFrom?.name === 'root'
-
-  if (cameFromRoot) {
-    if (!isAuthenticated) {
-      return { name: 'login' }
-    }
-    return resolvePostAuthRoute(authStore.user)
-  }
-
-  if (to.meta.requiresGuest && isAuthenticated) {
+  if (to.meta.requiresGuest && authStore.isSessionValid()) {
     return resolvePostAuthRoute(authStore.user)
   }
 

@@ -22,9 +22,18 @@ export const useAuthStore = defineStore('auth', () => {
   const refreshToken = ref<string | null>(null)
   const loading = ref<boolean>(false)
   const error = ref<string | null>(null)
+  const sessionInitialized = ref<boolean>(false)
 
   // ===== GETTERS =====
   const isAuthenticated = computed((): boolean => !!token.value && !!user.value)
+
+  function hasStoredAccessToken(): boolean {
+    return !!token.value
+  }
+
+  function isSessionValid(): boolean {
+    return !!token.value && !!user.value
+  }
 
   const userName = computed((): string => {
     if (user.value?.first_name || user.value?.last_name) {
@@ -195,12 +204,25 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function initializeAuth() {
-    const { access, refresh } = loadTokens()
-    if (access) {
-      token.value = access
-      refreshToken.value = refresh
-      await fetchUser()
+    if (sessionInitialized.value) return
+
+    try {
+      const { access, refresh } = loadTokens()
+      if (access) {
+        token.value = access
+        refreshToken.value = refresh
+        await fetchUser()
+        if (token.value && !user.value) {
+          clearSession()
+        }
+      }
+    } finally {
+      sessionInitialized.value = true
     }
+  }
+
+  async function ensureSessionLoaded(): Promise<void> {
+    await initializeAuth()
   }
 
   async function refreshAccessToken() {
@@ -284,8 +306,11 @@ export const useAuthStore = defineStore('auth', () => {
     refreshToken,
     loading,
     error,
+    sessionInitialized,
     // Getters
     isAuthenticated,
+    hasStoredAccessToken,
+    isSessionValid,
     userName,
     studentNameBadgePlaceholder,
     studentNameBadgeLabel,
@@ -298,6 +323,7 @@ export const useAuthStore = defineStore('auth', () => {
     logoutAll,
     fetchUser,
     initializeAuth,
+    ensureSessionLoaded,
     refreshAccessToken,
     forgotPassword,
     resetPassword,
