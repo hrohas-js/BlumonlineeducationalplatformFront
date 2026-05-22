@@ -19,7 +19,7 @@ POST /auth/login
     "refresh_token": "eyJ...",
     "user": {
       "id", "email", "first_name", "last_name",
-      "role",           ← "user" или "admin"
+      "role",           ← "student", "user" (legacy) или "admin"
       "email_verified",
       "has_paid"
     }

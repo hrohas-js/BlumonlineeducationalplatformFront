@@ -55,7 +55,7 @@ const toggleMenu = () => {
 }
 
 const goToAdmin = () => {
-  void router.push({ name: 'admin' })
+  void router.push({ name: 'admin-materials' })
 }
 
 const onMenuWrapFocusOut = (event: FocusEvent) => {

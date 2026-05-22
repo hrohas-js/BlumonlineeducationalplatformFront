@@ -67,7 +67,7 @@ function mapFilesFromLesson() {
 
 async function load() {
   if (!isAdminMaterialSectionId(sectionId.value)) {
-    void router.replace({ name: 'admin' })
+    void router.replace({ name: 'admin-materials' })
     return
   }
   loading.value = true
@@ -75,7 +75,7 @@ async function load() {
   loading.value = false
   if (!result.success) {
     notify({ type: 'error', message: result.error || 'Не удалось загрузить курс' })
-    void router.replace({ name: 'admin' })
+    void router.replace({ name: 'admin-materials' })
     return
   }
   if (!moduleData.value) {
@@ -109,7 +109,7 @@ const breadcrumbItems = computed(() => {
     .sort((a, b) => a.order_index - b.order_index)
     .map((m) => ({ id: m.id, title: m.title, accessUntil: '—' }))
   return [
-    { label: `Папка «${sectionTitle.value}»`, to: { name: 'admin' as const } },
+    { label: `Папка «${sectionTitle.value}»`, to: { name: 'admin-materials' as const } },
     {
       label: `Редактирование тем «${p.title}»`,
       to: {

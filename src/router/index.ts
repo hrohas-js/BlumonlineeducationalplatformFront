@@ -6,13 +6,14 @@
  * В plain Vue 3 используем явный createRouter() с createWebHistory().
  *
  * Секции личного кабинета: `/:section` с параметром из PROFILE_SECTIONS.
- * Корень `/` редиректит на `/profile`.
+ * Корень `/` — на `/admin` или `/profile` по роли (см. resolvePostAuthRoute).
  *
  * Route Guard: beforeEach проверяет авторизацию для защищённых маршрутов.
  */
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { HOME_SECTION_PATH_RE } from '@/components/home/profile-menu.types'
 import { useAuthStore } from '@/stores/auth'
+import { resolvePostAuthRoute } from '@/utils/postAuthRoute'
 
 const HomePage = () => import('@/pages/HomePage.vue')
 const LoginPage = () => import('@/pages/LoginPage.vue')
@@ -27,6 +28,8 @@ const PaymentSuccessPage = () => import('@/pages/PaymentSuccessPage.vue')
 const PaymentFailPage = () => import('@/pages/PaymentFailPage.vue')
 const PaymentHistoryPage = () => import('@/pages/PaymentHistoryPage.vue')
 const AdminPage = () => import('@/pages/AdminPage.vue')
+const AdminMaterialsPage = () => import('@/pages/AdminMaterialsPage.vue')
+const AdminGlossaryPage = () => import('@/pages/AdminGlossaryPage.vue')
 const AdminMaterialsStudentsPage = () => import('@/pages/AdminMaterialsStudentsPage.vue')
 const AdminStudentFolderLessonsAccessPage = () => import('@/pages/AdminStudentFolderLessonsAccessPage.vue')
 const AdminStudentProductTopicsPage = () => import('@/pages/AdminStudentProductTopicsPage.vue')
@@ -126,7 +129,21 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/',
-    redirect: '/profile',
+    name: 'root',
+    // Фактический редирект — в beforeEach (resolvePostAuthRoute); здесь fallback для типов и guard-off.
+    redirect: '/login',
+  },
+  {
+    path: '/admin/materials',
+    name: 'admin-materials',
+    component: AdminMaterialsPage,
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: '/admin/glossary',
+    name: 'admin-glossary',
+    component: AdminGlossaryPage,
+    meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
     path: '/admin/materials/:sectionId/students/:studentId/folder/:materialSectionKey/lessons-access/:sourceProductId',
@@ -231,8 +248,18 @@ router.beforeEach(async (to) => {
     return { name: 'login', query: { redirect: to.fullPath } }
   }
 
+  const cameFromRoot =
+    to.path === '/' || to.redirectedFrom?.path === '/' || to.redirectedFrom?.name === 'root'
+
+  if (cameFromRoot) {
+    if (!isAuthenticated) {
+      return { name: 'login' }
+    }
+    return resolvePostAuthRoute(authStore.user)
+  }
+
   if (to.meta.requiresGuest && isAuthenticated) {
-    return { name: 'home-section', params: { section: 'profile' } }
+    return resolvePostAuthRoute(authStore.user)
   }
 
   if (to.meta.requiresAdmin) {

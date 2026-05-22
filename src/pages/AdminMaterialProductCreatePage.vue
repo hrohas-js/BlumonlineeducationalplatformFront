@@ -37,7 +37,7 @@ watch(
   isAllowedSection,
   (ok) => {
     if (!ok) {
-      void router.replace({ name: 'admin' })
+      void router.replace({ name: 'admin-materials' })
     }
   },
   { immediate: true },
@@ -50,7 +50,7 @@ const folderBreadcrumbLabel = computed(() => {
 })
 
 const breadcrumbItems = computed(() => [
-  { label: folderBreadcrumbLabel.value, to: { name: 'admin' as const } },
+  { label: folderBreadcrumbLabel.value, to: { name: 'admin-materials' as const } },
   { label: 'Создание нового продукта' },
 ])
 

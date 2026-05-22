@@ -47,7 +47,7 @@ const productDetail = computed(() => adminStore.productDetails[productId.value] 
 
 async function loadProduct() {
   if (!isAdminMaterialSectionId(sectionId.value)) {
-    void router.replace({ name: 'admin' })
+    void router.replace({ name: 'admin-materials' })
     return
   }
   loading.value = true
@@ -55,7 +55,7 @@ async function loadProduct() {
   loading.value = false
   if (!result.success || !result.data) {
     notify({ type: 'error', message: result.error || 'Продукт не найден' })
-    void router.replace({ name: 'admin' })
+    void router.replace({ name: 'admin-materials' })
     return
   }
   const p = result.data
@@ -87,7 +87,7 @@ const editingBreadcrumbLabel = computed(
 )
 
 const breadcrumbItems = computed(() => [
-  { label: folderLabel.value, to: { name: 'admin' as const } },
+  { label: folderLabel.value, to: { name: 'admin-materials' as const } },
   { label: editingBreadcrumbLabel.value },
 ])
 
@@ -206,7 +206,7 @@ const onDeleteProduct = async () => {
     return
   }
   notify({ type: 'success', message: 'Продукт удалён' })
-  void router.push({ name: 'admin' })
+  void router.push({ name: 'admin-materials' })
 }
 
 const onUploadImage = () => {

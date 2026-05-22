@@ -12,6 +12,7 @@ import BaseInput from '@/components/atoms/BaseInput.vue'
 import BaseCard from '@/components/molecules/BaseCard.vue'
 import AgreementCheck from '@/components/molecules/AgreementCheck.vue'
 import WelcomeLetter from '@/components/organisms/WelcomeLetter.vue'
+import { resolvePostAuthRoute } from '@/utils/postAuthRoute'
 
 const route = useRoute()
 const router = useRouter()
@@ -65,7 +66,7 @@ const handleLogin = async () => {
   }
 
   notify({ type: 'success', message: 'Вход выполнен успешно' })
-  await router.push({ name: 'home-section', params: { section: 'profile' } })
+  await router.push(resolvePostAuthRoute(authStore.user))
 }
 
 const handleRegister = async () => {

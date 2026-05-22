@@ -105,7 +105,7 @@ watch(
     ] as const,
   ([sid, stid, mkey, src]) => {
     if (!isAdminStudentsSectionParam(sid)) {
-      void router.replace({ name: 'admin' })
+      void router.replace({ name: 'admin-materials' })
       return
     }
     const row = resolveAdminStudentRow(sid, stid)

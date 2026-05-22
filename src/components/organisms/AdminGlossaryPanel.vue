@@ -1,0 +1,110 @@
+<script setup lang="ts">
+import { glossaryAbbreviations } from '@/data/glossaryAbbreviations'
+import { useNotification } from '@/composables/useNotification'
+
+const { notify } = useNotification()
+
+const onEdit = () => {
+  notify({ type: 'info', message: 'Редактирование глоссария будет доступно позже' })
+}
+</script>
+
+<template>
+  <div class="admin-glossary-panel">
+    <h1 class="admin-glossary-panel__title">Глоссарий</h1>
+
+    <ul class="admin-glossary-panel__list">
+      <li
+        v-for="(row, index) in glossaryAbbreviations"
+        :key="`${row.abbreviation}-${index}`"
+        class="admin-glossary-panel__item"
+      >
+        <span class="admin-glossary-panel__abbr">{{ row.abbreviation }}</span>
+        <span aria-hidden="true"> — </span>
+        <span class="admin-glossary-panel__def">{{ row.definition }}</span>
+      </li>
+    </ul>
+
+    <button type="button" class="admin-glossary-panel__edit" @click="onEdit">
+      Редактировать
+    </button>
+  </div>
+</template>
+
+<style lang="scss" scoped>
+.admin-glossary-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-32);
+
+  &__title {
+    margin: var(--sp-24) 0 0;
+    font-family: var(--font-family);
+    font-weight: var(--font-semi-bold);
+    font-size: var(--size-25);
+    line-height: normal;
+    text-align: center;
+    color: var(--osnovnoy-tekst);
+  }
+
+  &__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    width: 100%;
+    max-width: 578px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  &__item {
+    font-family: var(--font-family);
+    font-weight: var(--font-medium);
+    font-size: var(--size-20);
+    line-height: normal;
+    color: var(--osnovnoy-tekst);
+  }
+
+  &__edit {
+    margin: var(--sp-20) 0 var(--sp-40);
+    padding: var(--sp-10);
+    border: var(--border-2) solid #178ef0;
+    border-radius: var(--radius-10);
+    background-color: var(--white);
+    font-family: var(--font-family);
+    font-weight: var(--font-medium);
+    font-size: var(--size-25);
+    line-height: normal;
+    color: var(--osnovnoy-tekst);
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:hover {
+      background-color: rgba(23, 142, 240, 0.08);
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: var(--focus-ring-main);
+    }
+  }
+
+  @media (max-width: 1023px) {
+    &__title {
+      font-size: var(--size-20);
+    }
+
+    &__item {
+      font-size: var(--size-15);
+    }
+
+    &__edit {
+      width: 100%;
+      max-width: 320px;
+      font-size: var(--size-20);
+    }
+  }
+}
+</style>

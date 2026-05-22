@@ -101,7 +101,7 @@ onMounted(() => {
 
 watch(sectionId, (id) => {
   if (!isAdminStudentsSectionParam(id)) {
-    void router.replace({ name: 'admin' })
+    void router.replace({ name: 'admin-materials' })
     return
   }
   if (id === ADMIN_STUDENTS_SCOPE_ALL) {

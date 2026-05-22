@@ -19,12 +19,12 @@ import {
   type AdminProductTopicRow,
 } from '@/utils/adminMockStudents'
 import { useAdminStore } from '@/stores/admin'
-import { useNotification } from '@/composables/useNotification'
+// import { useNotification } from '@/composables/useNotification'
 
 const route = useRoute()
 const router = useRouter()
 const adminStore = useAdminStore()
-const { notify } = useNotification()
+// const { notify } = useNotification()
 const topicSource = ref<AdminProductTopicRow[]>([])
 
 const sectionId = computed(() => route.params.sectionId as string)
@@ -126,7 +126,7 @@ watch(
     [sectionId.value, studentId.value, materialSectionKey.value, productId.value] as const,
   ([sid, stid, mkey, pid]) => {
     if (!isAdminStudentsSectionParam(sid)) {
-      void router.replace({ name: 'admin' })
+      void router.replace({ name: 'admin-materials' })
       return
     }
     const row =

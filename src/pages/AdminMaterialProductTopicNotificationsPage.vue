@@ -50,7 +50,7 @@ watch(
           params: { sectionId, productId },
         })
       } else {
-        void router.replace({ name: 'admin' })
+        void router.replace({ name: 'admin-materials' })
       }
     }
   },
@@ -61,7 +61,7 @@ const breadcrumbItems = computed(() => {
   const r = resolved.value
   if (!r) return []
   return [
-    { label: `Папка «${r.section.title}»`, to: { name: 'admin' as const } },
+    { label: `Папка «${r.section.title}»`, to: { name: 'admin-materials' as const } },
     {
       label: `Продукт «${r.card.title}»`,
       to: {
