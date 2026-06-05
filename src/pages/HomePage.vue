@@ -26,6 +26,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useProductsStore } from '@/stores/products'
 import { usePaymentsStore } from '@/stores/payments'
 import { useNotification } from '@/composables/useNotification'
+import { useLogout } from '@/composables/useLogout'
 import type { ProductResponse } from '@/services/api/types'
 
 const route = useRoute()
@@ -54,6 +55,7 @@ const authStore = useAuthStore()
 const productsStore = useProductsStore()
 const paymentsStore = usePaymentsStore()
 const { notify } = useNotification()
+const { performLogout, logoutLoading } = useLogout()
 
 const activeSection = computed(() => route.params.section as ProfileSection)
 
@@ -174,12 +176,6 @@ watch(
 )
 
 
-async function performLogout() {
-  await authStore.logout()
-  productsStore.reset()
-  await router.push({ name: 'login' })
-}
-
 function resetLearningDrillDown() {
   learningView.value = 'list'
   selectedCourseId.value = null
@@ -259,9 +255,6 @@ watch(
   () => route.params.section,
   (section) => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
-    if (section === 'logout') {
-      void performLogout()
-    }
     if (section !== 'learning') {
       resetLearningDrillDown()
     }
@@ -284,7 +277,7 @@ watch(
           >
             <HomeProfileInfoTableItem :label="authStore.studentNameBadgeLabel" tone="#178ef0" is-student-name />
             <RouterLink
-              v-if="authStore.isAdmin"
+              v-if="authStore.hasAdminRole"
               :to="{ name: 'admin' }"
               class="home-profile__admin-link"
             >
@@ -498,11 +491,6 @@ watch(
 
             <p class="home-profile__review-meta-note">(Meta* запрещена на территории РФ)</p>
           </article>
-
-          <article v-else key="logout" class="home-profile__panel">
-            <h1 class="home-profile__panel-title">Выходим из аккаунта…</h1>
-            <p class="home-profile__panel-text">Завершаем сессию.</p>
-          </article>
         </Transition>
 
         <button
@@ -516,7 +504,12 @@ watch(
       </section>
 
       <div class="home-profile__menu">
-        <HomeProfileMenu :active-section="activeSection" @select-section="setSection" />
+        <HomeProfileMenu
+          :active-section="activeSection"
+          :logout-loading="logoutLoading"
+          @select-section="setSection"
+          @logout="performLogout"
+        />
       </div>
     </div>
   </AppLayout>

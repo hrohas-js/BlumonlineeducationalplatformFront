@@ -1,5 +1,5 @@
 /** Единый список секций кабинета: маршрут `/:section` и тип `ProfileSection`. */
-export const PROFILE_SECTIONS = ['profile', 'learning', 'glossary', 'renewal', 'review', 'logout'] as const
+export const PROFILE_SECTIONS = ['profile', 'learning', 'glossary', 'renewal', 'review'] as const
 
 export type ProfileSection = (typeof PROFILE_SECTIONS)[number]
 

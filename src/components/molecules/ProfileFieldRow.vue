@@ -32,7 +32,13 @@ const labelIcon = computed<'email' | 'phone' | 'about' | null>(() => {
 </script>
 
 <template>
-  <div class="profile-field-row" :class="{ 'profile-field-row_textarea': props.as === 'textarea' }">
+  <div
+    class="profile-field-row"
+    :class="{
+      'profile-field-row_textarea': props.as === 'textarea',
+      'profile-field-row_phone': props.label === 'Телефон',
+    }"
+  >
     <p class="profile-field-row__label">
       <span class="profile-field-row__label-text">{{ props.label }}</span>
       <span v-if="labelIcon" class="profile-field-row__label-icon" aria-hidden="true">
@@ -240,6 +246,12 @@ const labelIcon = computed<'email' | 'phone' | 'about' | null>(() => {
 
     &__input-wrap {
       width: 100%;
+    }
+  }
+
+  &_phone {
+    :deep(.base-input__field_profile:not(.base-input__field_textarea)::placeholder) {
+      text-align: center;
     }
   }
 

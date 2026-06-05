@@ -60,6 +60,8 @@ const checkboxModel = true
   grid-template-columns: 140px var(--size-286);
   align-items: center;
   gap: var(--sp-20);
+  width: 100%;
+  flex-shrink: 0;
 
   &__label {
     margin: 0;
@@ -101,6 +103,10 @@ const checkboxModel = true
     :deep(.agreement-check__label_hidden) {
       display: none;
     }
+  }
+
+  :deep(.base-input__field_modal::placeholder) {
+    text-align: center;
   }
 }
 </style>

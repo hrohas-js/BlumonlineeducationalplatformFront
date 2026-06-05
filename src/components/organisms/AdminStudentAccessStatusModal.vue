@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import ModalCloseButton from '@/components/atoms/ModalCloseButton.vue'
 
 export type StudentAccessStatusValue = 'active' | 'paused' | 'blocked' | 'deleted'
 
@@ -60,9 +61,10 @@ const onSave = () => {
         aria-labelledby="admin-student-access-status-modal-title"
         @click.stop
       >
-        <button type="button" class="admin-student-access-status-modal__close" aria-label="Закрыть" @click="closeModal">
-          ×
-        </button>
+        <ModalCloseButton
+          class="admin-student-access-status-modal__close"
+          @click="closeModal"
+        />
 
         <h2 id="admin-student-access-status-modal-title" class="admin-student-access-status-modal__title">
           Статус ученика
@@ -269,22 +271,6 @@ const onSave = () => {
   position: absolute;
   top: var(--sp-16);
   right: var(--sp-16);
-  width: var(--size-24);
-  height: var(--size-24);
-  margin: 0;
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  color: var(--black);
-  font-size: var(--size-20);
-  line-height: 1;
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring-main);
-    border-radius: var(--radius-sm);
-  }
 }
 
 .admin-student-access-status-modal__title {

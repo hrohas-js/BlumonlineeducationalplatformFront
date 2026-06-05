@@ -2,7 +2,6 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import AppLayout from '@/components/layouts/AppLayout.vue'
-import BaseButton from '@/components/atoms/BaseButton.vue'
 import HomeProfileInfoTableItem from '@/components/atoms/HomeProfileInfoTableItem.vue'
 import AdminMaterialsCategorySection from '@/components/organisms/AdminMaterialsCategorySection.vue'
 import {
@@ -13,12 +12,10 @@ import { useAdminStore } from '@/stores/admin'
 import { useAuthStore } from '@/stores/auth'
 import { buildSectionConfig } from '@/utils/adminCatalogAdapter'
 import type { AdminCategorySectionConfig } from '@/utils/adminMaterialCatalog'
-import { useNotification } from '@/composables/useNotification'
 
 const router = useRouter()
 const adminStore = useAdminStore()
 const authStore = useAuthStore()
-const { notify } = useNotification()
 
 const loading = ref(true)
 const sectionConfigs = ref<AdminCategorySectionConfig[]>([])
@@ -61,13 +58,6 @@ const onEditMaterialCard = (sectionId: string, cardId: string) => {
   })
 }
 
-const onCreateProduct = (sectionId: string) => {
-  void router.push({
-    name: 'admin-material-product-create',
-    params: { sectionId },
-  })
-}
-
 const onOpenStudents = (section: AdminCategorySectionConfig) => {
   void router.push({
     name: 'admin-materials-students',
@@ -76,9 +66,6 @@ const onOpenStudents = (section: AdminCategorySectionConfig) => {
   })
 }
 
-const onRefresh = () => {
-  void loadSections().then(() => notify({ type: 'success', message: 'Список обновлён' }))
-}
 </script>
 
 <template>
@@ -88,19 +75,8 @@ const onRefresh = () => {
         <HomeProfileInfoTableItem :label="adminDisplayName" tone="#178ef0" is-student-name />
 
         <div class="admin-materials-page__toolbar">
-          <div class="admin-materials-page__toolbar-head">
-            <RouterLink :to="{ name: 'admin' }" class="admin-materials-page__back">← Админка</RouterLink>
-            <h1 class="admin-materials-page__title">Рабочие материалы</h1>
-          </div>
-          <div class="admin-materials-page__toolbar-actions">
-            <RouterLink :to="{ name: 'admin-payments' }" class="admin-materials-page__link">
-              Платежи
-            </RouterLink>
-            <RouterLink :to="{ name: 'admin-notifications' }" class="admin-materials-page__link">
-              Уведомления
-            </RouterLink>
-            <button type="button" class="admin-materials-page__link" @click="onRefresh">Обновить</button>
-          </div>
+          <RouterLink :to="{ name: 'admin' }" class="admin-materials-page__back">← Админка</RouterLink>
+          <h1 class="admin-materials-page__title">Рабочие материалы</h1>
         </div>
 
         <p v-if="loading" class="admin-materials-page__loading">Загружаем материалы…</p>
@@ -121,17 +97,6 @@ const onRefresh = () => {
             @open-students="onOpenStudents(section)"
           />
         </ul>
-
-        <div class="admin-materials-page__create-folder">
-          <BaseButton
-            class="admin-materials-page__create-folder-button"
-            variant="outline"
-            size="medium"
-            @click="onCreateProduct('courses')"
-          >
-            Создать продукт (курсы)
-          </BaseButton>
-        </div>
       </div>
     </section>
   </AppLayout>
@@ -149,14 +114,6 @@ const onRefresh = () => {
 
   &__toolbar {
     margin-top: var(--sp-20);
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--sp-16);
-  }
-
-  &__toolbar-head {
     display: flex;
     flex-direction: column;
     gap: var(--sp-8);
@@ -182,26 +139,6 @@ const onRefresh = () => {
     color: var(--black);
   }
 
-  &__toolbar-actions {
-    display: flex;
-    gap: var(--sp-16);
-  }
-
-  &__link {
-    font-family: var(--font-family);
-    font-weight: var(--font-medium);
-    font-size: var(--size-15);
-    color: var(--text-accent);
-    background: none;
-    border: none;
-    cursor: pointer;
-    text-decoration: none;
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-
   &__loading,
   &__error {
     margin-top: var(--sp-40);
@@ -221,23 +158,6 @@ const onRefresh = () => {
     display: flex;
     flex-direction: column;
     gap: var(--sp-40);
-  }
-
-  &__create-folder {
-    margin-top: var(--sp-40);
-    display: flex;
-    justify-content: center;
-  }
-
-  :deep(.admin-materials-page__create-folder-button.base-button) {
-    border-radius: var(--radius-10);
-  }
-
-  :deep(.admin-materials-page__create-folder-button.base-button_outline:hover:not(.base-button_disabled)) {
-    background-color: #178ef0;
-    border-color: #178ef0;
-    color: var(--white);
-    transform: var(--motion-shift-none);
   }
 
   @media (max-width: 1023px) {

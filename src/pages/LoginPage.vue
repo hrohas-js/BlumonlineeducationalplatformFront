@@ -484,6 +484,7 @@ const handleSubmit = async () => {
       color: var(--text-accent);
       text-decoration: none;
       margin-left: var(--sp-6);
+      cursor: pointer;
 
       &:hover {
         text-decoration: underline;

@@ -6,6 +6,7 @@ const emit = defineEmits<{
 const props = defineProps<{
   label: string
   isActive: boolean
+  disabled?: boolean
 }>()
 </script>
 
@@ -14,6 +15,7 @@ const props = defineProps<{
     type="button"
     class="home-profile-menu__item"
     :class="{ 'home-profile-menu__item_active': props.isActive }"
+    :disabled="props.disabled"
     @click="emit('select')"
   >
     <slot name="icon" />
@@ -59,6 +61,11 @@ const props = defineProps<{
     span {
       border-bottom-color: var(--text-accent);
     }
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
   }
 }
 </style>

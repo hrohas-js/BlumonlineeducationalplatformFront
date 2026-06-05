@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import { useLogout } from '@/composables/useLogout'
 
 type MenuIcon =
   | 'profile'
@@ -14,7 +15,7 @@ type MenuIcon =
   | 'review'
   | 'logout'
 
-type MenuItem = { label: string; icon: MenuIcon; to: string }
+type MenuItem = { label: string; icon: MenuIcon; to?: string; action?: 'logout' }
 
 const items: MenuItem[] = [
   { label: 'Профиль', icon: 'profile', to: '/profile' },
@@ -27,7 +28,7 @@ const items: MenuItem[] = [
   { label: 'О докторе', icon: 'about', to: '/about-doctor' },
   { label: 'Тех. поддержка', icon: 'support', to: '/support' },
   { label: 'Оставить отзыв', icon: 'review', to: '/review' },
-  { label: 'Выйти', icon: 'logout', to: '/logout' },
+  { label: 'Выйти', icon: 'logout', action: 'logout' },
 ]
 
 const emit = defineEmits<{
@@ -35,10 +36,17 @@ const emit = defineEmits<{
 }>()
 
 const router = useRouter()
+const { performLogout } = useLogout()
 
-const onItemClick = async (to: string) => {
+const onItemClick = async (item: MenuItem) => {
   emit('close')
-  await router.push(to)
+  if (item.action === 'logout') {
+    await performLogout()
+    return
+  }
+  if (item.to) {
+    await router.push(item.to)
+  }
 }
 </script>
 
@@ -54,7 +62,7 @@ const onItemClick = async (to: string) => {
 
     <ul class="header-mobile-menu__list">
       <li v-for="item in items" :key="item.label">
-        <button type="button" class="header-mobile-menu__item" @click="onItemClick(item.to)">
+        <button type="button" class="header-mobile-menu__item" @click="onItemClick(item)">
           <span class="header-mobile-menu__icon" aria-hidden="true">
             <svg v-if="item.icon === 'profile'" width="25" height="25" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path fill-rule="evenodd" clip-rule="evenodd" d="M12.4999 1.30208C9.76726 1.30208 7.552 3.51734 7.552 6.25C7.552 8.98265 9.76726 11.1979 12.4999 11.1979C15.2326 11.1979 17.4478 8.98265 17.4478 6.25C17.4478 3.51734 15.2326 1.30208 12.4999 1.30208ZM9.1145 6.25C9.1145 4.38028 10.6302 2.86458 12.4999 2.86458C14.3696 2.86458 15.8853 4.38028 15.8853 6.25C15.8853 8.11971 14.3696 9.63541 12.4999 9.63541C10.6302 9.63541 9.1145 8.11971 9.1145 6.25Z" fill="#010307" />

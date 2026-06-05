@@ -4,10 +4,12 @@ import type { ProfileSection } from '@/components/home/profile-menu.types'
 
 defineProps<{
   activeSection: ProfileSection
+  logoutLoading?: boolean
 }>()
 
 const emit = defineEmits<{
   (event: 'select-section', section: ProfileSection): void
+  (event: 'logout'): void
 }>()
 </script>
 
@@ -78,8 +80,9 @@ const emit = defineEmits<{
 
     <HomeProfileMenuItem
       label="Выйти"
-      :is-active="activeSection === 'logout'"
-      @select="emit('select-section', 'logout')"
+      :is-active="false"
+      :disabled="logoutLoading"
+      @select="emit('logout')"
     >
       <template #icon>
         <svg width="25" height="25" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
