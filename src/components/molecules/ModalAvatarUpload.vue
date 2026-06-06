@@ -4,8 +4,15 @@ import { ref } from 'vue'
 const MAX_FILE_SIZE = 3 * 1024 * 1024
 const ALLOWED_TYPES = ['image/jpeg', 'image/png']
 
+const props = defineProps<{
+  previewSrc?: string | null
+}>()
+
+const emit = defineEmits<{
+  (event: 'select', file: File | null): void
+}>()
+
 const fileInputRef = ref<HTMLInputElement | null>(null)
-const selectedFileName = ref('')
 const errorMessage = ref('')
 
 const openFilePicker = () => {
@@ -17,7 +24,6 @@ const onFileChange = (event: Event) => {
   const file = input.files?.[0]
 
   errorMessage.value = ''
-  selectedFileName.value = ''
 
   if (!file) return
 
@@ -33,7 +39,7 @@ const onFileChange = (event: Event) => {
     return
   }
 
-  selectedFileName.value = file.name
+  emit('select', file)
 }
 </script>
 
@@ -50,8 +56,27 @@ const onFileChange = (event: Event) => {
         не более 3 Mb
       </p>
 
-      <button type="button" class="modal-avatar-upload__button" aria-label="Загрузить изображение" @click="openFilePicker">
-        <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <button
+        type="button"
+        class="modal-avatar-upload__button"
+        :aria-label="props.previewSrc ? 'Изменить изображение' : 'Загрузить изображение'"
+        @click="openFilePicker"
+      >
+        <img
+          v-if="props.previewSrc"
+          class="modal-avatar-upload__preview"
+          :src="props.previewSrc"
+          alt="Превью аватара"
+        />
+        <svg
+          v-else
+          width="100"
+          height="100"
+          viewBox="0 0 100 100"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+        >
           <rect x="1" y="1" width="98" height="98" rx="49" fill="white" />
           <rect x="1" y="1" width="98" height="98" rx="49" stroke="black" stroke-width="2" />
           <path d="M50.3916 35V65" stroke="black" stroke-width="2" stroke-linecap="square" />
@@ -68,7 +93,6 @@ const onFileChange = (event: Event) => {
       @change="onFileChange"
     />
 
-    <p v-if="selectedFileName" class="modal-avatar-upload__file-name">{{ selectedFileName }}</p>
     <p v-if="errorMessage" class="modal-avatar-upload__error">{{ errorMessage }}</p>
   </div>
 </template>
@@ -101,18 +125,23 @@ const onFileChange = (event: Event) => {
     background: transparent;
     padding: 0;
     cursor: pointer;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  &__preview {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
   }
 
   &__input {
     display: none;
-  }
-
-  &__file-name {
-    margin: var(--sp-10) 0 0;
-    font-family: var(--font-family);
-    font-weight: var(--font-medium);
-    font-size: var(--size-14);
-    color: var(--black);
   }
 
   &__error {

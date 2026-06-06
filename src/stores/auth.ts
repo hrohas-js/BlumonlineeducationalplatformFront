@@ -9,7 +9,7 @@ import { ref, computed } from 'vue'
 import { authService } from '@/services/api/endpoints/auth'
 import { TOKEN_STORAGE_KEY, REFRESH_TOKEN_STORAGE_KEY } from '@/services/axios'
 import type { User, RegisterData, LoginCredentials } from '@/types'
-import type { RegisterRequest, LoginApiResponse, RefreshTokenResponse } from '@/services/api/types'
+import type { RegisterRequest, LoginApiResponse, RefreshTokenResponse, UpdateUserRequest } from '@/services/api/types'
 import { canAccessAdmin, userHasAdminRole } from '@/utils/adminAccess'
 import { normalizeUser } from '@/utils/normalizeUser'
 
@@ -297,6 +297,15 @@ export const useAuthStore = defineStore('auth', () => {
     return { success: true, message: result.data?.message }
   }
 
+  async function updateProfile(data: UpdateUserRequest) {
+    const result = await authService.updateMe(data)
+    if (result.success && result.data) {
+      setUserFromApi(result.data)
+      return { success: true as const }
+    }
+    return { success: false as const, error: result.error || 'Не удалось сохранить профиль' }
+  }
+
   function clearError() {
     error.value = null
   }
@@ -332,6 +341,7 @@ export const useAuthStore = defineStore('auth', () => {
     resetPassword,
     changePassword,
     resendVerification,
+    updateProfile,
     clearSession,
     clearError,
     setUserFromApi,

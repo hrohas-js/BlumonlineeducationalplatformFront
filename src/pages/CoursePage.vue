@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/components/layouts/AppLayout.vue'
+import StudentProfileLayout from '@/components/layouts/StudentProfileLayout.vue'
 import HomeProfileInfoTableItem from '@/components/atoms/HomeProfileInfoTableItem.vue'
 import LearningProductBadge from '@/components/molecules/LearningProductBadge.vue'
 import LearningCourseOverviewPanel from '@/components/organisms/LearningCourseOverviewPanel.vue'
@@ -29,14 +30,11 @@ const product = ref<ProductDetailResponse | null>(null)
 const progress = ref<ProductProgressResponse | null>(null)
 const loading = ref(false)
 const completing = ref(false)
-const videoSrcByLessonId = ref<Record<string, string>>({})
-const videoLoadingByLessonId = ref<Record<string, boolean>>({})
-const videoErrorByLessonId = ref<Record<string, string>>({})
 const activeTopicId = ref<string | null>(null)
 
 const learningDetail = computed<LearningCourseDetail | null>(() => {
   if (!product.value) return null
-  return mapProductToLearningDetail(product.value, progress.value, videoSrcByLessonId.value)
+  return mapProductToLearningDetail(product.value, progress.value)
 })
 
 const selectedTopicId = computed<string | null>(() => {
@@ -67,23 +65,6 @@ async function loadProduct() {
   loading.value = false
 }
 
-async function loadVideoForLesson(lessonId: string, videoUrl: string | null | undefined) {
-  if (!videoUrl?.trim()) return
-  if (videoSrcByLessonId.value[lessonId]) return
-
-  videoLoadingByLessonId.value = { ...videoLoadingByLessonId.value, [lessonId]: true }
-  videoErrorByLessonId.value = { ...videoErrorByLessonId.value, [lessonId]: '' }
-  videoSrcByLessonId.value = { ...videoSrcByLessonId.value, [lessonId]: videoUrl.trim() }
-  videoLoadingByLessonId.value = { ...videoLoadingByLessonId.value, [lessonId]: false }
-}
-
-async function loadVideosForTopic(topicId: string | null) {
-  if (!topicId || !product.value) return
-  const module = product.value.modules.find((m) => m.id === topicId)
-  if (!module) return
-  await Promise.all(module.lessons.map((lesson) => loadVideoForLesson(lesson.id, lesson.video_url)))
-}
-
 function goBack() {
   if (lessonIdParam.value) {
     void router.push({ name: 'course', params: { productId: productId.value } })
@@ -97,7 +78,10 @@ function openTopicLesson(topicId: string) {
   activeTopicId.value = topicId
   const topic = learningDetail.value?.topics.find((t) => t.id === topicId)
   const firstVideo = topic?.videos[0]
-  if (!firstVideo) return
+  if (!firstVideo) {
+    notify({ type: 'warning', message: 'В этой теме пока нет материалов' })
+    return
+  }
   void router.push({
     name: 'course-lesson',
     params: { productId: productId.value, lessonId: firstVideo.id },
@@ -105,10 +89,6 @@ function openTopicLesson(topicId: string) {
 }
 
 function onSelectTopic(topicId: string) {
-  if (isOverview.value && activeTopicId.value !== topicId) {
-    activeTopicId.value = topicId
-    return
-  }
   openTopicLesson(topicId)
 }
 
@@ -122,7 +102,8 @@ async function onCompleteTopic(topicId: string, completed: boolean) {
   if (!module) return
 
   completing.value = true
-  for (const lesson of module.lessons) {
+  const lessons = [...module.lessons].sort((a, b) => a.order_index - b.order_index)
+  for (const lesson of lessons) {
     const lp = progress.value?.modules
       .find((m) => m.module_id === topicId)
       ?.lessons.find((l) => l.id === lesson.id)
@@ -150,16 +131,12 @@ watch(selectedTopicId, (topicId) => {
   if (topicId) {
     activeTopicId.value = topicId
   }
-  void loadVideosForTopic(topicId)
 })
 
 watch(
   () => productId.value,
   () => {
     activeTopicId.value = null
-    videoSrcByLessonId.value = {}
-    videoLoadingByLessonId.value = {}
-    videoErrorByLessonId.value = {}
     void loadProduct()
   },
 )
@@ -167,16 +144,16 @@ watch(
 
 <template>
   <AppLayout>
-    <section class="course-page">
-      <div v-if="loading" class="course-page__loading">Загружаем курс…</div>
+    <StudentProfileLayout active-section="learning">
+      <div v-if="loading" class="home-profile__loading">Загружаем курс…</div>
 
-      <template v-else-if="learningDetail">
-        <button type="button" class="course-page__back" @click="goBack">
+      <article v-else-if="learningDetail" class="home-profile__panel home-profile__panel_learning">
+        <button type="button" class="home-learning__back" @click="goBack">
           <span aria-hidden="true">←</span>
           {{ lessonIdParam ? 'К темам курса' : 'К моим курсам' }}
         </button>
 
-        <header class="course-page__header">
+        <header class="home-learning__header">
           <HomeProfileInfoTableItem
             :label="authStore.studentNameBadgeLabel"
             tone="#178ef0"
@@ -199,66 +176,13 @@ watch(
           v-else-if="selectedTopicId"
           :course="learningDetail"
           :selected-topic-id="selectedTopicId"
-          :video-loading-by-id="videoLoadingByLessonId"
-          :video-error-by-id="videoErrorByLessonId"
           :completing="completing"
           @next-topic="onNextTopic"
           @complete-topic="onCompleteTopic"
         />
-      </template>
+      </article>
 
-      <p v-else class="course-page__empty">Курс не найден.</p>
-    </section>
+      <p v-else class="home-profile__empty">Курс не найден.</p>
+    </StudentProfileLayout>
   </AppLayout>
 </template>
-
-<style lang="scss" scoped>
-.course-page {
-  margin-top: var(--sp-40);
-  max-width: var(--size-604);
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-20);
-
-  &__loading,
-  &__empty {
-    background: var(--fon-bloka);
-    border-radius: var(--radius-20);
-    padding: var(--sp-40);
-    text-align: center;
-    font-family: var(--font-family);
-    font-weight: var(--font-medium);
-    color: var(--osnovnoy-tekst);
-  }
-
-  &__back {
-    align-self: flex-start;
-    border: none;
-    padding: 0;
-    background: none;
-    cursor: pointer;
-    font-family: var(--font-family);
-    font-weight: var(--font-medium);
-    font-size: var(--size-15);
-    color: var(--dopolnitelnyy-tekst);
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-
-  &__header {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--sp-20);
-    background: var(--fon-bloka);
-    border-radius: var(--radius-20);
-    padding: var(--sp-32) var(--sp-40);
-
-    @media (max-width: 1023px) {
-      padding: var(--sp-20);
-    }
-  }
-}
-</style>

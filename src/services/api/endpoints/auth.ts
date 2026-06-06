@@ -24,6 +24,7 @@ import type {
   ChangePasswordRequest,
   LogoutRequest,
   MessageResponse,
+  UpdateUserRequest,
   ApiServiceResponse,
 } from '../types'
 import { AUTH_ENDPOINTS } from './auth.contract'
@@ -62,6 +63,12 @@ export const authService = {
   async getCurrentUser(): ApiServiceResponse<User> {
     const api = useApi()
     return api.get<User>(AUTH_ENDPOINTS.me)
+  },
+
+  /** PATCH /api/v1/auth/me */
+  async updateMe(data: UpdateUserRequest): ApiServiceResponse<User> {
+    const api = useApi()
+    return api.patch<User>(AUTH_ENDPOINTS.me, data)
   },
 
   /** POST /api/v1/auth/refresh */

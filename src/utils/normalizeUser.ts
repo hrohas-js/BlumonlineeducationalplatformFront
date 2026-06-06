@@ -26,5 +26,6 @@ export function normalizeUser(raw: Record<string, unknown> | User): User {
     middle_name: r.middle_name != null ? String(r.middle_name) : undefined,
     phone: r.phone != null ? String(r.phone) : undefined,
     date_of_birth: r.date_of_birth != null ? String(r.date_of_birth) : undefined,
+    avatar_url: r.avatar_url != null ? String(r.avatar_url) : undefined,
   }
 }

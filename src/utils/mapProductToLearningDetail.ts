@@ -10,6 +10,7 @@ import type {
   ProductDetailResponse,
   ProductProgressResponse,
 } from '@/services/api/types'
+import { mapFileResponseToLearningTopicFile } from '@/utils/learningTopicFile'
 
 function mapProductTypeToCategory(productType: string): LearningCourseCategory {
   const t = productType.toLowerCase()
@@ -38,18 +39,39 @@ function formatWatchLabel(seconds: number): string {
 function lessonToVideo(
   lesson: LessonResponse,
   isCompleted: boolean,
-  videoSrc?: string,
+  videoSrcByLessonId: Record<string, string>,
 ): LearningTopicVideo {
   const watchTime = 0
+  const src = videoSrcByLessonId[lesson.id] ?? lesson.video_url ?? undefined
   return {
     id: lesson.id,
     title: lesson.title,
-    src: videoSrc,
+    src: src?.trim() || undefined,
     progressPercent: isCompleted ? 100 : watchTime > 0 ? 10 : 0,
     currentTimeLabel: isCompleted ? formatWatchLabel(100) : '00:00',
     durationLabel: '—',
     hasTimecode: Boolean(lesson.description),
+    files: lesson.files.map(mapFileResponseToLearningTopicFile),
   }
+}
+
+function splitModuleDescription(
+  desc: string | null,
+): Pick<LearningCourseTopic, 'materialsHtml' | 'materialsText'> {
+  if (!desc?.trim()) return {}
+  const trimmed = desc.trim()
+  if (/<[a-z][\s\S]*>/i.test(trimmed)) {
+    return { materialsHtml: trimmed }
+  }
+  return { materialsText: trimmed }
+}
+
+function formatTopicTitle(orderIndex: number, title: string): string {
+  const trimmed = title.trim()
+  if (/^\d+\s*тема\s*:/i.test(trimmed)) {
+    return trimmed
+  }
+  return `${orderIndex} тема: ${trimmed}`
 }
 
 function moduleToTopic(
@@ -58,20 +80,20 @@ function moduleToTopic(
   videoSrcByLessonId: Record<string, string>,
 ): LearningCourseTopic {
   const moduleProgress = progress?.modules.find((m) => m.module_id === module.id)
-  const lessons = module.lessons
+  const lessons = [...module.lessons].sort((a, b) => a.order_index - b.order_index)
   const completedCount = moduleProgress
     ? moduleProgress.lessons.filter((l) => l.is_completed).length
     : 0
 
   return {
     id: module.id,
-    title: module.title,
+    title: formatTopicTitle(module.order_index, module.title),
     accessUntil: formatAccessUntil(progress?.deadline ?? null),
     isCompleted: lessons.length > 0 && completedCount >= lessons.length,
-    materialsHtml: module.description ?? undefined,
+    ...splitModuleDescription(module.description),
     videos: lessons.map((lesson) => {
       const lp = moduleProgress?.lessons.find((l) => l.id === lesson.id)
-      return lessonToVideo(lesson, lp?.is_completed ?? false, videoSrcByLessonId[lesson.id])
+      return lessonToVideo(lesson, lp?.is_completed ?? false, videoSrcByLessonId)
     }),
   }
 }
@@ -81,7 +103,9 @@ export function mapProductToLearningDetail(
   progress: ProductProgressResponse | null,
   videoSrcByLessonId: Record<string, string> = {},
 ): LearningCourseDetail {
-  const topics = product.modules.map((m) => moduleToTopic(m, progress, videoSrcByLessonId))
+  const topics = [...product.modules]
+    .sort((a, b) => a.order_index - b.order_index)
+    .map((m) => moduleToTopic(m, progress, videoSrcByLessonId))
   const description = product.description?.trim()
   const descriptionLines = description
     ? description.split('\n').filter((line) => line.length > 0)

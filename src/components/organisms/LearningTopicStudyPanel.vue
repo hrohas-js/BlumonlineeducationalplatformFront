@@ -80,6 +80,14 @@ const goNextTopic = () => {
       <div class="learning-topic-study-panel__materials" v-html="topic.materialsHtml" />
     </LearningCollapsibleChip>
 
+    <LearningCollapsibleChip
+      v-else-if="topic.materialsText"
+      label="Учебный материал"
+      variant="filled"
+    >
+      <p class="learning-topic-study-panel__materials">{{ topic.materialsText }}</p>
+    </LearningCollapsibleChip>
+
     <LearningTopicVideoBlock
       v-for="video in topic.videos"
       :key="video.id"

@@ -25,6 +25,7 @@ export interface User {
   middle_name?: string
   phone?: string
   date_of_birth?: string
+  avatar_url?: string
 }
 
 // ===== API UTILITIES =====

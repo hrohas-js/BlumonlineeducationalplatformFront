@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onUnmounted, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import ModalAvatarUpload from '@/components/molecules/ModalAvatarUpload.vue'
 import ModalProfileFieldRow from '@/components/molecules/ModalProfileFieldRow.vue'
 import ModalCloseButton from '@/components/atoms/ModalCloseButton.vue'
@@ -26,6 +26,22 @@ const email = ref('')
 const about = ref('')
 
 const forgotPasswordLoading = ref(false)
+const saveLoading = ref(false)
+
+const selectedAvatarFile = ref<File | null>(null)
+const avatarPreviewUrl = ref<string | null>(null)
+
+const modalAvatarPreview = computed(
+  () => avatarPreviewUrl.value ?? authStore.user?.avatar_url ?? null,
+)
+
+function revokeAvatarPreview() {
+  if (avatarPreviewUrl.value) {
+    URL.revokeObjectURL(avatarPreviewUrl.value)
+    avatarPreviewUrl.value = null
+  }
+  selectedAvatarFile.value = null
+}
 
 function syncFromUser() {
   const u = authStore.user
@@ -38,17 +54,22 @@ function syncFromUser() {
   about.value = ''
 }
 
+function resetAvatarDraft() {
+  revokeAvatarPreview()
+}
+
 const closeModal = () => {
   emit('close')
 }
 
 const onOverlayClick = (event: MouseEvent) => {
   if (event.target === event.currentTarget) {
-    closeModal()
+    onCancel()
   }
 }
 
 const onCancel = () => {
+  resetAvatarDraft()
   syncFromUser()
   closeModal()
 }
@@ -56,14 +77,37 @@ const onCancel = () => {
 const buildUpdatePayload = (): UpdateUserRequest => ({
   first_name: firstName.value.trim(),
   last_name: lastName.value.trim(),
-  middle_name: middleName.value.trim() || undefined,
   phone: phone.value.trim() || undefined,
-  bio: about.value.trim() || undefined,
 })
 
+const onAvatarSelect = (file: File | null) => {
+  revokeAvatarPreview()
+  if (!file) return
+  selectedAvatarFile.value = file
+  avatarPreviewUrl.value = URL.createObjectURL(file)
+}
+
 const onSave = async () => {
-  // Будет подключено после появления PATCH /api/v1/auth/me на бэкенде
-  void buildUpdatePayload()
+  const trimmedFirstName = firstName.value.trim()
+  const trimmedLastName = lastName.value.trim()
+
+  if (!trimmedFirstName || !trimmedLastName) {
+    notify({ type: 'warning', message: 'Укажите имя и фамилию' })
+    return
+  }
+
+  saveLoading.value = true
+  const result = await authStore.updateProfile(buildUpdatePayload())
+  saveLoading.value = false
+
+  if (!result.success) {
+    notify({ type: 'error', message: result.error || 'Не удалось сохранить профиль' })
+    return
+  }
+
+  notify({ type: 'success', message: 'Профиль сохранён' })
+  resetAvatarDraft()
+  closeModal()
 }
 
 const onForgotPassword = async () => {
@@ -89,7 +133,7 @@ const onForgotPassword = async () => {
 }
 
 function onEscapeKey(event: KeyboardEvent) {
-  if (event.key === 'Escape' && props.isOpen && !forgotPasswordLoading.value) {
+  if (event.key === 'Escape' && props.isOpen && !forgotPasswordLoading.value && !saveLoading.value) {
     onCancel()
   }
 }
@@ -98,6 +142,7 @@ watch(
   () => props.isOpen,
   (open) => {
     if (open) {
+      resetAvatarDraft()
       syncFromUser()
       document.addEventListener('keydown', onEscapeKey)
     } else {
@@ -109,6 +154,7 @@ watch(
 
 onUnmounted(() => {
   document.removeEventListener('keydown', onEscapeKey)
+  revokeAvatarPreview()
 })
 </script>
 
@@ -122,14 +168,14 @@ onUnmounted(() => {
         aria-labelledby="profile-edit-modal-title"
         @click.stop
       >
-        <ModalCloseButton class="profile-edit-modal__close" @click="closeModal" />
+        <ModalCloseButton class="profile-edit-modal__close" @click="onCancel" />
 
         <h2 id="profile-edit-modal-title" class="profile-edit-modal__title">
           Редактирование основной информации
         </h2>
 
         <div class="profile-edit-modal__avatar-upload">
-          <ModalAvatarUpload />
+          <ModalAvatarUpload :preview-src="modalAvatarPreview" @select="onAvatarSelect" />
         </div>
 
         <div class="profile-edit-modal__form">
@@ -149,13 +195,17 @@ onUnmounted(() => {
               <button
                 type="button"
                 class="profile-edit-modal__action-button"
-                disabled
-                title="Сохранение профиля будет доступно позже"
+                :disabled="saveLoading || forgotPasswordLoading"
                 @click="onSave"
               >
-                Сохранить
+                {{ saveLoading ? 'Сохраняем…' : 'Сохранить' }}
               </button>
-              <button type="button" class="profile-edit-modal__action-button" @click="onCancel">
+              <button
+                type="button"
+                class="profile-edit-modal__action-button"
+                :disabled="saveLoading"
+                @click="onCancel"
+              >
                 Отмена
               </button>
             </div>
@@ -175,7 +225,7 @@ onUnmounted(() => {
           <button
             type="button"
             class="profile-edit-modal__action-button"
-            :disabled="forgotPasswordLoading"
+            :disabled="forgotPasswordLoading || saveLoading"
             @click="onForgotPassword"
           >
             {{ forgotPasswordLoading ? 'Отправляем…' : 'Сменить пароль' }}

@@ -72,12 +72,8 @@ export interface RegisterResponse {
 export interface UpdateUserRequest {
   first_name?: string
   last_name?: string
-  middle_name?: string
   phone?: string
-  date_of_birth?: string
-  bio?: string
-  city?: string
-  sex?: 'male' | 'female'
+  avatar_url?: string
 }
 
 export interface RefreshTokenRequest {

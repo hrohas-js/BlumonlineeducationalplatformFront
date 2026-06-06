@@ -2,8 +2,8 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/components/layouts/AppLayout.vue'
+import StudentProfileLayout from '@/components/layouts/StudentProfileLayout.vue'
 import HomeProfileInfoTableItem from '@/components/atoms/HomeProfileInfoTableItem.vue'
-import HomeProfileMenu from '@/components/home/HomeProfileMenu.vue'
 import HomeProfileAvatarPanel from '@/components/organisms/HomeProfileAvatarPanel.vue'
 import LearningCourseCard from '@/components/organisms/LearningCourseCard.vue'
 import LearningCourseCardDescription from '@/components/organisms/LearningCourseCardDescription.vue'
@@ -26,7 +26,6 @@ import { useAuthStore } from '@/stores/auth'
 import { useProductsStore } from '@/stores/products'
 import { usePaymentsStore } from '@/stores/payments'
 import { useNotification } from '@/composables/useNotification'
-import { useLogout } from '@/composables/useLogout'
 import type { ProductResponse } from '@/services/api/types'
 
 const route = useRoute()
@@ -55,8 +54,6 @@ const authStore = useAuthStore()
 const productsStore = useProductsStore()
 const paymentsStore = usePaymentsStore()
 const { notify } = useNotification()
-const { performLogout, logoutLoading } = useLogout()
-
 const activeSection = computed(() => route.params.section as ProfileSection)
 
 /** Фолбэк-данные, если my-courses пуст или API недоступен. */
@@ -213,12 +210,6 @@ function openTopicStudy(topicId: string) {
 
 const onLearningTopicSelect = (topicId: string) => {
   if (!selectedCourseId.value) return
-
-  if (learningView.value === 'course' && activeTopicId.value !== topicId) {
-    activeTopicId.value = topicId
-    return
-  }
-
   openTopicStudy(topicId)
 }
 
@@ -267,8 +258,7 @@ watch(
 
 <template>
   <AppLayout>
-    <div class="home-profile">
-      <section class="home-profile__content">
+    <StudentProfileLayout :active-section="activeSection">
         <Transition name="home-profile-panel" mode="out-in">
           <article
             v-if="activeSection === 'profile'"
@@ -283,7 +273,7 @@ watch(
             >
               Админка →
             </RouterLink>
-            <HomeProfileAvatarPanel />
+            <HomeProfileAvatarPanel :avatar-url="authStore.user?.avatar_url ?? null" />
             <ProfileDetailsForm />
           </article>
 
@@ -501,40 +491,12 @@ watch(
         >
           Приступить к изучению
         </button>
-      </section>
-
-      <div class="home-profile__menu">
-        <HomeProfileMenu
-          :active-section="activeSection"
-          :logout-loading="logoutLoading"
-          @select-section="setSection"
-          @logout="performLogout"
-        />
-      </div>
-    </div>
+    </StudentProfileLayout>
   </AppLayout>
 </template>
 
 <style lang="scss" scoped>
 .home-profile {
-  margin-top: var(--sp-40);
-  display: flex;
-  align-items: stretch;
-  gap: var(--sp-32);
-
-  @media (min-width: 1024px) {
-    align-items: flex-start;
-  }
-
-  &__content {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    @media (max-width: 1024px) {
-      flex-direction: column;
-    }
-  }
-
   &__admin-link {
     align-self: flex-start;
     font-family: var(--font-family);
@@ -545,46 +507,6 @@ watch(
 
     &:hover {
       text-decoration: underline;
-    }
-  }
-
-  &__panel {
-    border-radius: var(--radius-20);
-    background-color: var(--white);
-    padding: var(--sp-40) var(--sp-60) var(--sp-38);
-
-    @media (max-width: 1023px) {
-      width: 100%;
-      max-width: 100%;
-      box-sizing: border-box;
-    }
-
-    &_profile {
-      display: flex;
-      flex-direction: column;
-      gap: var(--sp-20);
-      width: 100%;
-    }
-
-    &_learning {
-      display: flex;
-      flex-direction: column;
-      width: 100%;
-
-      @media (min-width: 1024px) {
-        max-width: var(--size-552);
-      }
-    }
-
-    &_glossary {
-      display: flex;
-      flex-direction: column;
-      gap: var(--sp-20);
-      width: 100%;
-
-      @media (min-width: 1024px) {
-        max-width: var(--size-552);
-      }
     }
   }
 
@@ -776,12 +698,6 @@ watch(
     }
   }
 
-  &__menu {
-    @media (max-width: 1023px) {
-      display: none;
-    }
-  }
-
   &__learning-cta {
     display: none;
     width: 100%;
@@ -812,50 +728,6 @@ watch(
   }
 }
 
-.home-profile-panel-enter-active,
-.home-profile-panel-leave-active {
-  transition: transform 0.35s ease, opacity 0.35s ease;
-  transform-origin: center top;
-  will-change: transform, opacity;
-}
-
-.home-profile-panel-enter-from,
-.home-profile-panel-leave-to {
-  transform: scale(0.94) translateY(var(--sp-16));
-  opacity: 0;
-}
-
-.home-profile-panel-enter-to,
-.home-profile-panel-leave-from {
-  transform: scale(1) translateY(0);
-  opacity: var(--opacity-full);
-}
-
-.home-learning__header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--sp-20);
-  margin-top: var(--sp-20);
-}
-
-.home-learning__back {
-  align-self: flex-start;
-  margin-top: var(--sp-20);
-  border: none;
-  padding: 0;
-  background: none;
-  cursor: pointer;
-  font-family: var(--font-family);
-  font-weight: var(--font-medium);
-  font-size: var(--size-15);
-  color: var(--dopolnitelnyy-tekst);
-
-  &:hover {
-    text-decoration: underline;
-  }
-}
-
 .home-learning__courses {
   margin-top: var(--sp-40);
   display: flex;
@@ -869,15 +741,5 @@ watch(
 
 .home-learning__course-card {
   cursor: default;
-}
-
-@media (min-width: 1024px) {
-  .home-profile {
-    &__panel {
-      &_profile {
-        width: var(--size-460);
-      }
-    }
-  }
 }
 </style>

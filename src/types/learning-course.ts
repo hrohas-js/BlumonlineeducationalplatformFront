@@ -1,5 +1,15 @@
 export type LearningCourseCategory = 'courses' | 'projects' | 'other'
 
+export type LearningTopicFileType = 'pdf' | 'docx' | 'png' | 'jpeg' | 'other'
+
+export interface LearningTopicFile {
+  id: string
+  fileName: string
+  fileUrl: string
+  fileType: LearningTopicFileType
+  fileSize?: number | null
+}
+
 export interface LearningTopicVideo {
   id: string
   title: string
@@ -9,6 +19,7 @@ export interface LearningTopicVideo {
   currentTimeLabel?: string
   durationLabel?: string
   hasTimecode?: boolean
+  files: LearningTopicFile[]
 }
 
 export interface LearningCourseTopic {
@@ -18,6 +29,7 @@ export interface LearningCourseTopic {
   isCompleted: boolean
   videos: LearningTopicVideo[]
   materialsHtml?: string
+  materialsText?: string
 }
 
 export interface LearningCourseDetail {
