@@ -306,6 +306,15 @@ export const useAuthStore = defineStore('auth', () => {
     return { success: false as const, error: result.error || 'Не удалось сохранить профиль' }
   }
 
+  async function uploadAvatar(file: File) {
+    const result = await authService.uploadAvatar(file)
+    if (result.success && result.data) {
+      setUserFromApi(result.data)
+      return { success: true as const }
+    }
+    return { success: false as const, error: result.error || 'Не удалось загрузить аватар' }
+  }
+
   function clearError() {
     error.value = null
   }
@@ -342,6 +351,7 @@ export const useAuthStore = defineStore('auth', () => {
     changePassword,
     resendVerification,
     updateProfile,
+    uploadAvatar,
     clearSession,
     clearError,
     setUserFromApi,

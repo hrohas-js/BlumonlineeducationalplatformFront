@@ -5,6 +5,7 @@ export const AUTH_ENDPOINTS = {
   logoutAll: '/api/v1/auth/logout-all',
   refresh: '/api/v1/auth/refresh',
   me: '/api/v1/auth/me',
+  avatar: '/api/v1/auth/me/avatar',
   verifyEmail: '/api/v1/auth/verify-email',
   resendVerification: '/api/v1/auth/resend-verification',
   forgotPassword: '/api/v1/auth/forgot-password',

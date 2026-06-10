@@ -97,17 +97,27 @@ const onSave = async () => {
   }
 
   saveLoading.value = true
-  const result = await authStore.updateProfile(buildUpdatePayload())
-  saveLoading.value = false
+  try {
+    if (selectedAvatarFile.value) {
+      const avatarResult = await authStore.uploadAvatar(selectedAvatarFile.value)
+      if (!avatarResult.success) {
+        notify({ type: 'error', message: avatarResult.error || 'Не удалось загрузить аватар' })
+        return
+      }
+    }
 
-  if (!result.success) {
-    notify({ type: 'error', message: result.error || 'Не удалось сохранить профиль' })
-    return
+    const result = await authStore.updateProfile(buildUpdatePayload())
+    if (!result.success) {
+      notify({ type: 'error', message: result.error || 'Не удалось сохранить профиль' })
+      return
+    }
+
+    notify({ type: 'success', message: 'Профиль сохранён' })
+    resetAvatarDraft()
+    closeModal()
+  } finally {
+    saveLoading.value = false
   }
-
-  notify({ type: 'success', message: 'Профиль сохранён' })
-  resetAvatarDraft()
-  closeModal()
 }
 
 const onForgotPassword = async () => {

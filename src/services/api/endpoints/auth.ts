@@ -71,6 +71,12 @@ export const authService = {
     return api.patch<User>(AUTH_ENDPOINTS.me, data)
   },
 
+  /** POST /api/v1/auth/me/avatar */
+  async uploadAvatar(file: File): ApiServiceResponse<User> {
+    const api = useApi()
+    return api.uploadFile<User>(AUTH_ENDPOINTS.avatar, file)
+  },
+
   /** POST /api/v1/auth/refresh */
   async refreshToken(refreshToken: string): ApiServiceResponse<RefreshTokenResponse> {
     const api = useApi()
