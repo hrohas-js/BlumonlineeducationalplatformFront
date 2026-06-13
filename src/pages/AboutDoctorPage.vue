@@ -7,6 +7,8 @@ import AboutDoctorAccordion, {
 import image12 from '@/assets/img/webp/12.webp'
 import image3 from '@/assets/img/webp/3.webp'
 import image45 from '@/assets/img/webp/45.webp'
+import image4 from '@/assets/img/webp/4.webp'
+import image99 from '@/assets/img/webp/99.webp'
 
 const accordionItems: AboutDoctorAccordionItem[] = [
   {
@@ -41,7 +43,7 @@ const accordionItems: AboutDoctorAccordionItem[] = [
   },
   {
     title: 'Высшее образование',
-    imageSrc: image3,
+    imageSrc: image45,
     imageAlt: 'Высшее образование',
     content: [
       {
@@ -56,7 +58,7 @@ const accordionItems: AboutDoctorAccordionItem[] = [
   },
   {
     title: 'Проф. переподготовка',
-    imageSrc: image45,
+    imageSrc: image4,
     imageAlt: 'Профессиональная переподготовка',
     content: [
       {
@@ -72,7 +74,7 @@ const accordionItems: AboutDoctorAccordionItem[] = [
   },
   {
     title: 'Выводы',
-    imageSrc: image45,
+    imageSrc: image99,
     imageAlt: 'Выводы',
     content: [
       {

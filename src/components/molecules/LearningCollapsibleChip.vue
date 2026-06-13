@@ -55,7 +55,7 @@ const toggle = () => {
     border: none;
     border-radius: var(--radius-10);
     padding: var(--sp-10) var(--sp-20);
-    justify-content: flex-end;
+    justify-content: flex-start;
   }
 
   &_outline .learning-collapsible-chip__trigger {
@@ -63,7 +63,7 @@ const toggle = () => {
     border: var(--border-1) solid var(--osnovnoy-tekst);
     border-radius: var(--radius-check);
     padding: var(--size-5) var(--sp-20);
-    justify-content: flex-end;
+    justify-content: flex-start;
   }
 
   &__trigger {
@@ -72,7 +72,6 @@ const toggle = () => {
     gap: var(--sp-10);
     cursor: pointer;
     width: fit-content;
-    margin-left: auto;
   }
 
   &__label {

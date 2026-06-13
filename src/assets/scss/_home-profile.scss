@@ -50,6 +50,12 @@
       @media (min-width: 1024px) {
         max-width: var(--size-552);
       }
+
+      &_lesson {
+        background: transparent;
+        padding: 0;
+        gap: var(--sp-20);
+      }
     }
 
     &_glossary {
@@ -115,6 +121,48 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--sp-20);
+  margin-top: var(--sp-20);
+
+  &_lesson {
+    @media (max-width: 1023px) {
+      width: 100%;
+
+      .home-profile-info-table-item_student-name {
+        width: 100%;
+        justify-content: center;
+        margin-left: 0;
+        margin-right: 0;
+      }
+
+      .learning-product-badge {
+        align-self: flex-start;
+      }
+    }
+  }
+}
+
+.home-learning__card {
+  background: var(--white);
+  border-radius: var(--radius-20);
+  padding: var(--sp-40) var(--sp-60) var(--sp-38);
+  box-sizing: border-box;
+
+  @media (max-width: 1023px) {
+    padding: var(--sp-20);
+  }
+
+  &_header {
+    .home-learning__header {
+      margin-top: 0;
+
+      @media (max-width: 1023px) {
+        flex-direction: column;
+      }
+    }
+  }
+}
+
+.home-learning__header-progress {
   margin-top: var(--sp-20);
 }
 

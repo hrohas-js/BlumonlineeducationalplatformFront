@@ -1,12 +1,18 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-const props = defineProps<{
-  completedTopics: number
-  totalTopics: number
-  accessUntil: string | null
-  progressPercentOverride?: number
-}>()
+const props = withDefaults(
+  defineProps<{
+    completedTopics: number
+    totalTopics: number
+    accessUntil: string | null
+    progressPercentOverride?: number
+    fullWidth?: boolean
+  }>(),
+  {
+    fullWidth: false,
+  },
+)
 
 const progressPercent = computed(() => {
   if (props.progressPercentOverride !== undefined) {
@@ -30,6 +36,7 @@ const accessLabel = computed(() => props.accessUntil ?? 'бессрочно')
     </p>
     <div
       class="learning-course-access-progress__track"
+      :class="{ 'learning-course-access-progress__track_full': fullWidth }"
       role="progressbar"
       :aria-valuemin="0"
       :aria-valuemax="100"
@@ -75,6 +82,10 @@ const accessLabel = computed(() => props.accessUntil ?? 'бессрочно')
     border-radius: var(--radius-check);
     background: var(--fon-bloka);
     overflow: hidden;
+
+    &_full {
+      max-width: none;
+    }
   }
 
   &__fill {

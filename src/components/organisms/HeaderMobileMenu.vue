@@ -1,6 +1,11 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLogout } from '@/composables/useLogout'
+import HeaderNavSubmenuPanel from '@/components/molecules/HeaderNavSubmenuPanel.vue'
+import { USEFUL_ARTICLES_URL } from '@/constants/headerExternalLinks'
+import { TRAINING_ARCHIVE_NAV_ITEMS } from '@/constants/trainingArchiveNav'
+import { TRAINING_PROGRAMS_NAV_ITEMS } from '@/constants/trainingProgramsNav'
 
 type MenuIcon =
   | 'profile'
@@ -15,33 +20,64 @@ type MenuIcon =
   | 'review'
   | 'logout'
 
-type MenuItem = { label: string; icon: MenuIcon; to?: string; action?: 'logout' }
+type MenuItem = {
+  label: string
+  icon: MenuIcon
+  to?: string
+  href?: string
+  action?: 'logout' | 'support'
+}
 
 const items: MenuItem[] = [
   { label: 'Профиль', icon: 'profile', to: '/profile' },
   { label: 'Моё обучение', icon: 'learning', to: '/learning' },
   { label: 'Продление приобретённых курсов', icon: 'renewal', to: '/renewal' },
-  { label: 'Программы обучения', icon: 'programs', to: '/training-programs' },
-  { label: 'Архив обучения', icon: 'archive', to: '/training-archive' },
   { label: 'Глоссарий Blum', icon: 'glossary', to: '/glossary' },
-  { label: 'Полезные статьи', icon: 'articles', to: '/articles' },
+  { label: 'Полезные статьи', icon: 'articles', href: USEFUL_ARTICLES_URL },
   { label: 'О докторе', icon: 'about', to: '/about-doctor' },
-  { label: 'Тех. поддержка', icon: 'support', to: '/support' },
+  { label: 'Тех. поддержка', icon: 'support', action: 'support' },
   { label: 'Оставить отзыв', icon: 'review', to: '/review' },
   { label: 'Выйти', icon: 'logout', action: 'logout' },
 ]
 
 const emit = defineEmits<{
   (event: 'close'): void
+  (event: 'open-support'): void
 }>()
 
 const router = useRouter()
 const { performLogout } = useLogout()
+const isProgramsOpen = ref(false)
+const isArchiveOpen = ref(false)
+
+const togglePrograms = () => {
+  isProgramsOpen.value = !isProgramsOpen.value
+}
+
+const toggleArchive = () => {
+  isArchiveOpen.value = !isArchiveOpen.value
+}
+
+const onProgramsNavigate = () => {
+  emit('close')
+}
+
+const onArchiveNavigate = () => {
+  emit('close')
+}
 
 const onItemClick = async (item: MenuItem) => {
   emit('close')
   if (item.action === 'logout') {
     await performLogout()
+    return
+  }
+  if (item.action === 'support') {
+    emit('open-support')
+    return
+  }
+  if (item.href) {
+    window.open(item.href, '_blank', 'noopener,noreferrer')
     return
   }
   if (item.to) {
@@ -61,8 +97,9 @@ const onItemClick = async (item: MenuItem) => {
     </button>
 
     <ul class="header-mobile-menu__list">
-      <li v-for="item in items" :key="item.label">
-        <button type="button" class="header-mobile-menu__item" @click="onItemClick(item)">
+      <template v-for="(item, index) in items" :key="item.label">
+        <li>
+          <button type="button" class="header-mobile-menu__item" @click="onItemClick(item)">
           <span class="header-mobile-menu__icon" aria-hidden="true">
             <svg v-if="item.icon === 'profile'" width="25" height="25" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path fill-rule="evenodd" clip-rule="evenodd" d="M12.4999 1.30208C9.76726 1.30208 7.552 3.51734 7.552 6.25C7.552 8.98265 9.76726 11.1979 12.4999 11.1979C15.2326 11.1979 17.4478 8.98265 17.4478 6.25C17.4478 3.51734 15.2326 1.30208 12.4999 1.30208ZM9.1145 6.25C9.1145 4.38028 10.6302 2.86458 12.4999 2.86458C14.3696 2.86458 15.8853 4.38028 15.8853 6.25C15.8853 8.11971 14.3696 9.63541 12.4999 9.63541C10.6302 9.63541 9.1145 8.11971 9.1145 6.25Z" fill="#010307" />
@@ -107,7 +144,56 @@ const onItemClick = async (item: MenuItem) => {
           </span>
           <span class="header-mobile-menu__label">{{ item.label }}</span>
         </button>
-      </li>
+        </li>
+
+        <li v-if="index === 2" class="header-mobile-menu__programs">
+          <button
+            type="button"
+            class="header-mobile-menu__item header-mobile-menu__programs-trigger"
+            :aria-expanded="isProgramsOpen"
+            @click="togglePrograms"
+          >
+            <span class="header-mobile-menu__icon" aria-hidden="true">
+              <svg width="25" height="25" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M9.85862 2.9381C11.5489 2.14563 13.4508 2.14563 15.1411 2.9381L22.1111 6.20579C23.2073 6.71969 23.6978 7.83565 23.6978 8.85419C23.6978 9.87273 23.2073 10.9887 22.1111 11.5026L20.5728 12.2238V17.3181C20.5728 18.6234 19.9184 19.8836 18.727 20.5434C17.944 20.9771 16.9149 21.4991 15.832 21.9145C14.7619 22.3251 13.5769 22.6562 12.4999 22.6562C11.4229 22.6562 10.2379 22.3251 9.1678 21.9145C8.0849 21.4991 7.05586 20.9771 6.27282 20.5434C5.08144 19.8836 4.427 18.6234 4.427 17.3181V12.2237L2.8887 11.5025L2.8645 11.491V14.5833C2.8645 15.0148 2.51472 15.3646 2.08325 15.3646C1.65178 15.3646 1.302 15.0148 1.302 14.5833V8.85417C1.302 7.83562 1.79257 6.71964 2.88871 6.20575L9.85862 2.9381ZM5.9895 12.9563V17.3181C5.9895 18.1129 6.38403 18.8189 7.0298 19.1765C7.7763 19.5899 8.73615 20.0754 9.72746 20.4557C10.7315 20.8409 11.7061 21.0938 12.4999 21.0938C13.2938 21.0938 14.2683 20.8409 15.2724 20.4557C16.2637 20.0754 17.2235 19.5899 17.97 19.1765C18.6158 18.8189 19.0103 18.1129 19.0103 17.3181V12.9563L15.1412 14.7702C13.4509 15.5627 11.549 15.5627 9.85871 14.7702L5.9895 12.9563ZM3.55197 10.0878C3.13199 9.8909 2.8645 9.42123 2.8645 8.85414C2.8645 8.28705 3.13199 7.81738 3.55197 7.62049L10.5219 4.35284C11.792 3.75739 13.2078 3.75739 14.4779 4.35284L21.4479 7.62053C21.8679 7.81743 22.1353 8.2871 22.1353 8.85419C22.1353 9.42128 21.8678 9.89095 21.4479 10.0878L14.478 13.3555C13.2079 13.9509 11.7921 13.9509 10.522 13.3555L3.55197 10.0878Z" fill="#010307" />
+              </svg>
+            </span>
+            <span class="header-mobile-menu__label">Программы обучения</span>
+          </button>
+
+          <HeaderNavSubmenuPanel
+            v-if="isProgramsOpen"
+            variant="mobile"
+            :items="TRAINING_PROGRAMS_NAV_ITEMS"
+            icon-type="arrow"
+            @navigate="onProgramsNavigate"
+          />
+        </li>
+
+        <li v-if="index === 2" class="header-mobile-menu__archive">
+          <button
+            type="button"
+            class="header-mobile-menu__item header-mobile-menu__archive-trigger"
+            :aria-expanded="isArchiveOpen"
+            @click="toggleArchive"
+          >
+            <span class="header-mobile-menu__icon" aria-hidden="true">
+              <svg width="25" height="25" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M10.3595 1.30209H14.6405C16.0651 1.30206 17.2133 1.30205 18.1164 1.42347C19.0541 1.54952 19.8435 1.8192 20.4705 2.4462C21.0975 3.0732 21.3672 3.86265 21.4932 4.80026C21.6147 5.70335 21.6146 6.85161 21.6146 8.27618V16.7238C21.6146 18.1484 21.6147 19.2967 21.4932 20.1997C21.3672 21.1374 21.0975 21.9268 20.4705 22.5538C19.8435 23.1808 19.0541 23.4505 18.1164 23.5765C17.2133 23.698 16.0651 23.6979 14.6405 23.6979H10.3595C8.93497 23.6979 7.78672 23.698 6.88362 23.5765C5.94601 23.4505 5.15656 23.1808 4.52956 22.5538C3.90257 21.9268 3.63288 21.1374 3.50683 20.1997C3.46652 19.8999 3.43959 19.5731 3.42161 19.2181C3.3809 19.0896 3.37297 18.9492 3.40499 18.8092C3.38543 18.1926 3.38544 17.4991 3.38545 16.7238V8.27618C3.38543 6.8516 3.38541 5.70335 3.50683 4.80026C3.63288 3.86265 3.90257 3.0732 4.52956 2.4462C5.15656 1.8192 5.94601 1.54952 6.88362 1.42347C7.78671 1.30205 8.93496 1.30206 10.3595 1.30209ZM4.97582 19.0095C4.99165 19.378 5.01648 19.7021 5.05539 19.9915C5.15816 20.7559 5.34612 21.1607 5.63442 21.449C5.92271 21.7372 6.32747 21.9252 7.09182 22.028C7.87865 22.1338 8.92147 22.1354 10.4167 22.1354H14.5834C16.0786 22.1354 17.1214 22.1338 17.9082 22.028C18.6726 21.9252 19.0774 21.7372 19.3656 21.449C19.6539 21.1607 19.8419 20.7559 19.9447 19.9915C20.031 19.3496 20.048 18.5373 20.0513 17.4479H8.22688C7.20786 17.4479 6.85161 17.4546 6.57861 17.5278C5.82932 17.7286 5.23199 18.2855 4.97582 19.0095ZM20.0521 15.8854V8.33334C20.0521 6.83811 20.0505 5.79529 19.9447 5.00846C19.8419 4.24411 19.6539 3.83935 19.3656 3.55106C19.0774 3.26276 18.6726 3.0748 17.9082 2.97203C17.1214 2.86625 16.0786 2.86459 14.5834 2.86459H10.4167C9.47106 2.86459 8.70637 2.86525 8.07295 2.8925V15.8854C8.08401 15.8854 8.09511 15.8854 8.10626 15.8854C8.14588 15.8854 8.18608 15.8854 8.22688 15.8854H20.0521ZM6.51045 15.9494C6.39325 15.9671 6.2818 15.9897 6.1742 16.0185C5.72839 16.138 5.31486 16.3331 4.94795 16.5895V8.33334C4.94795 6.83811 4.94961 5.79529 5.05539 5.00846C5.15816 4.24411 5.34612 3.83935 5.63442 3.55106C5.83891 3.34656 6.102 3.19255 6.51045 3.08362V15.9494Z" fill="#010307" />
+              </svg>
+            </span>
+            <span class="header-mobile-menu__label">Архив обучения</span>
+          </button>
+
+          <HeaderNavSubmenuPanel
+            v-if="isArchiveOpen"
+            variant="mobile"
+            :items="TRAINING_ARCHIVE_NAV_ITEMS"
+            icon-type="lock"
+            @navigate="onArchiveNavigate"
+          />
+        </li>
+      </template>
     </ul>
   </aside>
 </template>
@@ -121,8 +207,8 @@ const onItemClick = async (item: MenuItem) => {
 
   &__close {
     position: absolute;
-    top: var(--sp-10);
-    right: var(--size-30);
+    top: var(--sp-20);
+    right: var(--sp-20);
     border: 0;
     background: transparent;
     padding: 0;
@@ -166,6 +252,11 @@ const onItemClick = async (item: MenuItem) => {
     font-size: clamp(20px, calc(20px + 5 * ((100vw - 430px) / 594)), 25px);
     color: var(--black);
     line-height: 1.2;
+  }
+
+  &__programs-trigger,
+  &__archive-trigger {
+    align-items: flex-start;
   }
 }
 </style>

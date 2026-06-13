@@ -11,7 +11,7 @@ const instagramGradientId = 'app-footer-instagram-gradient'
       <section class="app-footer__social" aria-label="Социальные сети">
         <a
           class="app-footer__social-link"
-          href="#"
+          href="https://t.me/Dr_Blum"
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Telegram"
@@ -27,7 +27,7 @@ const instagramGradientId = 'app-footer-instagram-gradient'
 
         <a
           class="app-footer__social-link"
-          href="#"
+          href="https://www.instagram.com/doktor_blum?igshid=NTc4MTIwNjQ2YQ%3D%3D"
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Instagram"
@@ -86,7 +86,7 @@ const instagramGradientId = 'app-footer-instagram-gradient'
 
         <a
           class="app-footer__social-link"
-          href="#"
+          href="https://vk.com/dr_blum"
           target="_blank"
           rel="noopener noreferrer"
           aria-label="ВКонтакте"
@@ -102,9 +102,9 @@ const instagramGradientId = 'app-footer-instagram-gradient'
       </section>
 
       <section class="app-footer__links" aria-label="Основные документы">
-        <a href="#" class="app-footer__link">#Новостная повестка</a>
-        <a href="#" class="app-footer__link">#Маршрут знаний</a>
-        <a href="#" class="app-footer__link">#Партнёрам</a>
+        <a href="https://www.doktorblum.ru/newsblum" target="_blank" class="app-footer__link">#Новостная повестка</a>
+        <a href="https://www.doktorblum.ru/courses/webinars/projects#beginning" target="_blank" class="app-footer__link">#Маршрут знаний</a>
+        <a href="https://t.me/Dr_Blum/661" target="_blank" class="app-footer__link">#Партнёрам</a>
       </section>
 
       <section class="app-footer__legal" aria-label="Юридическая информация">

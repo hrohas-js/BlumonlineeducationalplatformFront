@@ -14,6 +14,7 @@ import { ref, watch } from 'vue'
 import AppHeader from '@/components/organisms/AppHeader.vue'
 import AppFooter from '@/components/organisms/AppFooter.vue'
 import HeaderMobileMenu from '@/components/organisms/HeaderMobileMenu.vue'
+import TechnicalSupportModal from '@/components/organisms/TechnicalSupportModal.vue'
 import { BREAKPOINTS, useMediaQuery } from '@/composables/useMediaQuery'
 
 const props = withDefaults(defineProps<{ contentMode?: 'default' | 'boxed' }>(), {
@@ -21,6 +22,7 @@ const props = withDefaults(defineProps<{ contentMode?: 'default' | 'boxed' }>(),
 })
 
 const isHeaderMenuOpen = ref(false)
+const isSupportModalOpen = ref(false)
 const isMobileLg = useMediaQuery(BREAKPOINTS.lg)
 
 const toggleHeaderMenu = () => {
@@ -32,6 +34,14 @@ const closeHeaderMenu = () => {
   isHeaderMenuOpen.value = false
 }
 
+const openSupportModal = () => {
+  isSupportModalOpen.value = true
+}
+
+const closeSupportModal = () => {
+  isSupportModalOpen.value = false
+}
+
 watch(isMobileLg, (isMobile) => {
   if (!isMobile) closeHeaderMenu()
 })
@@ -39,7 +49,11 @@ watch(isMobileLg, (isMobile) => {
 
 <template>
   <div class="app-layout">
-    <AppHeader :is-header-menu-open="isHeaderMenuOpen" @toggle-header-menu="toggleHeaderMenu" />
+    <AppHeader
+      :is-header-menu-open="isHeaderMenuOpen"
+      @toggle-header-menu="toggleHeaderMenu"
+      @open-support="openSupportModal"
+    />
 
     <main class="app-layout__main" role="main">
       <div class="app-layout__main-stage">
@@ -57,12 +71,14 @@ watch(isMobileLg, (isMobile) => {
           class="app-layout__main-menu"
           :class="{ 'app-layout__main-menu_visible': isHeaderMenuOpen && isMobileLg }"
         >
-          <HeaderMobileMenu @close="closeHeaderMenu" />
+          <HeaderMobileMenu @close="closeHeaderMenu" @open-support="openSupportModal" />
         </section>
       </div>
     </main>
 
     <AppFooter />
+
+    <TechnicalSupportModal :is-open="isSupportModalOpen" @close="closeSupportModal" />
   </div>
 </template>
 

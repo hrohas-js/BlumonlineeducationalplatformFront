@@ -98,6 +98,16 @@ defineProps<{
     &__title {
       font-size: var(--size-13);
     }
+
+    &__player {
+      aspect-ratio: 16 / 9;
+      max-height: none;
+
+      :deep(.lesson-video-player) {
+        height: 100%;
+        aspect-ratio: unset;
+      }
+    }
   }
 }
 </style>

@@ -15,6 +15,7 @@ import LearningTopicStudyPanel from '@/components/organisms/LearningTopicStudyPa
 import LearningProductBadge from '@/components/molecules/LearningProductBadge.vue'
 import ProfileDetailsForm from '@/components/organisms/ProfileDetailsForm.vue'
 import HomeGlossaryPanel from '@/components/organisms/HomeGlossaryPanel.vue'
+import SupportContactsGrid from '@/components/molecules/SupportContactsGrid.vue'
 import type { ProfileSection } from '@/components/home/profile-menu.types'
 import type { LearningCourseDetail, LearningViewMode } from '@/types/learning-course'
 import {
@@ -468,18 +469,7 @@ watch(
 
             <h2 class="home-profile__review-title">Нам важно Ваше мнение:</h2>
 
-            <div class="home-profile__review-grid">
-              <p class="home-profile__review-label">Рабочая почта</p>
-              <a class="home-profile__review-mail-link" href="mailto:info@doktorblum.ru">info@doktorblum.ru</a>
-
-              <p class="home-profile__review-label">Телеграм</p>
-              <a class="home-profile__review-link home-profile__review-link_primary" href="#">Ссылка</a>
-
-              <p class="home-profile__review-label">Нельзаграм*</p>
-              <a class="home-profile__review-link home-profile__review-link_secondary" href="#">Ссылка</a>
-            </div>
-
-            <p class="home-profile__review-meta-note">(Meta* запрещена на территории РФ)</p>
+            <SupportContactsGrid />
           </article>
         </Transition>
 
@@ -546,6 +536,17 @@ watch(
 
     @media (max-width: 1023px) {
       justify-content: center;
+      :deep(.home-profile-info-table-item) {
+        display: flex;
+        margin-left: unset;
+        margin-right: unset;
+        &:nth-child(odd) {
+          justify-content: flex-end;
+        }
+        &:nth-child(even) {
+          justify-content: flex-start;
+        }
+      }
     }
   }
 
@@ -582,118 +583,6 @@ watch(
             ((100vw - var(--size-430)) / (var(--size-1024) - var(--size-430)))
         ),
         var(--size-20)
-      );
-    }
-  }
-
-  &__review-grid {
-    margin-top: var(--sp-40);
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: var(--sp-20);
-    row-gap: var(--sp-20);
-    align-items: center;
-  }
-
-  &__review-label {
-    margin: 0;
-    font-family: var(--font-family);
-    font-weight: var(--font-semi-bold);
-    font-size: var(--size-15);
-    color: var(--osnovnoy-tekst);
-
-    @media (max-width: 1023px) {
-      font-size: clamp(
-        var(--size-13),
-        calc(
-          var(--size-13) + (var(--size-15) - var(--size-13)) *
-            ((100vw - var(--size-430)) / (var(--size-1024) - var(--size-430)))
-        ),
-        var(--size-15)
-      );
-    }
-  }
-
-  &__review-mail-link {
-    justify-self: end;
-    font-family: var(--font-family);
-    font-weight: var(--font-semi-bold);
-    font-size: var(--size-15);
-    color: var(--osnovnoy-tekst);
-    text-decoration: none;
-
-    @media (max-width: 1023px) {
-      font-size: clamp(
-        var(--size-13),
-        calc(
-          var(--size-13) + (var(--size-15) - var(--size-13)) *
-            ((100vw - var(--size-430)) / (var(--size-1024) - var(--size-430)))
-        ),
-        var(--size-15)
-      );
-    }
-  }
-
-  &__review-link {
-    width: var(--size-180);
-    height: var(--size-38);
-    box-sizing: border-box;
-    justify-self: end;
-    border-radius: var(--radius-10);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--sp-10) var(--sp-60);
-    font-family: var(--font-family);
-    font-weight: var(--font-semi-bold);
-    font-size: var(--size-15);
-    text-align: center;
-    text-decoration: none;
-
-    @media (max-width: 1023px) {
-      width: var(--size-132);
-      height: var(--size-30);
-      padding: var(--size-7) var(--size-40);
-      font-size: clamp(
-        var(--size-13),
-        calc(
-          var(--size-13) + (var(--size-15) - var(--size-13)) *
-            ((100vw - var(--size-430)) / (var(--size-1024) - var(--size-430)))
-        ),
-        var(--size-15)
-      );
-    }
-
-    &_primary {
-      background: var(--dopolnitelnyy-tekst);
-      border: none;
-      color: var(--fon-bloka);
-    }
-
-    &_secondary {
-      border: var(--border-2) solid var(--dopolnitelnyy-tekst);
-      background: var(--fon-bloka);
-      color: var(--osnovnoy-tekst);
-    }
-  }
-
-  &__review-meta-note {
-    margin: var(--sp-40) 0 0;
-    font-family: var(--font-family);
-    font-weight: var(--font-regular);
-    font-size: var(--size-15);
-    text-align: center;
-    color: var(--osnovnoy-tekst);
-
-    @media (max-width: 1023px) {
-      margin-top: var(--sp-20);
-      font-size: clamp(
-        var(--size-10),
-        calc(
-          var(--size-10) + (var(--size-15) - var(--size-10)) *
-            ((100vw - var(--size-430)) / (var(--size-1024) - var(--size-430)))
-        ),
-        var(--size-15)
       );
     }
   }

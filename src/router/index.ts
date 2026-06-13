@@ -111,12 +111,6 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: false, stubTitle: 'Архив обучения' },
   },
   {
-    path: '/articles',
-    name: 'articles',
-    component: ContentStubPage,
-    meta: { requiresAuth: false, stubTitle: 'Полезные статьи' },
-  },
-  {
     path: '/about-doctor',
     name: 'about-doctor',
     component: AboutDoctorPage,

@@ -53,7 +53,7 @@ const toneStyle = computed<Record<string, string>>(() => ({
   align-items: center;
   justify-content: center;
   border: var(--border-2) solid var(--home-profile-info-table-item-tone);
-  border-radius: var(--radius-10);
+  border-radius: 32px;
   padding: var(--sp-10);
   background-color: transparent;
   font-family: var(--font-family);

@@ -38,13 +38,23 @@ const speedMenuRef = ref<HTMLElement | null>(null)
 const qualityMenuRef = ref<HTMLElement | null>(null)
 const volumeWrapRef = ref<HTMLElement | null>(null)
 
+type OverlayFeedback = 'play' | 'pause' | 'rewind' | 'forward' | null
+
+const VOLUME_CURVE_EXP = 3
+const DOUBLE_TAP_MS = 300
+const TAP_ZONE_LEFT = 0.4
+const TAP_ZONE_RIGHT = 0.6
+const TAP_X_TOLERANCE = 0.15
+const OVERLAY_HIDE_MS = 800
+
 const paused = ref(true)
 const currentTime = ref(0)
 const duration = ref(0)
 const volume = ref(1)
+const volumeBeforeMute = ref(1)
 const muted = ref(false)
 const playbackRate = ref(1)
-const isHovering = ref(false)
+const overlayFeedback = ref<OverlayFeedback>(null)
 const openMenu = ref<'speed' | 'quality' | null>(null)
 const volumePopoverOpen = ref(false)
 const fullscreenHint = ref(false)
@@ -84,7 +94,51 @@ const speedLabel = computed(() => {
   return `${String(r).replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1')}х`
 })
 
+const volumeSliderPct = computed(() => {
+  if (muted.value) return 0
+  return volumeToSliderRatio(volume.value) * 100
+})
+
 let hintTimer: ReturnType<typeof setTimeout> | null = null
+let overlayTimer: ReturnType<typeof setTimeout> | null = null
+let singleTapTimer: ReturnType<typeof setTimeout> | null = null
+let lastTapAt = 0
+let lastTapX = 0
+
+function sliderRatioToVolume(ratio: number): number {
+  return Math.pow(ratio, VOLUME_CURVE_EXP)
+}
+
+function volumeToSliderRatio(vol: number): number {
+  return Math.pow(vol, 1 / VOLUME_CURVE_EXP)
+}
+
+function clearOverlayTimers() {
+  if (overlayTimer) {
+    clearTimeout(overlayTimer)
+    overlayTimer = null
+  }
+  if (singleTapTimer) {
+    clearTimeout(singleTapTimer)
+    singleTapTimer = null
+  }
+}
+
+function showOverlayFeedback(type: OverlayFeedback) {
+  overlayFeedback.value = type
+  if (overlayTimer) clearTimeout(overlayTimer)
+  overlayTimer = setTimeout(() => {
+    overlayFeedback.value = null
+    overlayTimer = null
+  }, OVERLAY_HIDE_MS)
+}
+
+function handleSingleTap() {
+  const v = videoRef.value
+  const wasPaused = v?.paused ?? true
+  togglePlay()
+  showOverlayFeedback(wasPaused ? 'play' : 'pause')
+}
 
 function formatTime(sec: number): string {
   if (!Number.isFinite(sec) || sec < 0) return '0:00'
@@ -106,6 +160,9 @@ function syncFromVideo() {
   volume.value = v.volume
   muted.value = v.muted
   playbackRate.value = v.playbackRate
+  if (!v.muted && v.volume > 0) {
+    volumeBeforeMute.value = v.volume
+  }
 }
 
 function togglePlay() {
@@ -168,8 +225,15 @@ function setVolumeFromClientY(clientY: number) {
   if (!el || !v) return
   const rect = el.getBoundingClientRect()
   const ratio = Math.min(1, Math.max(0, (rect.bottom - clientY) / rect.height))
-  v.volume = ratio
-  v.muted = ratio === 0
+  if (ratio === 0) {
+    v.muted = true
+    v.volume = 0
+  } else {
+    const vol = sliderRatioToVolume(ratio)
+    v.volume = vol
+    v.muted = false
+    volumeBeforeMute.value = vol
+  }
   volume.value = v.volume
   muted.value = v.muted
 }
@@ -198,8 +262,73 @@ function onVolumeTrackPointerUp(e: PointerEvent) {
 function toggleMute() {
   const v = videoRef.value
   if (!v) return
-  v.muted = !v.muted
+  if (v.muted) {
+    v.muted = false
+    v.volume = Math.max(volumeBeforeMute.value, 0.05)
+  } else {
+    if (v.volume > 0) volumeBeforeMute.value = v.volume
+    v.muted = true
+  }
+  volume.value = v.volume
   muted.value = v.muted
+}
+
+function toggleVolumePopover() {
+  volumePopoverOpen.value = !volumePopoverOpen.value
+}
+
+function onVolumeWrapMouseEnter() {
+  if (window.matchMedia('(hover: hover)').matches) {
+    volumePopoverOpen.value = true
+  }
+}
+
+function onVolumeWrapMouseLeave() {
+  if (window.matchMedia('(hover: hover)').matches) {
+    volumePopoverOpen.value = false
+  }
+}
+
+function onVideoAreaPointerUp(e: PointerEvent) {
+  if (e.pointerType === 'mouse' && e.button !== 0) return
+
+  const root = rootRef.value
+  if (!root) return
+
+  const rect = root.getBoundingClientRect()
+  const xRatio = (e.clientX - rect.left) / rect.width
+  const now = Date.now()
+
+  const isDoubleTap =
+    now - lastTapAt < DOUBLE_TAP_MS && Math.abs(xRatio - lastTapX) < TAP_X_TOLERANCE
+
+  if (isDoubleTap) {
+    if (singleTapTimer) {
+      clearTimeout(singleTapTimer)
+      singleTapTimer = null
+    }
+    lastTapAt = 0
+
+    if (xRatio < TAP_ZONE_LEFT) {
+      seekBy(-15)
+      showOverlayFeedback('rewind')
+    } else if (xRatio > TAP_ZONE_RIGHT) {
+      seekBy(15)
+      showOverlayFeedback('forward')
+    } else {
+      handleSingleTap()
+    }
+    return
+  }
+
+  lastTapAt = now
+  lastTapX = xRatio
+
+  if (singleTapTimer) clearTimeout(singleTapTimer)
+  singleTapTimer = setTimeout(() => {
+    singleTapTimer = null
+    handleSingleTap()
+  }, DOUBLE_TAP_MS)
 }
 
 function setPlaybackRate(rate: number) {
@@ -289,7 +418,7 @@ function onDocumentClick(e: MouseEvent) {
 function onKeydown(e: KeyboardEvent) {
   if (e.code === 'Space' || e.code === 'KeyK') {
     e.preventDefault()
-    togglePlay()
+    handleSingleTap()
     return
   }
   if (e.code === 'ArrowLeft') {
@@ -340,6 +469,7 @@ onUnmounted(() => {
   document.removeEventListener('pointerdown', onDocumentPointerDown, true)
   document.removeEventListener('click', onDocumentClick, true)
   if (hintTimer) clearTimeout(hintTimer)
+  clearOverlayTimers()
 })
 </script>
 
@@ -350,8 +480,6 @@ onUnmounted(() => {
     tabindex="0"
     role="region"
     aria-label="Видеоплеер урока"
-    @mouseenter="isHovering = true"
-    @mouseleave="isHovering = false"
     @keydown="onKeydown"
   >
     <video
@@ -364,7 +492,6 @@ onUnmounted(() => {
       preload="metadata"
       disablepictureinpicture
       controlslist="nodownload noremoteplayback"
-      @click.prevent.stop="togglePlay"
       @play="syncFromVideo"
       @pause="syncFromVideo"
       @timeupdate="syncFromVideo"
@@ -383,16 +510,16 @@ onUnmounted(() => {
 
     <div
       class="lesson-video-player__overlay"
-      :class="{ 'lesson-video-player__overlay_active': !paused || isHovering }"
       aria-hidden="true"
-      @click.self="togglePlay"
+      @pointerup="onVideoAreaPointerUp"
     >
-      <div class="lesson-video-player__center" @click.self="togglePlay">
+      <div class="lesson-video-player__center">
         <button
           type="button"
           class="lesson-video-player__skip lesson-video-player__skip_back"
+          :class="{ 'lesson-video-player__skip_visible': overlayFeedback === 'rewind' }"
           aria-label="Назад на 15 секунд"
-          @click.stop="seekBy(-15)"
+          tabindex="-1"
         >
           <font-awesome-icon :icon="faRotateLeft" class="lesson-video-player__skip-icon" />
           <span class="lesson-video-player__skip-num">15</span>
@@ -401,17 +528,22 @@ onUnmounted(() => {
         <button
           type="button"
           class="lesson-video-player__play-big"
+          :class="{
+            'lesson-video-player__play-big_visible':
+              overlayFeedback === 'play' || overlayFeedback === 'pause',
+          }"
           :aria-label="paused ? 'Воспроизвести' : 'Пауза'"
-          @click.stop="togglePlay"
+          tabindex="-1"
         >
-          <font-awesome-icon :icon="paused ? faPlay : faPause" />
+          <font-awesome-icon :icon="overlayFeedback === 'play' ? faPlay : faPause" />
         </button>
 
         <button
           type="button"
           class="lesson-video-player__skip lesson-video-player__skip_forward"
+          :class="{ 'lesson-video-player__skip_visible': overlayFeedback === 'forward' }"
           aria-label="Вперёд на 15 секунд"
-          @click.stop="seekBy(15)"
+          tabindex="-1"
         >
           <font-awesome-icon :icon="faRotateRight" class="lesson-video-player__skip-icon" />
           <span class="lesson-video-player__skip-num">15</span>
@@ -456,10 +588,8 @@ onUnmounted(() => {
           <div
             ref="volumeWrapRef"
             class="lesson-video-player__volume-wrap"
-            @mouseenter="volumePopoverOpen = true"
-            @mouseleave="volumePopoverOpen = false"
-            @focusin="volumePopoverOpen = true"
-            @focusout="volumePopoverOpen = false"
+            @mouseenter="onVolumeWrapMouseEnter"
+            @mouseleave="onVolumeWrapMouseLeave"
           >
             <div
               v-show="volumePopoverOpen"
@@ -476,18 +606,28 @@ onUnmounted(() => {
               >
                 <div
                   class="lesson-video-player__volume-fill"
-                  :style="{ height: `${muted ? 0 : volume * 100}%` }"
+                  :style="{ height: `${volumeSliderPct}%` }"
                 />
               </div>
             </div>
             <button
               type="button"
               class="lesson-video-player__icon-btn lesson-video-player__icon-btn_volume"
+              aria-label="Громкость"
+              :aria-expanded="volumePopoverOpen"
+              @click.stop="toggleVolumePopover"
+            >
+              <font-awesome-icon :icon="faVolumeHigh" />
+            </button>
+            <button
+              type="button"
+              class="lesson-video-player__icon-btn lesson-video-player__icon-btn_mute"
+              :class="{ 'lesson-video-player__icon-btn_mute_active': muted }"
               :aria-label="muted ? 'Включить звук' : 'Выключить звук'"
               :aria-pressed="muted"
-              @click="toggleMute"
+              @click.stop="toggleMute"
             >
-              <font-awesome-icon :icon="muted ? faVolumeXmark : faVolumeHigh" />
+              <font-awesome-icon :icon="faVolumeXmark" />
             </button>
           </div>
         </div>
@@ -654,18 +794,12 @@ $lesson-player-chrome-bg: #010307;
   &__overlay {
     position: absolute;
     inset: 0;
+    bottom: 49px;
     display: flex;
     align-items: center;
     justify-content: center;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.2s ease;
+    pointer-events: auto;
     z-index: 2;
-
-    &_active {
-      opacity: 1;
-      pointer-events: auto;
-    }
   }
 
   &__center {
@@ -688,16 +822,19 @@ $lesson-player-chrome-bg: #010307;
     border-radius: 50%;
     background: transparent;
     color: var(--white);
-    cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease;
+    cursor: default;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      opacity 0.2s ease,
+      visibility 0.2s ease,
+      background 0.15s ease,
+      border-color 0.15s ease;
 
-    &:hover {
-      background: rgba(255, 255, 255, 0.08);
-    }
-
-    &:focus-visible {
-      outline: 2px solid var(--text-accent);
-      outline-offset: 2px;
+    &_visible {
+      opacity: 1;
+      visibility: visible;
     }
   }
 
@@ -728,16 +865,18 @@ $lesson-player-chrome-bg: #010307;
     background: rgba(255, 255, 255, 0.06);
     color: var(--white);
     font-size: 28px;
-    cursor: pointer;
-    transition: background 0.15s ease;
+    cursor: default;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      opacity 0.2s ease,
+      visibility 0.2s ease,
+      background 0.15s ease;
 
-    &:hover {
-      background: rgba(255, 255, 255, 0.12);
-    }
-
-    &:focus-visible {
-      outline: 2px solid var(--text-accent);
-      outline-offset: 3px;
+    &_visible {
+      opacity: 1;
+      visibility: visible;
     }
   }
 
@@ -829,6 +968,18 @@ $lesson-player-chrome-bg: #010307;
       font-size: 17px;
     }
 
+    &_mute {
+      width: 20px;
+      height: 20px;
+      font-size: 14px;
+      opacity: 0.55;
+
+      &_active {
+        opacity: 1;
+        color: var(--text-accent);
+      }
+    }
+
     &_gear {
       border-radius: 5px;
     }
@@ -857,6 +1008,7 @@ $lesson-player-chrome-bg: #010307;
     position: relative;
     display: flex;
     align-items: center;
+    gap: 6px;
   }
 
   &__volume-pop {
@@ -958,5 +1110,33 @@ $lesson-player-chrome-bg: #010307;
 
 :fullscreen .lesson-video-player__video {
   object-fit: contain;
+}
+
+@media (max-width: 1023px) {
+  .lesson-video-player {
+    &__overlay {
+      bottom: 41px;
+    }
+
+    &__bar {
+      min-height: 36px;
+      padding: 6px 12px;
+      gap: var(--sp-8);
+    }
+
+    &__bar-left,
+    &__bar-right {
+      gap: 10px;
+    }
+
+    &__time {
+      font-size: 11px;
+    }
+
+    &__speed-trigger {
+      font-size: 11px;
+      min-width: 24px;
+    }
+  }
 }
 </style>

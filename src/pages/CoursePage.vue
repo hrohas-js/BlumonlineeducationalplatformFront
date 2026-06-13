@@ -5,6 +5,7 @@ import AppLayout from '@/components/layouts/AppLayout.vue'
 import StudentProfileLayout from '@/components/layouts/StudentProfileLayout.vue'
 import HomeProfileInfoTableItem from '@/components/atoms/HomeProfileInfoTableItem.vue'
 import LearningProductBadge from '@/components/molecules/LearningProductBadge.vue'
+import LearningCourseLessonHeader from '@/components/organisms/LearningCourseLessonHeader.vue'
 import LearningCourseOverviewPanel from '@/components/organisms/LearningCourseOverviewPanel.vue'
 import LearningTopicStudyPanel from '@/components/organisms/LearningTopicStudyPanel.vue'
 import { productsService } from '@/services/api/endpoints/products'
@@ -147,13 +148,28 @@ watch(
     <StudentProfileLayout active-section="learning">
       <div v-if="loading" class="home-profile__loading">Загружаем курс…</div>
 
-      <article v-else-if="learningDetail" class="home-profile__panel home-profile__panel_learning">
+      <article
+        v-else-if="learningDetail"
+        class="home-profile__panel home-profile__panel_learning"
+        :class="{ 'home-profile__panel_learning_lesson': selectedTopicId }"
+      >
         <button type="button" class="home-learning__back" @click="goBack">
           <span aria-hidden="true">←</span>
           {{ lessonIdParam ? 'К темам курса' : 'К моим курсам' }}
         </button>
 
-        <header class="home-learning__header">
+        <LearningCourseLessonHeader
+          v-if="selectedTopicId"
+          :student-name="authStore.studentNameBadgeLabel"
+          :course-title="learningDetail.title"
+          :course-category="learningDetail.category"
+          :completed-topics="learningDetail.completedTopics"
+          :total-topics="learningDetail.totalTopics"
+          :access-until="learningDetail.accessUntil"
+          :progress-percent-override="learningDetail.progressPercentOverride"
+        />
+
+        <header v-else-if="isOverview" class="home-learning__header">
           <HomeProfileInfoTableItem
             :label="authStore.studentNameBadgeLabel"
             tone="#178ef0"
@@ -177,6 +193,7 @@ watch(
           :course="learningDetail"
           :selected-topic-id="selectedTopicId"
           :completing="completing"
+          lesson-layout
           @next-topic="onNextTopic"
           @complete-topic="onCompleteTopic"
         />

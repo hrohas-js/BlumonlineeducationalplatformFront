@@ -7,13 +7,19 @@ import LearningTopicVideoBlock from '@/components/molecules/LearningTopicVideoBl
 import { getNextTopicId } from '@/utils/mapProductToLearningDetail'
 import type { LearningCourseDetail } from '@/types/learning-course'
 
-const props = defineProps<{
-  course: LearningCourseDetail
-  selectedTopicId: string
-  videoLoadingById?: Record<string, boolean>
-  videoErrorById?: Record<string, string>
-  completing?: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    course: LearningCourseDetail
+    selectedTopicId: string
+    videoLoadingById?: Record<string, boolean>
+    videoErrorById?: Record<string, string>
+    completing?: boolean
+    lessonLayout?: boolean
+  }>(),
+  {
+    lessonLayout: false,
+  },
+)
 
 const emit = defineEmits<{
   'next-topic': [topicId: string]
@@ -49,8 +55,16 @@ const goNextTopic = () => {
 </script>
 
 <template>
-  <section v-if="topic" class="learning-topic-study-panel">
+  <section
+    v-if="topic"
+    class="learning-topic-study-panel"
+    :class="{
+      'home-learning__card': lessonLayout,
+      'learning-topic-study-panel_lesson': lessonLayout,
+    }"
+  >
     <LearningCourseAccessProgress
+      v-if="!lessonLayout"
       :completed-topics="course.completedTopics"
       :total-topics="course.totalTopics"
       :access-until="course.accessUntil"
@@ -112,6 +126,10 @@ const goNextTopic = () => {
   flex-direction: column;
   gap: var(--sp-20);
   margin-top: var(--sp-20);
+
+  &_lesson {
+    margin-top: 0;
+  }
 
   &__header {
     display: flex;
@@ -175,9 +193,6 @@ const goNextTopic = () => {
 
 @media (max-width: 1023px) {
   .learning-topic-study-panel {
-    &__header {
-      flex-direction: column;
-    }
 
     &__title {
       font-size: var(--size-13);

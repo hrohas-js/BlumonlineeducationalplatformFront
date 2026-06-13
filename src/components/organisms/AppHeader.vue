@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
+import HeaderNavDropdown from '@/components/molecules/HeaderNavDropdown.vue'
+import { USEFUL_ARTICLES_URL } from '@/constants/headerExternalLinks'
+import { TRAINING_ARCHIVE_NAV_ITEMS } from '@/constants/trainingArchiveNav'
+import { TRAINING_PROGRAMS_NAV_ITEMS } from '@/constants/trainingProgramsNav'
 
 defineProps<{
   isHeaderMenuOpen?: boolean
@@ -7,10 +11,20 @@ defineProps<{
 
 const emit = defineEmits<{
   (event: 'toggle-header-menu'): void
+  (event: 'open-support'): void
 }>()
 
 const headerEl = ref<HTMLElement | null>(null)
 const shouldDisableSticky = ref(false)
+const openNavDropdown = ref<'programs' | 'archive' | null>(null)
+
+const onNavDropdownToggle = (id: 'programs' | 'archive') => {
+  openNavDropdown.value = openNavDropdown.value === id ? null : id
+}
+
+const closeNavDropdown = () => {
+  openNavDropdown.value = null
+}
 
 const updateStickyVsFooter = () => {
   const headerNode = headerEl.value
@@ -41,16 +55,39 @@ onUnmounted(() => {
     </RouterLink>
 
     <nav class="app-header__nav" aria-label="Основная навигация">
-      <RouterLink to="/training-programs" class="app-header__nav-link">Программы обучения</RouterLink>
-      <RouterLink to="/training-archive" class="app-header__nav-link">Архив обучения</RouterLink>
-      <RouterLink to="/articles" class="app-header__nav-link">Полезные статьи</RouterLink>
+      <HeaderNavDropdown
+        label="Программы обучения"
+        :items="TRAINING_PROGRAMS_NAV_ITEMS"
+        icon-type="arrow"
+        :is-open="openNavDropdown === 'programs'"
+        @toggle="onNavDropdownToggle('programs')"
+        @close="closeNavDropdown"
+      />
+      <HeaderNavDropdown
+        label="Архив обучения"
+        :items="TRAINING_ARCHIVE_NAV_ITEMS"
+        icon-type="lock"
+        :is-open="openNavDropdown === 'archive'"
+        @toggle="onNavDropdownToggle('archive')"
+        @close="closeNavDropdown"
+      />
+      <a
+        :href="USEFUL_ARTICLES_URL"
+        class="app-header__nav-link"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Полезные статьи
+      </a>
       <RouterLink to="/about-doctor" class="app-header__nav-link app-header__nav-link_one-line">
         О докторе
       </RouterLink>
     </nav>
 
     <div class="app-header__support">
-      <button type="button" class="app-header__support-button">Нужна помощь?</button>
+      <button type="button" class="app-header__support-button" @click="emit('open-support')">
+        Нужна помощь?
+      </button>
     </div>
 
     <div class="app-header__mobile" aria-label="Мобильная навигация">

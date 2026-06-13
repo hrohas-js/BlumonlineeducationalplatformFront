@@ -12,12 +12,15 @@
  * - initializeAuth() выполняется в bootstrap/auth.ts из main.ts
  */
 import { computed } from 'vue'
+import { useCourseDeadlineAlert } from '@/composables/useCourseDeadlineAlert'
 import { useNotification } from '@/composables/useNotification'
 import { useAuthStore } from '@/stores/auth'
+import CourseDeadlineAlertModal from '@/components/organisms/CourseDeadlineAlertModal.vue'
 import NotificationContainer from '@/components/ui/NotificationContainer.vue'
 
 const { notifications, dismiss } = useNotification()
 const authStore = useAuthStore()
+const { isModalOpen, currentAlert, onClose, onRenew } = useCourseDeadlineAlert()
 const showBootLoader = computed(() => !authStore.sessionInitialized)
 </script>
 
@@ -33,6 +36,13 @@ const showBootLoader = computed(() => !authStore.sessionInitialized)
         </Transition>
       </RouterView>
       <NotificationContainer :notifications="notifications" @dismiss="dismiss" />
+      <CourseDeadlineAlertModal
+        :is-open="isModalOpen"
+        :course-title="currentAlert?.title ?? ''"
+        :days-left="currentAlert?.daysLeft ?? 0"
+        @close="onClose"
+        @renew="onRenew"
+      />
     </template>
   </div>
 </template>
