@@ -548,6 +548,10 @@ watch(
         }
       }
     }
+
+    button {
+      border-radius: var(--radius-xl);
+    }
   }
 
   &__panel-title {

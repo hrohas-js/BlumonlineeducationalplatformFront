@@ -86,7 +86,6 @@ withDefaults(
   }
 
   &__mail-link {
-    justify-self: end;
     font-family: var(--font-family);
     font-weight: var(--font-semi-bold);
     font-size: var(--size-15);

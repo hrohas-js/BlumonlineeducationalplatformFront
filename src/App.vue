@@ -13,14 +13,22 @@
  */
 import { computed } from 'vue'
 import { useCourseDeadlineAlert } from '@/composables/useCourseDeadlineAlert'
+import { useLogout } from '@/composables/useLogout'
 import { useNotification } from '@/composables/useNotification'
 import { useAuthStore } from '@/stores/auth'
+import AdminLogoutConfirmModal from '@/components/organisms/AdminLogoutConfirmModal.vue'
 import CourseDeadlineAlertModal from '@/components/organisms/CourseDeadlineAlertModal.vue'
 import NotificationContainer from '@/components/ui/NotificationContainer.vue'
 
 const { notifications, dismiss } = useNotification()
 const authStore = useAuthStore()
 const { isModalOpen, currentAlert, onClose, onRenew } = useCourseDeadlineAlert()
+const {
+  isLogoutModalOpen,
+  logoutLoading,
+  closeLogoutModal,
+  confirmLogout,
+} = useLogout()
 const showBootLoader = computed(() => !authStore.sessionInitialized)
 </script>
 
@@ -42,6 +50,12 @@ const showBootLoader = computed(() => !authStore.sessionInitialized)
         :days-left="currentAlert?.daysLeft ?? 0"
         @close="onClose"
         @renew="onRenew"
+      />
+      <AdminLogoutConfirmModal
+        :is-open="isLogoutModalOpen"
+        :confirm-loading="logoutLoading"
+        @close="closeLogoutModal"
+        @confirm="confirmLogout"
       />
     </template>
   </div>

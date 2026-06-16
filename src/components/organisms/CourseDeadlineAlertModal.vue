@@ -122,8 +122,6 @@ onUnmounted(() => {
   justify-content: center;
   width: 31px;
   height: 31px;
-  border: 1px solid #010307;
-  border-radius: var(--radius-10);
   box-sizing: border-box;
 }
 

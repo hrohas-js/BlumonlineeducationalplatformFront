@@ -4,11 +4,17 @@ import LearningCollapsibleChip from '@/components/molecules/LearningCollapsibleC
 import LearningTopicFilesList from '@/components/molecules/LearningTopicFilesList.vue'
 import type { LearningTopicVideo } from '@/types/learning-course'
 
-defineProps<{
-  video: LearningTopicVideo
-  loading?: boolean
-  error?: string
-}>()
+withDefaults(
+  defineProps<{
+    video: LearningTopicVideo
+    loading?: boolean
+    error?: string
+    lessonLayout?: boolean
+  }>(),
+  {
+    lessonLayout: false,
+  },
+)
 </script>
 
 <template>
@@ -31,7 +37,7 @@ defineProps<{
     </section>
 
     <LearningCollapsibleChip
-      v-if="video.files.length > 0"
+      v-if="video.files.length > 0 && !lessonLayout"
       label="Учебный материал"
       variant="filled"
     >
@@ -63,6 +69,7 @@ defineProps<{
   }
 
   &__player {
+    position: relative;
     width: 100%;
     aspect-ratio: 488 / 306;
     max-height: 306px;
@@ -71,6 +78,11 @@ defineProps<{
     background: var(--osnovnoy-tekst);
     display: flex;
     flex-direction: column;
+
+    :deep(.lesson-video-player) {
+      height: 100%;
+      aspect-ratio: unset;
+    }
   }
 
   &__placeholder {
@@ -102,11 +114,6 @@ defineProps<{
     &__player {
       aspect-ratio: 16 / 9;
       max-height: none;
-
-      :deep(.lesson-video-player) {
-        height: 100%;
-        aspect-ratio: unset;
-      }
     }
   }
 }

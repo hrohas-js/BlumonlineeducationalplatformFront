@@ -9,7 +9,7 @@ defineProps<{
 }>()
 
 const router = useRouter()
-const { performLogout, logoutLoading } = useLogout()
+const { openLogoutModal, logoutLoading } = useLogout()
 
 const onSelectSection = (section: ProfileSection) => {
   void router.push({ name: 'home-section', params: { section } })
@@ -27,7 +27,7 @@ const onSelectSection = (section: ProfileSection) => {
         :active-section="activeSection"
         :logout-loading="logoutLoading"
         @select-section="onSelectSection"
-        @logout="performLogout"
+        @logout="openLogoutModal"
       />
     </div>
   </div>

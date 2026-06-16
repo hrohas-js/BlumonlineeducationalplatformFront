@@ -46,7 +46,7 @@ const emit = defineEmits<{
 }>()
 
 const router = useRouter()
-const { performLogout } = useLogout()
+const { openLogoutModal } = useLogout()
 const isProgramsOpen = ref(false)
 const isArchiveOpen = ref(false)
 
@@ -69,7 +69,7 @@ const onArchiveNavigate = () => {
 const onItemClick = async (item: MenuItem) => {
   emit('close')
   if (item.action === 'logout') {
-    await performLogout()
+    openLogoutModal()
     return
   }
   if (item.action === 'support') {

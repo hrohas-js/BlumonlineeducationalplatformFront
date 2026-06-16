@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import LearningCourseAccessProgress from '@/components/molecules/LearningCourseAccessProgress.vue'
 import LearningCollapsibleChip from '@/components/molecules/LearningCollapsibleChip.vue'
 import LearningTopicCompleteToggle from '@/components/molecules/LearningTopicCompleteToggle.vue'
+import LearningTopicFilesList from '@/components/molecules/LearningTopicFilesList.vue'
 import LearningTopicVideoBlock from '@/components/molecules/LearningTopicVideoBlock.vue'
 import { getNextTopicId } from '@/utils/mapProductToLearningDetail'
 import type { LearningCourseDetail } from '@/types/learning-course'
@@ -41,6 +42,8 @@ watch(
 )
 
 const accessLabel = computed(() => topic.value?.accessUntil ?? 'бессрочно')
+
+const topicFiles = computed(() => topic.value?.videos.flatMap((video) => video.files) ?? [])
 
 const onCompleteChange = (value: boolean) => {
   topicCompleted.value = value
@@ -86,26 +89,51 @@ const goNextTopic = () => {
       </button>
     </header>
 
-    <LearningCollapsibleChip
-      v-if="topic.materialsHtml"
-      label="Учебный материал"
-      variant="filled"
-    >
-      <div class="learning-topic-study-panel__materials" v-html="topic.materialsHtml" />
-    </LearningCollapsibleChip>
+    <template v-if="lessonLayout">
+      <div
+        v-if="topic.materialsHtml"
+        class="learning-topic-study-panel__description"
+        v-html="topic.materialsHtml"
+      />
+      <p
+        v-else-if="topic.materialsText"
+        class="learning-topic-study-panel__description"
+      >
+        {{ topic.materialsText }}
+      </p>
 
-    <LearningCollapsibleChip
-      v-else-if="topic.materialsText"
-      label="Учебный материал"
-      variant="filled"
-    >
-      <p class="learning-topic-study-panel__materials">{{ topic.materialsText }}</p>
-    </LearningCollapsibleChip>
+      <LearningCollapsibleChip
+        v-if="topicFiles.length > 0"
+        label="Учебный материал"
+        variant="filled"
+      >
+        <LearningTopicFilesList :files="topicFiles" />
+      </LearningCollapsibleChip>
+    </template>
+
+    <template v-else>
+      <LearningCollapsibleChip
+        v-if="topic.materialsHtml"
+        label="Учебный материал"
+        variant="filled"
+      >
+        <div class="learning-topic-study-panel__materials" v-html="topic.materialsHtml" />
+      </LearningCollapsibleChip>
+
+      <LearningCollapsibleChip
+        v-else-if="topic.materialsText"
+        label="Учебный материал"
+        variant="filled"
+      >
+        <p class="learning-topic-study-panel__materials">{{ topic.materialsText }}</p>
+      </LearningCollapsibleChip>
+    </template>
 
     <LearningTopicVideoBlock
       v-for="video in topic.videos"
       :key="video.id"
       :video="video"
+      :lesson-layout="lessonLayout"
       :loading="videoLoadingById?.[video.id]"
       :error="videoErrorById?.[video.id]"
     />
@@ -166,7 +194,7 @@ const goNextTopic = () => {
     flex-shrink: 0;
     border: var(--border-2) solid var(--dopolnitelnyy-tekst);
     border-radius: var(--radius-10);
-    padding: var(--sp-10);
+    padding: var(--sp-4) var(--sp-10);
     background: transparent;
     font-family: var(--font-family);
     font-weight: var(--font-medium);
@@ -176,12 +204,17 @@ const goNextTopic = () => {
     white-space: nowrap;
   }
 
-  &__materials {
+  &__materials,
+  &__description {
     font-family: var(--font-family);
     font-weight: var(--font-medium);
     font-size: var(--size-13);
     color: var(--osnovnoy-tekst);
     line-height: 1.5;
+  }
+
+  &__description {
+    margin: 0;
   }
 
   &__footer {

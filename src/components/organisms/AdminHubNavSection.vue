@@ -60,6 +60,10 @@ import { ADMIN_STUDENTS_SCOPE_ALL } from '@/constants/adminMaterials'
     display: flex;
     flex-direction: column;
     gap: var(--sp-20);
+
+    li {
+      width: fit-content;
+    }
   }
 
   &__link {
