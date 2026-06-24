@@ -53,7 +53,9 @@ watch(
       void router.replace({ name: 'admin-materials' })
       return
     }
-    const row = resolveAdminStudentRow(sid, stid)
+    const row =
+      adminStore.findAggregatedStudent(sid, stid) ??
+      resolveAdminStudentRow(sid, stid)
     if (!row) {
       void router.replace({ name: 'admin-materials-students', params: { sectionId: sid } })
     }

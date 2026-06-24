@@ -531,7 +531,7 @@ watch(
   &__learning-filters {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--sp-10);
+    gap: var(--sp-20);
     margin-top: var(--sp-40);
 
     @media (max-width: 1023px) {

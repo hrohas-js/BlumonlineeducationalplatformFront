@@ -9,10 +9,12 @@ withDefaults(
     placeholder: string
     as?: 'input' | 'textarea'
     withCheckbox?: boolean
+    readonly?: boolean
   }>(),
   {
     as: 'input',
     withCheckbox: false,
+    readonly: false,
   },
 )
 
@@ -47,6 +49,7 @@ const checkboxModel = true
           :placeholder="placeholder"
           :as="as"
           variant="modal"
+          :disabled="readonly"
           @update:model-value="emit('update:modelValue', $event)"
         />
       </div>
@@ -80,7 +83,8 @@ const checkboxModel = true
 
   &__input-wrap {
     position: relative;
-    display: inline-block;
+    display: block;
+    width: 100%;
 
     &_with-checkbox {
       :deep(.base-input__field_modal:not(.base-input__field_textarea)) {
@@ -107,6 +111,51 @@ const checkboxModel = true
 
   :deep(.base-input__field_modal::placeholder) {
     text-align: center;
+  }
+
+  @media (max-width: 1023px) {
+    grid-template-columns: minmax(90px, 35%) minmax(0, 1fr);
+    gap: var(--sp-12);
+
+    &__label {
+      white-space: normal;
+      line-height: 1.2;
+      align-self: center;
+    }
+
+    &__control,
+    &__input-wrap {
+      width: 100%;
+      min-width: 0;
+    }
+
+    :deep(.base-input__field_modal) {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    :deep(.base-input__field_modal.base-input__field_textarea) {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+    }
+  }
+
+  @media (max-width: 768px) {
+    &__label {
+      font-size: var(--size-10);
+    }
+
+    :deep(.base-input__field_modal) {
+      font-size: var(--size-10);
+    }
+
+    :deep(.base-input__field_modal.base-input__field_textarea) {
+      max-height: var(--size-100);
+      min-height: var(--size-100);
+    }
   }
 }
 </style>

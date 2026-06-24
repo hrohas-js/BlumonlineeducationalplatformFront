@@ -162,7 +162,9 @@ const onTopicTitleInput = (id: string, value: string) => {
             />
           </div>
 
-          <div class="admin-material-product-create-page__field-row">
+          <div
+            class="admin-material-product-create-page__field-row admin-material-product-create-page__field-row_multiline"
+          >
             <label
               class="admin-material-product-create-page__label"
               for="admin-material-product-create-description"
@@ -216,11 +218,13 @@ const onTopicTitleInput = (id: string, value: string) => {
           <div
             class="admin-material-product-create-page__field-row admin-material-product-create-page__field-row_notify"
           >
-            <AdminTopicNotificationCheckbox
-              v-model="notifyAllStudents"
-              :input-id="notifyCheckboxId"
-            />
-            <span class="admin-material-product-create-page__notify-text">Уведомить всех учеников</span>
+            <div class="admin-material-product-create-page__notify-group">
+              <AdminTopicNotificationCheckbox
+                v-model="notifyAllStudents"
+                :input-id="notifyCheckboxId"
+              />
+              <span class="admin-material-product-create-page__notify-text">Уведомить всех учеников</span>
+            </div>
           </div>
         </div>
 
@@ -260,46 +264,42 @@ const onTopicTitleInput = (id: string, value: string) => {
   }
 
   &__form {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: var(--sp-20);
-    width: 100%;
+    display: grid;
+    grid-template-columns: max-content 250px;
+    column-gap: var(--sp-20);
+    row-gap: var(--sp-20);
+    width: fit-content;
     max-width: 100%;
+    margin-inline: auto;
     box-sizing: border-box;
     margin-top: var(--sp-10);
+    align-items: center;
+    justify-items: stretch;
   }
 
   &__field-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: flex-end;
-    gap: var(--sp-20);
-    width: 100%;
-    max-width: min(540px, 100%);
+    display: contents;
     box-sizing: border-box;
 
     &_notify {
-      justify-content: flex-end;
-      flex-wrap: nowrap;
       margin-top: var(--sp-6);
-      gap: var(--sp-10);
-      align-items: center;
     }
   }
 
+  &__field-row_multiline > &__label {
+    align-self: start;
+    padding-top: 8px;
+  }
+
   &__add-topic-row {
-    display: flex;
-    justify-content: flex-end;
-    width: 100%;
-    max-width: min(540px, 100%);
+    display: contents;
     box-sizing: border-box;
   }
 
   &__label {
     @include font-main(600);
-    flex-shrink: 0;
+    grid-column: 1;
+    justify-self: end;
     font-size: var(--size-25);
     line-height: normal;
     color: var(--black);
@@ -308,6 +308,7 @@ const onTopicTitleInput = (id: string, value: string) => {
   }
 
   &__control {
+    grid-column: 2;
     box-sizing: border-box;
     width: 250px;
     max-width: 100%;
@@ -336,7 +337,9 @@ const onTopicTitleInput = (id: string, value: string) => {
 
   &__add-topic {
     @include font-main(600);
-    width: 250px;
+    grid-column: 2;
+    justify-self: start;
+    width: auto;
     max-width: 100%;
     padding: 0;
     border: none;
@@ -348,7 +351,7 @@ const onTopicTitleInput = (id: string, value: string) => {
     text-decoration: underline;
     text-underline-offset: 3px;
     cursor: pointer;
-    text-align: right;
+    text-align: left;
 
     &:focus-visible {
       outline: none;
@@ -359,6 +362,14 @@ const onTopicTitleInput = (id: string, value: string) => {
     &:hover {
       opacity: 0.85;
     }
+  }
+
+  &__notify-group {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: var(--sp-10);
   }
 
   &__notify-text {
@@ -376,6 +387,15 @@ const onTopicTitleInput = (id: string, value: string) => {
     width: auto;
     display: flex;
     justify-content: center;
+
+    :deep(.base-button_outline) {
+      border-radius: var(--radius-10);
+      border-color: #010307;
+      height: auto;
+      min-height: 0;
+      font-family: "Montserrat", sans-serif;
+      font-size: var(--size-25);
+    }
   }
 
   @media (max-width: 1023px) {
@@ -383,39 +403,49 @@ const onTopicTitleInput = (id: string, value: string) => {
       padding: var(--sp-24);
     }
 
-    &__field-row {
-      flex-direction: column;
-      align-items: stretch;
+    &__form {
+      grid-template-columns: 1fr;
+      width: 100%;
+    }
 
-      &_notify {
-        flex-direction: row;
-        justify-content: flex-start;
-      }
+    &__field-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      row-gap: var(--sp-8);
+    }
+
+    &__add-topic-row {
+      display: block;
     }
 
     &__label {
+      grid-column: 1;
+      justify-self: start;
       text-align: left;
-      width: 100%;
       white-space: normal;
     }
 
     &__control {
+      grid-column: 1;
       width: 100%;
-    }
-
-    &__add-topic-row {
-      justify-content: stretch;
     }
 
     &__add-topic {
+      grid-column: 1;
       width: 100%;
-      text-align: center;
+      text-align: left;
+    }
+
+    &__notify-group {
+      grid-column: 1;
+      justify-content: flex-start;
     }
   }
 
-  /* AdminDateField внутри col 250px */
+  /* AdminDateField во 2-й колонке общей сетки */
   &__field-row :deep(.admin-date-field.fluid),
   &__field-row :deep(.admin-date-field) {
+    grid-column: 2;
     width: 250px;
     max-width: 100%;
   }

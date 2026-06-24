@@ -41,31 +41,32 @@ async function onLogoutConfirm() {
 
 <template>
   <div class="admin-start-panel">
-    <HomeProfileInfoTableItem
-      class="admin-start-panel__badge"
-      :label="authStore.studentNameBadgeLabel"
-      tone="#178ef0"
-      is-student-name
-    />
-
     <div class="admin-start-panel__divider" aria-hidden="true" />
 
     <div class="admin-start-panel__profile">
       <AdminProfileEditSection />
     </div>
 
-    <div class="admin-start-panel__hub">
-      <AdminHubNavSection />
-    </div>
+    <div class="admin-start-panel__hub-column">
+      <div class="admin-start-panel__hub">
+        <HomeProfileInfoTableItem
+          class="admin-start-panel__hub-badge"
+          :label="authStore.studentNameBadgeLabel"
+          tone="#178ef0"
+          is-student-name
+        />
+        <AdminHubNavSection />
+      </div>
 
-    <BaseButton
-      class="admin-start-panel__logout"
-      :class="{ 'admin-start-panel__logout_active': isLogoutModalOpen }"
-      variant="outline"
-      size="medium"
-      text="Выйти"
-      @click="openLogoutModal"
-    />
+      <BaseButton
+        class="admin-start-panel__logout"
+        :class="{ 'admin-start-panel__logout_active': isLogoutModalOpen }"
+        variant="outline"
+        size="medium"
+        text="Выйти"
+        @click="openLogoutModal"
+      />
+    </div>
 
     <AdminLogoutConfirmModal
       :is-open="isLogoutModalOpen"
@@ -80,49 +81,59 @@ async function onLogoutConfirm() {
 .admin-start-panel {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: 1fr auto;
   column-gap: var(--sp-40);
   row-gap: var(--sp-20);
   min-height: 480px;
 
-  &__badge {
-    grid-column: 1 / -1;
-    justify-self: start;
+  &__hub-badge {
+    display: none;
   }
 
   &__divider {
     grid-column: 2;
-    grid-row: 2;
+    grid-row: 1 / -1;
     width: 0;
     align-self: stretch;
     border-left: var(--border-1) solid var(--osnovnoy-tekst);
-    min-height: 200px;
   }
 
   &__profile {
     grid-column: 1;
-    grid-row: 2;
+    grid-row: 1;
     display: flex;
-    justify-content: flex-end;
+    justify-content: stretch;
     padding-right: var(--sp-20);
+    padding-top: var(--sp-40);
+    padding-bottom: var(--sp-20);
+  }
+
+  &__hub-column {
+    grid-column: 3;
+    grid-row: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 15%;
+    padding-left: var(--sp-20);
+    padding-bottom: var(--sp-20);
+    min-height: 0;
   }
 
   &__hub {
-    grid-column: 3;
-    grid-row: 2;
     display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    padding-left: var(--sp-20);
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
   }
 
   &__logout {
-    grid-column: 3;
-    grid-row: 3;
-    justify-self: end;
+    align-self: flex-end;
   }
 
   :deep(.admin-start-panel__logout.base-button) {
+    height: auto;
     border-radius: var(--radius-input);
     border-color: var(--osnovnoy-tekst);
     font-family: var(--font-family);
@@ -139,40 +150,49 @@ async function onLogoutConfirm() {
 
   @media (max-width: 1023px) {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto auto auto;
+    grid-template-rows: auto auto auto auto;
+
+    &__hub-column {
+      display: contents;
+    }
+
+    &__hub-badge {
+      display: flex;
+      justify-self: center;
+    }
 
     &__divider {
       grid-column: 1;
-      grid-row: 3;
+      grid-row: 2;
       width: 100%;
       height: 0;
-      min-height: 0;
       border-left: none;
       border-top: var(--border-1) solid var(--osnovnoy-tekst);
     }
 
-    &__profile {
-      grid-column: 1;
-      grid-row: 2;
-      padding-right: 0;
-      justify-content: stretch;
-    }
-
     &__hub {
       grid-column: 1;
-      grid-row: 4;
-      padding-left: 0;
+      grid-row: 1;
+      width: 100%;
+      gap: var(--sp-20);
+      justify-content: flex-start;
+      align-items: center;
+    }
+
+    &__profile {
+      grid-column: 1;
+      grid-row: 3;
+      padding-right: 0;
+      padding-top: 0;
+      padding-bottom: 0;
     }
 
     &__logout {
       grid-column: 1;
-      grid-row: 5;
-      justify-self: stretch;
-    }
-
-    :deep(.admin-start-panel__logout.base-button_block),
-    :deep(.admin-start-panel__logout) {
-      width: 100%;
+      grid-row: 4;
+      justify-self: end;
+      margin-top: var(--sp-20);
+      font-size: var(--size-13) !important;
     }
   }
 }

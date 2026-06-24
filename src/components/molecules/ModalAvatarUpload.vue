@@ -151,5 +151,26 @@ const onFileChange = (event: Event) => {
     font-size: var(--size-14);
     color: var(--error);
   }
+
+  @media (max-width: 1023px) {
+    align-items: stretch;
+
+    &__head {
+      justify-content: space-between;
+      width: 100%;
+      gap: var(--sp-20);
+    }
+
+    &__text {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+
+  @media (max-width: 768px) {
+    &__text {
+      font-size: var(--size-10);
+    }
+  }
 }
 </style>

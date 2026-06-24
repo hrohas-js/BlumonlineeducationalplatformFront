@@ -1,8 +1,17 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import LessonVideoPlayer from '@/components/organisms/LessonVideoPlayer.vue'
 import LearningCollapsibleChip from '@/components/molecules/LearningCollapsibleChip.vue'
 import LearningTopicFilesList from '@/components/molecules/LearningTopicFilesList.vue'
+import { useAuthStore } from '@/stores/auth'
 import type { LearningTopicVideo } from '@/types/learning-course'
+
+const authStore = useAuthStore()
+
+const watermarkText = computed(() => {
+  const id = authStore.user?.id?.trim()
+  return id ? `ID: ${id}` : undefined
+})
 
 withDefaults(
   defineProps<{
@@ -25,7 +34,12 @@ withDefaults(
       v-if="video.src || loading || error || video.files.length === 0"
       class="learning-topic-video-block__player"
     >
-      <LessonVideoPlayer v-if="video.src && !loading && !error" :src="video.src" :poster="video.poster" />
+      <LessonVideoPlayer
+        v-if="video.src && !loading && !error"
+        :src="video.src"
+        :poster="video.poster"
+        :watermark-text="watermarkText"
+      />
       <p v-else-if="loading" class="learning-topic-video-block__placeholder">Подгружаем видео…</p>
       <p
         v-else-if="error"

@@ -119,9 +119,6 @@ onUnmounted(() => {
 </template>
 
 <style lang="scss" scoped>
-// Figma: 1084×100, padding 20×40, gap 60, white bg, radius 20, no border.
-// Nav: Inter Regular 400 / 20px, color #010307, blue underline on hover.
-// Поддержка: 3px stroke #178EF0, radius 10px, padding 10, Inter Medium 500 / 20.
 .app-header {
   background-color: var(--white);
   position: static;
@@ -146,6 +143,11 @@ onUnmounted(() => {
     width: var(--size-60);
     height: var(--size-60);
     object-fit: contain;
+
+    @media (max-width: 768px) {
+      width: var(--size-40);
+      height: var(--size-40);
+    }
   }
 
   &__nav {
@@ -214,23 +216,27 @@ onUnmounted(() => {
   @media (max-width: 1024px) {
     position: sticky;
     top: var(--sp-10);
-    justify-content: space-between;
-    gap: var(--sp-20);
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    column-gap: var(--sp-16);
 
     &__nav,
     &__support {
       display: none;
     }
 
+    &__logo {
+      grid-column: 1;
+      justify-self: start;
+    }
+
     &__mobile {
-      flex: 1;
-      display: grid;
-      grid-template-columns: 1fr auto;
-      align-items: center;
-      column-gap: var(--sp-16);
+      display: contents;
     }
 
     &__nav-link_mobile {
+      grid-column: 2;
       justify-self: center;
       white-space: nowrap;
       font-size: clamp(15px, calc(15px + 5 * ((100vw - 430px) / 594)), 20px);
@@ -239,6 +245,7 @@ onUnmounted(() => {
     }
 
     &__burger-button {
+      grid-column: 3;
       justify-self: end;
       width: var(--size-34, 34px);
       height: var(--size-34, 34px);

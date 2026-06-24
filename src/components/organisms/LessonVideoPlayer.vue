@@ -11,6 +11,7 @@ import {
   faVolumeHigh,
   faVolumeXmark,
 } from '@fortawesome/free-solid-svg-icons'
+import LessonVideoWatermarkOverlay from '@/components/molecules/LessonVideoWatermarkOverlay.vue'
 
 export interface LessonVideoQuality {
   label: string
@@ -21,11 +22,13 @@ interface Props {
   src: string
   poster?: string
   qualities?: LessonVideoQuality[]
+  watermarkText?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   poster: undefined,
   qualities: undefined,
+  watermarkText: undefined,
 })
 
 const rootRef = ref<HTMLElement | null>(null)
@@ -499,6 +502,12 @@ onUnmounted(() => {
       @volumechange="syncFromVideo"
     />
 
+    <LessonVideoWatermarkOverlay
+      v-if="watermarkText"
+      :text="watermarkText"
+      :active="!paused"
+    />
+
     <div
       v-if="fullscreenHint"
       class="lesson-video-player__fs-hint"
@@ -591,34 +600,36 @@ onUnmounted(() => {
             @mouseenter="onVolumeWrapMouseEnter"
             @mouseleave="onVolumeWrapMouseLeave"
           >
-            <div
-              v-show="volumePopoverOpen"
-              class="lesson-video-player__volume-pop"
-              aria-hidden="true"
-            >
+            <div class="lesson-video-player__volume-anchor">
               <div
-                ref="volumeTrackRef"
-                class="lesson-video-player__volume-track"
-                @pointerdown="onVolumeTrackPointerDown"
-                @pointermove="onVolumeTrackPointerMove"
-                @pointerup="onVolumeTrackPointerUp"
-                @pointercancel="onVolumeTrackPointerUp"
+                v-show="volumePopoverOpen"
+                class="lesson-video-player__volume-pop"
+                aria-hidden="true"
               >
                 <div
-                  class="lesson-video-player__volume-fill"
-                  :style="{ height: `${volumeSliderPct}%` }"
-                />
+                  ref="volumeTrackRef"
+                  class="lesson-video-player__volume-track"
+                  @pointerdown="onVolumeTrackPointerDown"
+                  @pointermove="onVolumeTrackPointerMove"
+                  @pointerup="onVolumeTrackPointerUp"
+                  @pointercancel="onVolumeTrackPointerUp"
+                >
+                  <div
+                    class="lesson-video-player__volume-fill"
+                    :style="{ height: `${volumeSliderPct}%` }"
+                  />
+                </div>
               </div>
+              <button
+                type="button"
+                class="lesson-video-player__icon-btn lesson-video-player__icon-btn_volume"
+                aria-label="Громкость"
+                :aria-expanded="volumePopoverOpen"
+                @click.stop="toggleVolumePopover"
+              >
+                <font-awesome-icon :icon="faVolumeHigh" />
+              </button>
             </div>
-            <button
-              type="button"
-              class="lesson-video-player__icon-btn lesson-video-player__icon-btn_volume"
-              aria-label="Громкость"
-              :aria-expanded="volumePopoverOpen"
-              @click.stop="toggleVolumePopover"
-            >
-              <font-awesome-icon :icon="faVolumeHigh" />
-            </button>
             <button
               type="button"
               class="lesson-video-player__icon-btn lesson-video-player__icon-btn_mute"
@@ -1005,10 +1016,16 @@ $lesson-player-chrome-bg: #010307;
   }
 
   &__volume-wrap {
-    position: relative;
     display: flex;
     align-items: center;
     gap: 6px;
+  }
+
+  &__volume-anchor {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
   }
 
   &__volume-pop {

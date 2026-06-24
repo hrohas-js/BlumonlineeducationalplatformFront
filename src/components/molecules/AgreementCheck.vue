@@ -90,6 +90,11 @@ const model = computed({
     &_compact {
       width: var(--size-20);
       height: var(--size-20);
+
+      @media (max-width: 768px) {
+        width: var(--size-15);
+        height: var(--size-15);
+      }
     }
 
     &::after {

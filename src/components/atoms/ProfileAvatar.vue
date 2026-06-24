@@ -54,6 +54,11 @@ const onImageError = () => {
   overflow: hidden;
   flex-shrink: 0;
 
+  @media (max-width: 1023px) {
+    width: var(--size-100);
+    height: var(--size-100);
+  }
+
   &__image,
   &__placeholder {
     display: block;

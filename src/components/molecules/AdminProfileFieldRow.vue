@@ -57,5 +57,23 @@ defineProps<{
     border-color: #178ef0;
     border-width: var(--border-2);
   }
+
+  @media (max-width: 1023px) {
+    display: grid;
+    grid-template-columns: minmax(72px, 38%) minmax(0, 1fr);
+    gap: var(--sp-12);
+    justify-content: stretch;
+
+    &__label {
+      text-align: left;
+      font-size: var(--size-15);
+    }
+
+    &__value {
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+  }
 }
 </style>

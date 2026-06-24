@@ -235,6 +235,10 @@ const handleInput = (event: Event) => {
         font-weight: var(--font-extra-light);
         font-size: var(--size-15);
         color: var(--black);
+
+        @media (max-width: 768px) {
+          font-size: var(--size-10);
+        }
       }
 
       &:focus {
@@ -262,6 +266,10 @@ const handleInput = (event: Event) => {
         font-weight: var(--font-extra-light);
         font-size: var(--size-15);
         color: var(--black-300);
+
+        @media (max-width: 768px) {
+          font-size: var(--size-10);
+        }
       }
 
       &:focus {

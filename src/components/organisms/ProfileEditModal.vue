@@ -22,7 +22,6 @@ const firstName = ref('')
 const lastName = ref('')
 const middleName = ref('')
 const phone = ref('')
-const email = ref('')
 const about = ref('')
 
 const forgotPasswordLoading = ref(false)
@@ -50,7 +49,6 @@ function syncFromUser() {
   lastName.value = u.last_name ?? ''
   middleName.value = u.middle_name ?? ''
   phone.value = u.phone ?? ''
-  email.value = u.email ?? ''
   about.value = ''
 }
 
@@ -121,7 +119,7 @@ const onSave = async () => {
 }
 
 const onForgotPassword = async () => {
-  const trimmedEmail = (authStore.user?.email ?? email.value).trim()
+  const trimmedEmail = (authStore.user?.email ?? '').trim()
   if (!trimmedEmail) {
     notify({ type: 'warning', message: 'Email не указан в профиле' })
     return
@@ -189,45 +187,46 @@ onUnmounted(() => {
         </div>
 
         <div class="profile-edit-modal__form">
-          <div class="profile-edit-modal__left-column">
+          <div class="profile-edit-modal__fields-main">
             <ModalProfileFieldRow v-model="firstName" label="Имя" placeholder="Введите ваше имя" />
             <ModalProfileFieldRow v-model="lastName" label="Фамилия" placeholder="Введите вашу фамилию" />
             <ModalProfileFieldRow v-model="middleName" label="Отчество" placeholder="Введите ваше отчество" />
             <ModalProfileFieldRow v-model="phone" label="Номер телефона" placeholder="Введите ваш номер телефона" />
             <ModalProfileFieldRow
-              v-model="email"
+              model-value=""
               label="Email"
               placeholder="Указанная при регистрации почта"
               with-checkbox
+              readonly
             />
-
-            <div class="profile-edit-modal__form-actions">
-              <button
-                type="button"
-                class="profile-edit-modal__action-button"
-                :disabled="saveLoading || forgotPasswordLoading"
-                @click="onSave"
-              >
-                {{ saveLoading ? 'Сохраняем…' : 'Сохранить' }}
-              </button>
-              <button
-                type="button"
-                class="profile-edit-modal__action-button"
-                :disabled="saveLoading"
-                @click="onCancel"
-              >
-                Отмена
-              </button>
-            </div>
           </div>
 
-          <div class="profile-edit-modal__right-column">
+          <div class="profile-edit-modal__fields-about">
             <ModalProfileFieldRow
               v-model="about"
               label="Обо мне"
               placeholder="Краткость - сестра таланта"
               as="textarea"
             />
+          </div>
+
+          <div class="profile-edit-modal__form-actions">
+            <button
+              type="button"
+              class="profile-edit-modal__action-button"
+              :disabled="saveLoading || forgotPasswordLoading"
+              @click="onSave"
+            >
+              {{ saveLoading ? 'Сохраняем…' : 'Сохранить' }}
+            </button>
+            <button
+              type="button"
+              class="profile-edit-modal__action-button"
+              :disabled="saveLoading"
+              @click="onCancel"
+            >
+              Отмена
+            </button>
           </div>
         </div>
 
@@ -274,6 +273,7 @@ onUnmounted(() => {
     @media (max-width: 1023px) {
       width: 100%;
       min-width: 0;
+      overflow-x: hidden;
     }
   }
 
@@ -291,6 +291,10 @@ onUnmounted(() => {
     font-size: var(--size-20);
     text-align: center;
     color: var(--text-accent);
+
+    @media (max-width: 768px) {
+      font-size: var(--size-15);
+    }
   }
 
   &__avatar-upload {
@@ -299,41 +303,70 @@ onUnmounted(() => {
 
   &__form {
     margin-top: var(--sp-40);
-    display: flex;
+    display: grid;
+    grid-template-columns: var(--profile-edit-modal-column-width) var(--profile-edit-modal-column-width);
+    grid-template-areas:
+      'main about'
+      'actions about';
     align-items: center;
-    gap: var(--sp-40);
+    gap: var(--sp-40) var(--sp-40);
     flex-shrink: 0;
 
     @media (max-width: 1023px) {
-      flex-direction: column;
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        'main'
+        'about'
+        'actions';
       align-items: stretch;
       gap: var(--sp-20);
+      flex-shrink: 1;
+      min-width: 0;
     }
   }
 
-  &__left-column {
+  &__fields-main {
+    grid-area: main;
     display: flex;
     flex-direction: column;
     gap: var(--sp-20);
     width: var(--profile-edit-modal-column-width);
-    flex-shrink: 0;
-  }
-
-  &__right-column {
-    display: flex;
-    width: var(--profile-edit-modal-column-width);
-    flex-shrink: 0;
 
     @media (max-width: 1023px) {
       width: 100%;
+      min-width: 0;
+    }
+  }
+
+  &__fields-about {
+    grid-area: about;
+    display: flex;
+    width: var(--profile-edit-modal-column-width);
+    align-self: center;
+
+    @media (max-width: 1023px) {
+      width: 100%;
+      min-width: 0;
+      align-self: stretch;
     }
   }
 
   &__form-actions {
+    grid-area: actions;
     display: flex;
     justify-content: flex-end;
     gap: var(--sp-10);
-    width: 100%;
+    width: var(--profile-edit-modal-column-width);
+
+    @media (max-width: 1023px) {
+      width: 100%;
+      min-width: 0;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 360px) {
+      flex-wrap: wrap;
+    }
   }
 
   &__action-button {
@@ -348,6 +381,10 @@ onUnmounted(() => {
     background-color: var(--white);
     cursor: pointer;
     white-space: nowrap;
+
+    @media (max-width: 768px) {
+      font-size: var(--size-10);
+    }
 
     &:disabled {
       opacity: 0.55;
@@ -364,6 +401,10 @@ onUnmounted(() => {
     margin-top: var(--sp-40);
     display: flex;
     justify-content: flex-start;
+
+    @media (max-width: 768px) {
+      margin-top: var(--sp-20);
+    }
   }
 }
 </style>

@@ -65,7 +65,6 @@ const onLinkClick = () => {
   &_mobile {
     padding: var(--sp-20);
     margin-top: var(--sp-12);
-    margin-left: calc(var(--size-25) + var(--sp-20));
     border-radius: var(--radius-16, 16px);
   }
 

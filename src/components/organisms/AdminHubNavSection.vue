@@ -51,6 +51,10 @@ import { ADMIN_STUDENTS_SCOPE_ALL } from '@/constants/adminMaterials'
     font-size: var(--size-25);
     color: var(--osnovnoy-tekst);
     text-align: center;
+
+    @media (max-width: 1023px) {
+      font-size: var(--size-15);
+    }
   }
 
   &__list {
@@ -84,6 +88,29 @@ import { ADMIN_STUDENTS_SCOPE_ALL } from '@/constants/adminMaterials'
 
     &:hover {
       background-color: color-mix(in srgb, #178ef0 92%, black);
+    }
+  }
+
+  @media (max-width: 1023px) {
+    align-items: center;
+    width: 100%;
+    max-width: none;
+
+    &__list {
+      align-items: center;
+      width: 100%;
+
+      li {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+        max-width: 292px;
+      }
+    }
+
+    &__link {
+      width: fit-content;
+      font-size: var(--size-15);
     }
   }
 }

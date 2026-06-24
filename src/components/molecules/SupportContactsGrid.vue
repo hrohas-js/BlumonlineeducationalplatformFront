@@ -134,6 +134,10 @@ withDefaults(
       );
     }
 
+    @media (max-width: 768px) {
+      width: 100%;
+    }
+
     &_primary {
       background: var(--dopolnitelnyy-tekst);
       border: none;

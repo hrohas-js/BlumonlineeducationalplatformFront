@@ -284,7 +284,7 @@ export const useAuthStore = defineStore('auth', () => {
     loading.value = false
     if (!result.success) {
       error.value = result.error || 'Не удалось изменить пароль'
-      return { success: false, error: error.value }
+      return { success: false, error: error.value, errorCode: result.errorCode }
     }
     return { success: true, message: result.data?.message }
   }

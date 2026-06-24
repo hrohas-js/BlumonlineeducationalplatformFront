@@ -20,7 +20,7 @@ import AdminStartPanel from '@/components/organisms/AdminStartPanel.vue'
   &__panel {
     border-radius: var(--radius-20);
     background-color: var(--fon-bloka);
-    padding: var(--sp-40) var(--sp-50);
+    padding: 0 var(--sp-50);
   }
 
   @media (max-width: 1023px) {

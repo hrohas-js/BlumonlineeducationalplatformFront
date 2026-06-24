@@ -156,7 +156,7 @@ onUnmounted(() => {
     z-index: calc(var(--z-header) + 1);
     min-width: max(100%, 280px);
     width: max-content;
-    max-width: min(420px, calc(100vw - 48px));
+    max-width: 292px;
 
     &_wide {
       max-width: min(480px, calc(100vw - 48px));

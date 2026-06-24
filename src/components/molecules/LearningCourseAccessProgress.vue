@@ -78,7 +78,7 @@ const accessLabel = computed(() => props.accessUntil ?? 'бессрочно')
     width: 100%;
     max-width: var(--size-320);
     height: var(--size-20);
-    border: var(--border-1) solid var(--osnovnoy-tekst);
+    border: var(--border-1) solid var(--dopolnitelnyy-tekst);
     border-radius: var(--radius-check);
     background: var(--fon-bloka);
     overflow: hidden;

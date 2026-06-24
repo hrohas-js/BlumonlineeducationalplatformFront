@@ -22,9 +22,11 @@ import {
   resolveAdminStudentRow,
   type AdminFolderLessonProductRow,
 } from '@/utils/adminMockStudents'
+import { useAdminStore } from '@/stores/admin'
 
 const route = useRoute()
 const router = useRouter()
+const adminStore = useAdminStore()
 const { notify } = useNotification()
 
 const minDateForDateInput = computed(() => formatLocalDateForInput(new Date()))
@@ -43,6 +45,10 @@ const validatedMaterialSection = computed<AdminMaterialSectionId | null>(() =>
 
 const student = computed(() => {
   if (!validatedScope.value) return null
+  const agg = adminStore.findAggregatedStudent(validatedScope.value, studentId.value)
+  if (agg) {
+    return { id: agg.user_id, name: agg.name, email: agg.email, productsCount: agg.productIds.length }
+  }
   return resolveAdminStudentRow(validatedScope.value, studentId.value)
 })
 
@@ -108,7 +114,9 @@ watch(
       void router.replace({ name: 'admin-materials' })
       return
     }
-    const row = resolveAdminStudentRow(sid, stid)
+    const row =
+      adminStore.findAggregatedStudent(sid, stid) ??
+      resolveAdminStudentRow(sid, stid)
     if (!row) {
       void router.replace({ name: 'admin-materials-students', params: { sectionId: sid } })
       return
