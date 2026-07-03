@@ -19,6 +19,7 @@ interface Props {
   error?: string
   hint?: string
   disabled?: boolean
+  readonly?: boolean
   required?: boolean
   name?: string
   id?: string
@@ -35,6 +36,7 @@ const props = withDefaults(defineProps<Props>(), {
   variant: 'default',
   type: 'text',
   disabled: false,
+  readonly: false,
   required: false,
 })
 
@@ -92,6 +94,7 @@ const handleInput = (event: Event) => {
         :value="modelValue"
         :placeholder="placeholder"
         :disabled="disabled"
+        :readonly="readonly"
         :required="required"
         :name="name"
         v-bind="attrs"
@@ -117,6 +120,7 @@ const handleInput = (event: Event) => {
       :value="modelValue"
       :placeholder="placeholder"
       :disabled="disabled"
+      :readonly="readonly"
       :required="required"
       :name="name"
       v-bind="attrs"
@@ -133,6 +137,7 @@ const handleInput = (event: Event) => {
       :value="modelValue"
       :placeholder="placeholder"
       :disabled="disabled"
+      :readonly="readonly"
       :required="required"
       :name="name"
       v-bind="attrs"
@@ -244,6 +249,15 @@ const handleInput = (event: Event) => {
       &:focus {
         border-color: var(--accent-soft-blue);
         box-shadow: var(--focus-ring-soft-blue);
+      }
+
+      &[readonly] {
+        cursor: default;
+
+        &:focus {
+          border-color: transparent;
+          box-shadow: none;
+        }
       }
     }
 

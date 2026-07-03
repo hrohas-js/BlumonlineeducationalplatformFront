@@ -24,6 +24,7 @@ export interface User {
   updated_at: string
   middle_name?: string
   phone?: string
+  about?: string
   date_of_birth?: string
   avatar_url?: string
 }

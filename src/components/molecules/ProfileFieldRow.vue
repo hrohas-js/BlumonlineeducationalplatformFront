@@ -10,10 +10,12 @@ const props = withDefaults(
     placeholder: string
     as?: 'input' | 'textarea'
     withCheckbox?: boolean
+    readonly?: boolean
   }>(),
   {
     as: 'input',
     withCheckbox: false,
+    readonly: false,
   },
 )
 
@@ -113,6 +115,7 @@ const labelIcon = computed<'email' | 'phone' | 'about' | null>(() => {
           :placeholder="props.placeholder"
           :as="props.as"
           variant="profile"
+          :readonly="props.readonly"
           @update:model-value="emit('update:modelValue', $event)"
         />
       </div>

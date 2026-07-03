@@ -49,7 +49,7 @@ function syncFromUser() {
   lastName.value = u.last_name ?? ''
   middleName.value = u.middle_name ?? ''
   phone.value = u.phone ?? ''
-  about.value = ''
+  about.value = u.about ?? ''
 }
 
 function resetAvatarDraft() {
@@ -76,6 +76,7 @@ const buildUpdatePayload = (): UpdateUserRequest => ({
   first_name: firstName.value.trim(),
   last_name: lastName.value.trim(),
   phone: phone.value.trim() || undefined,
+  about: about.value.trim() || undefined,
 })
 
 const onAvatarSelect = (file: File | null) => {

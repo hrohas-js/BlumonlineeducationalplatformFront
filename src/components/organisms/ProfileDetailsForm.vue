@@ -15,6 +15,7 @@ function syncFromUser() {
   if (!u) return
   email.value = u.email
   phone.value = u.phone ?? ''
+  about.value = u.about ?? ''
 }
 
 watch(() => authStore.user, syncFromUser, { immediate: true })
@@ -22,9 +23,9 @@ watch(() => authStore.user, syncFromUser, { immediate: true })
 
 <template>
   <section class="profile-details-form" aria-label="Контактные данные профиля">
-    <ProfileFieldRow v-model="email" label="Email" placeholder="Указанная почта" with-checkbox />
-    <ProfileFieldRow v-model="phone" label="Телефон" placeholder="Номер телефона" />
-    <ProfileFieldRow v-model="about" label="Обо мне" placeholder="Обо мне" as="textarea" />
+    <ProfileFieldRow v-model="email" label="Email" placeholder="Указанная почта" with-checkbox readonly />
+    <ProfileFieldRow v-model="phone" label="Телефон" placeholder="Номер телефона" readonly />
+    <ProfileFieldRow v-model="about" label="Обо мне" placeholder="Обо мне" as="textarea" readonly />
 
     <p v-if="authStore.user && !authStore.user.email_verified" class="profile-details-form__hint">
       Email не подтверждён.

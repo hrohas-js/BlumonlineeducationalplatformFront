@@ -83,7 +83,20 @@ POST /auth/change-password  🔒
 
 ```
 GET /auth/me  🔒✉️
-→ { id, email, first_name, last_name, role, email_verified, has_paid }
+→ {
+    id, email, first_name, last_name, middle_name, phone, about,
+    role, email_verified, has_paid, avatar_url, created_at, updated_at
+  }
+
+PATCH /auth/me  🔒✉️
+{
+  "first_name"?: string,
+  "last_name"?: string,
+  "phone"?: string,
+  "about"?: string,
+  "avatar_url"?: string
+}
+→ объект пользователя (как в GET /auth/me)
 ```
 
 ---
