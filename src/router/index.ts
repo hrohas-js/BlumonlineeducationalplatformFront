@@ -32,6 +32,7 @@ const AdminPage = () => import('@/pages/AdminPage.vue')
 const AdminMaterialsPage = () => import('@/pages/AdminMaterialsPage.vue')
 const AdminGlossaryPage = () => import('@/pages/AdminGlossaryPage.vue')
 const AdminMaterialsStudentsPage = () => import('@/pages/AdminMaterialsStudentsPage.vue')
+const AdminAddStudentsPage = () => import('@/pages/AdminAddStudentsPage.vue')
 const AdminStudentFolderLessonsAccessPage = () => import('@/pages/AdminStudentFolderLessonsAccessPage.vue')
 const AdminStudentProductTopicsPage = () => import('@/pages/AdminStudentProductTopicsPage.vue')
 const AdminStudentProfilePage = () => import('@/pages/AdminStudentProfilePage.vue')
@@ -156,6 +157,12 @@ const routes: RouteRecordRaw[] = [
     path: '/admin/materials/:sectionId/students/:studentId',
     name: 'admin-materials-student-profile',
     component: AdminStudentProfilePage,
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: '/admin/materials/:sectionId/students/add',
+    name: 'admin-materials-students-add',
+    component: AdminAddStudentsPage,
     meta: { requiresAuth: true, requiresAdmin: true },
   },
   {

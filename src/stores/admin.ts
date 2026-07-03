@@ -253,6 +253,23 @@ export const useAdminStore = defineStore('admin', () => {
     return { success: true as const, data: Array.from(map.values()) }
   }
 
+  async function fetchProductsForStudentsScope(scope: AdminStudentsSectionScope) {
+    if (scope === ADMIN_STUDENTS_SCOPE_ALL) {
+      const result: ProductResponse[] = []
+      for (const section of ADMIN_MATERIAL_SECTION_LIST) {
+        if (section.id === 'archive') continue
+        const res = await fetchProductsForSection(section.id)
+        if (res.success) result.push(...res.data)
+      }
+      return result
+    }
+    if (isAdminMaterialSectionId(scope)) {
+      const res = await fetchProductsForSection(scope)
+      return res.success ? res.data : []
+    }
+    return []
+  }
+
   function reset() {
     productsBySection.value = {}
     productDetails.value = {}
@@ -285,6 +302,7 @@ export const useAdminStore = defineStore('admin', () => {
     findAggregatedStudent,
     getStudentProfileProducts,
     aggregateAllSections,
+    fetchProductsForStudentsScope,
     reset,
   }
 })

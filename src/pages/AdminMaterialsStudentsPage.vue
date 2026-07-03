@@ -117,7 +117,16 @@ const toggleNameSort = () => {
 }
 
 const onAddStudent = () => {
-  /* до API добавления ученика */
+  const scope = validatedStudentsScope.value
+  if (!scope) return
+  if (scope === 'archive') {
+    notify({ type: 'info', message: 'Добавление учеников в архив недоступно' })
+    return
+  }
+  void router.push({
+    name: 'admin-materials-students-add',
+    params: { sectionId: scope },
+  })
 }
 
 const onExportXlsx = async () => {
