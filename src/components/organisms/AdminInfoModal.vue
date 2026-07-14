@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import BaseButton from '@/components/atoms/BaseButton.vue'
+
 interface Props {
   isOpen: boolean
   title: string
@@ -43,9 +45,13 @@ const onConfirm = () => {
       >
         <h2 id="admin-info-modal-title" class="admin-info-modal__title">{{ props.title }}</h2>
         <p class="admin-info-modal__message">{{ props.message }}</p>
-        <button type="button" class="admin-info-modal__confirm" @click="onConfirm">
-          {{ props.confirmLabel }}
-        </button>
+        <BaseButton
+          class="admin-info-modal__confirm"
+          variant="primary"
+          shape="rounded"
+          :text="props.confirmLabel"
+          @click="onConfirm"
+        />
       </div>
     </div>
   </Teleport>
@@ -99,27 +105,13 @@ const onConfirm = () => {
   color: #010307;
 }
 
-.admin-info-modal__confirm {
-  margin: 0;
-  padding: 10px;
-  border: none;
-  border-radius: 10px;
+:deep(.admin-info-modal__confirm.base-button_primary) {
   background-color: var(--knopka);
-  color: var(--white);
-  font-family: var(--font-family);
-  font-weight: var(--font-semi-bold);
-  font-size: 20px;
-  line-height: normal;
-  cursor: pointer;
-  white-space: nowrap;
+  border-color: var(--knopka);
 
-  &:hover {
-    filter: brightness(1.03);
-  }
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring-main);
+  &:hover:not(.base-button_disabled) {
+    background-color: color-mix(in srgb, var(--knopka) 92%, black);
+    border-color: color-mix(in srgb, var(--knopka) 92%, black);
   }
 }
 
@@ -134,7 +126,7 @@ const onConfirm = () => {
     font-size: var(--size-20);
   }
 
-  .admin-info-modal__confirm {
+  :deep(.admin-info-modal__confirm) {
     width: 100%;
     min-height: 44px;
   }

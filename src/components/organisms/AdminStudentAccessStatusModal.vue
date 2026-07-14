@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import BaseButton from '@/components/atoms/BaseButton.vue'
 import ModalCloseButton from '@/components/atoms/ModalCloseButton.vue'
 
 export type StudentAccessStatusValue = 'active' | 'paused' | 'blocked' | 'deleted'
@@ -233,7 +234,13 @@ const onSave = () => {
               <span class="admin-student-access-status-modal__notify-email">E-mail</span>
             </label>
           </div>
-          <button type="button" class="admin-student-access-status-modal__save" @click="onSave">Сохранить</button>
+          <BaseButton
+            class="admin-student-access-status-modal__save"
+            variant="primary"
+            shape="rounded"
+            text="Сохранить"
+            @click="onSave"
+          />
         </div>
       </div>
     </div>
@@ -497,26 +504,13 @@ const onSave = () => {
   color: #178ef0;
 }
 
-.admin-student-access-status-modal__save {
-  margin: 0;
-  padding: var(--sp-8) var(--sp-16);
-  border: none;
-  border-radius: var(--radius-10);
-  background-color: #178ef0;
-  color: var(--white);
-  font-family: var(--font-family);
-  font-weight: var(--font-semi-bold);
-  font-size: var(--size-20);
-  cursor: pointer;
-  transition: filter 0.15s ease;
+:deep(.admin-student-access-status-modal__save.base-button_primary) {
+  background-color: var(--knopka);
+  border-color: var(--knopka);
 
-  &:hover {
-    filter: brightness(1.05);
-  }
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring-main);
+  &:hover:not(.base-button_disabled) {
+    background-color: color-mix(in srgb, var(--knopka) 92%, black);
+    border-color: color-mix(in srgb, var(--knopka) 92%, black);
   }
 }
 
@@ -625,10 +619,9 @@ const onSave = () => {
     font-size: var(--size-18);
   }
 
-  .admin-student-access-status-modal__save {
+  :deep(.admin-student-access-status-modal__save) {
     width: 100%;
     min-height: 44px;
-    font-size: var(--size-18);
   }
 }
 

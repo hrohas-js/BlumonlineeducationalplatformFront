@@ -199,9 +199,13 @@ const onTopicTitleInput = (id: string, value: string) => {
           </div>
 
           <div class="admin-material-product-create-page__add-topic-row">
-            <button type="button" class="admin-material-product-create-page__add-topic" @click="onAddTopic">
-              Добавить тему
-            </button>
+            <BaseButton
+              class="admin-material-product-create-page__add-topic"
+              variant="ghost"
+              size="medium"
+              text="Добавить тему"
+              @click="onAddTopic"
+            />
           </div>
 
           <div class="admin-material-product-create-page__field-row">
@@ -336,31 +340,26 @@ const onTopicTitleInput = (id: string, value: string) => {
   }
 
   &__add-topic {
-    @include font-main(600);
     grid-column: 2;
     justify-self: start;
     width: auto;
     max-width: 100%;
-    padding: 0;
-    border: none;
-    border-radius: 0;
-    background: none;
+  }
+
+  :deep(.admin-material-product-create-page__add-topic.base-button_ghost) {
+    @include font-main(600);
     font-size: var(--size-25);
     line-height: normal;
     color: var(--black);
     text-decoration: underline;
     text-underline-offset: 3px;
-    cursor: pointer;
     text-align: left;
+    justify-content: flex-start;
 
-    &:focus-visible {
-      outline: none;
-      box-shadow: var(--focus-ring-main);
-      border-radius: var(--radius-sm);
-    }
-
-    &:hover {
+    &:hover:not(.base-button_disabled) {
+      color: var(--black);
       opacity: 0.85;
+      text-decoration: underline;
     }
   }
 
@@ -393,7 +392,7 @@ const onTopicTitleInput = (id: string, value: string) => {
       border-color: #010307;
       height: auto;
       min-height: 0;
-      font-family: "Montserrat", sans-serif;
+      font-family: var(--font-family);
       font-size: var(--size-25);
     }
   }

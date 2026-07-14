@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/components/layouts/AppLayout.vue'
+import BaseButton from '@/components/atoms/BaseButton.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useNotification } from '@/composables/useNotification'
 
@@ -89,14 +90,15 @@ const handleSubmit = async () => {
           </form>
         </div>
 
-        <button
-          type="button"
+        <BaseButton
           class="reset-pwd__submit"
-          :disabled="authStore.loading || !token"
+          variant="primary"
+          shape="rounded"
+          text="Сохранить"
+          :loading="authStore.loading"
+          :disabled="!token"
           @click="handleSubmit"
-        >
-          Сохранить
-        </button>
+        />
       </div>
     </section>
   </AppLayout>
@@ -150,7 +152,7 @@ const handleSubmit = async () => {
 
   &__hint {
     margin: 0;
-    font-family: var(--second-family);
+    font-family: var(--font-family);
     font-weight: var(--font-medium);
     font-size: var(--size-15);
     color: var(--osnovnoy-tekst);
@@ -206,7 +208,7 @@ const handleSubmit = async () => {
     border: none;
     border-radius: var(--radius-input);
     padding: var(--sp-10);
-    font-family: var(--second-family);
+    font-family: var(--font-family);
     font-weight: var(--font-medium);
     font-size: var(--size-15);
     color: var(--osnovnoy-tekst);
@@ -222,25 +224,19 @@ const handleSubmit = async () => {
     }
   }
 
-  &__submit {
-    background: var(--knopka);
+  :deep(.reset-pwd__submit.base-button_primary) {
+    background-color: var(--knopka);
+    border-color: var(--knopka);
     color: var(--cvet-v-knopke);
-    border: none;
-    border-radius: var(--radius-10);
+    height: auto;
     padding: var(--sp-10) var(--sp-40);
-    font-family: var(--font-family);
     font-weight: var(--font-semi-bold);
     font-size: var(--size-25);
-    cursor: pointer;
-    transition: background-color 0.2s ease;
 
-    &:hover:not(:disabled) {
-      background: color-mix(in srgb, var(--knopka) 92%, black);
-    }
-
-    &:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
+    &:hover:not(.base-button_disabled) {
+      background-color: color-mix(in srgb, var(--knopka) 92%, black);
+      border-color: color-mix(in srgb, var(--knopka) 92%, black);
+      transform: none;
     }
 
     @media (max-width: 1023px) {

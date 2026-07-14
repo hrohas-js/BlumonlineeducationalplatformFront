@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onUnmounted, watch } from 'vue'
+import BaseButton from '@/components/atoms/BaseButton.vue'
 
 interface Props {
   isOpen: boolean
@@ -77,22 +78,23 @@ onUnmounted(() => {
         </h2>
 
         <div class="admin-logout-confirm-modal__actions">
-          <button
-            type="button"
+          <BaseButton
             class="admin-logout-confirm-modal__btn"
+            variant="primary"
+            shape="rounded"
+            text="Да"
             :disabled="props.confirmLoading"
+            :loading="props.confirmLoading"
             @click="onYes"
-          >
-            Да
-          </button>
-          <button
-            type="button"
+          />
+          <BaseButton
             class="admin-logout-confirm-modal__btn"
+            variant="outline"
+            shape="rounded"
+            text="Нет"
             :disabled="props.confirmLoading"
             @click="onNo"
-          >
-            Нет
-          </button>
+          />
         </div>
       </div>
     </div>
@@ -145,36 +147,6 @@ onUnmounted(() => {
   gap: 47px;
 }
 
-.admin-logout-confirm-modal__btn {
-  margin: 0;
-  padding: 7px var(--sp-20);
-  border: 1px solid #010307;
-  border-radius: var(--radius-10);
-  background-color: var(--white);
-  font-family: var(--font-family);
-  font-weight: var(--font-semi-bold);
-  font-size: var(--size-25);
-  line-height: normal;
-  color: #010307;
-  cursor: pointer;
-  white-space: nowrap;
-  box-sizing: border-box;
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring-main);
-  }
-
-  &:hover:not(:disabled) {
-    filter: brightness(0.98);
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-}
-
 @media (max-width: 479px) {
   .admin-logout-confirm-modal__content {
     gap: var(--sp-24);
@@ -191,7 +163,7 @@ onUnmounted(() => {
     gap: var(--sp-16);
   }
 
-  .admin-logout-confirm-modal__btn {
+  :deep(.admin-logout-confirm-modal__btn) {
     width: 100%;
     min-height: 44px;
   }

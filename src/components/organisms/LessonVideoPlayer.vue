@@ -60,6 +60,7 @@ const playbackRate = ref(1)
 const overlayFeedback = ref<OverlayFeedback>(null)
 const openMenu = ref<'speed' | 'quality' | null>(null)
 const volumePopoverOpen = ref(false)
+const closeVolumeAfterDrag = ref(false)
 const fullscreenHint = ref(false)
 const isFullscreen = ref(false)
 const draggingProgress = ref(false)
@@ -260,6 +261,10 @@ function onVolumeTrackPointerUp(e: PointerEvent) {
   } catch {
     /* ignore */
   }
+  if (closeVolumeAfterDrag.value) {
+    closeVolumeAfterDrag.value = false
+    volumePopoverOpen.value = false
+  }
 }
 
 function toggleMute() {
@@ -281,15 +286,19 @@ function toggleVolumePopover() {
 }
 
 function onVolumeWrapMouseEnter() {
+  closeVolumeAfterDrag.value = false
   if (window.matchMedia('(hover: hover)').matches) {
     volumePopoverOpen.value = true
   }
 }
 
 function onVolumeWrapMouseLeave() {
-  if (window.matchMedia('(hover: hover)').matches) {
-    volumePopoverOpen.value = false
+  if (!window.matchMedia('(hover: hover)').matches) return
+  if (draggingVolume.value) {
+    closeVolumeAfterDrag.value = true
+    return
   }
+  volumePopoverOpen.value = false
 }
 
 function onVideoAreaPointerUp(e: PointerEvent) {
@@ -450,6 +459,11 @@ watch(
   () => {
     activeQualityIndex.value = 0
     openMenu.value = null
+    volumePopoverOpen.value = false
+    paused.value = true
+    currentTime.value = 0
+    duration.value = 0
+    overlayFeedback.value = null
   }
 )
 
@@ -781,7 +795,7 @@ $lesson-player-chrome-bg: #010307;
     border-radius: var(--radius-10);
     background: rgba(1, 3, 7, 0.85);
     color: var(--white);
-    font-family: var(--second-family);
+    font-family: var(--font-family);
     font-weight: var(--font-semi-bold);
     font-size: 13px;
     white-space: nowrap;
@@ -797,7 +811,7 @@ $lesson-player-chrome-bg: #010307;
     border-radius: 4px;
     border: 1px solid rgba(255, 255, 255, 0.35);
     background: rgba(255, 255, 255, 0.12);
-    font-family: var(--second-family);
+    font-family: var(--font-family);
     font-size: 12px;
     font-weight: var(--font-semi-bold);
   }
@@ -857,7 +871,7 @@ $lesson-player-chrome-bg: #010307;
   &__skip-num {
     position: absolute;
     margin-top: 2px;
-    font-family: var(--second-family);
+    font-family: var(--font-family);
     font-weight: var(--font-semi-bold);
     font-size: 11px;
     line-height: 1;
@@ -947,7 +961,7 @@ $lesson-player-chrome-bg: #010307;
     margin: 0;
     flex: 1;
     text-align: center;
-    font-family: var(--second-family);
+    font-family: var(--font-family);
     font-weight: var(--font-semi-bold);
     font-size: 13px;
     color: var(--white);
@@ -1000,7 +1014,7 @@ $lesson-player-chrome-bg: #010307;
     padding: 0;
     border: none;
     background: transparent;
-    font-family: var(--second-family);
+    font-family: var(--font-family);
     font-weight: var(--font-semi-bold);
     font-size: 13px;
     color: var(--white);
@@ -1030,10 +1044,10 @@ $lesson-player-chrome-bg: #010307;
 
   &__volume-pop {
     position: absolute;
-    bottom: calc(100% + 8px);
+    bottom: 100%;
     left: 50%;
     transform: translateX(-50%);
-    padding-bottom: 4px;
+    padding: 4px 8px 12px;
   }
 
   &__volume-track {
@@ -1080,7 +1094,7 @@ $lesson-player-chrome-bg: #010307;
 
   &__menu-title {
     margin: 0 16px 8px;
-    font-family: var(--second-family);
+    font-family: var(--font-family);
     font-weight: var(--font-semi-bold);
     font-size: 12px;
     color: rgba(255, 255, 255, 0.65);
@@ -1101,7 +1115,7 @@ $lesson-player-chrome-bg: #010307;
     padding: 10px 16px;
     border: none;
     background: transparent;
-    font-family: var(--second-family);
+    font-family: var(--font-family);
     font-weight: var(--font-semi-bold);
     font-size: 13px;
     color: var(--white);

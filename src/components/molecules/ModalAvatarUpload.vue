@@ -112,7 +112,7 @@ const onFileChange = (event: Event) => {
 
   &__text {
     margin: 0;
-    font-family: var(--second-family);
+    font-family: var(--font-family);
     font-weight: var(--font-medium);
     font-size: var(--size-13);
     text-align: center;

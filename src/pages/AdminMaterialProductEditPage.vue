@@ -35,7 +35,6 @@ const folderLabel = ref('')
 const topics = ref<AdminMaterialProductTopicRow[]>([])
 const activeExtensions = ref<AdminMaterialActiveExtensionMock[]>([])
 const paymentLink = ref('')
-const productImageInput = ref<HTMLInputElement | null>(null)
 
 const sectionTitle = computed(() =>
   isAdminMaterialSectionId(sectionId.value)
@@ -209,35 +208,11 @@ const onDeleteProduct = async () => {
   void router.push({ name: 'admin-materials' })
 }
 
-const onUploadImage = () => {
-  productImageInput.value?.click()
-}
-
-const onImageSelected = async (event: Event) => {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (!file) return
-  const result = await adminService.uploadProductImage(productId.value, file)
-  if (!result.success) {
-    notify({ type: 'error', message: result.error || 'Не удалось загрузить изображение' })
-    return
-  }
-  notify({ type: 'success', message: 'Изображение загружено' })
-  await loadProduct()
-  input.value = ''
-}
 </script>
 
 <template>
   <AppLayout>
     <section v-if="!loading && productDetail" class="admin-material-product-edit-page">
-      <input
-        ref="productImageInput"
-        type="file"
-        accept="image/*"
-        class="admin-material-product-edit-page__file-input"
-        @change="onImageSelected"
-      />
       <div class="admin-material-product-edit-page__panel">
         <AdminProductEditGeneralSection
           v-model:title="formTitle"
@@ -250,10 +225,6 @@ const onImageSelected = async (event: Event) => {
           @save="onSave"
           @cancel="onCancel"
         />
-
-        <button type="button" class="admin-material-product-edit-page__upload" @click="onUploadImage">
-          Загрузить обложку
-        </button>
 
         <AdminProductTopicsSection
           :topics="topics"
@@ -287,24 +258,6 @@ const onImageSelected = async (event: Event) => {
 <style lang="scss" scoped>
 .admin-material-product-edit-page {
   margin-top: var(--sp-40);
-
-  &__file-input {
-    display: none;
-  }
-
-  &__upload {
-    align-self: flex-start;
-    background: none;
-    border: none;
-    color: var(--text-accent);
-    cursor: pointer;
-    font-family: var(--font-family);
-    font-size: var(--size-15);
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
 
   &__loading {
     margin: var(--sp-40);

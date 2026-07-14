@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import BaseButton from '@/components/atoms/BaseButton.vue'
 import AdminDateField from '@/components/molecules/AdminDateField.vue'
 import AdminTopicNotificationsTemplateSelect from '@/components/molecules/AdminTopicNotificationsTemplateSelect.vue'
 import type { AdminTopicNotificationTemplate } from '@/utils/adminTopicNotifications'
@@ -77,20 +78,22 @@ const onTemplateSelect = (template: AdminTopicNotificationTemplate) => {
     </div>
 
     <div class="admin-topic-notifications-compose-section__actions">
-      <button
-        type="button"
+      <BaseButton
         class="admin-topic-notifications-compose-section__btn"
+        variant="outline"
+        size="medium"
+        shape="rounded"
+        text="Сохранить и отправить"
         @click="emit('save-and-send')"
-      >
-        Сохранить и отправить
-      </button>
-      <button
-        type="button"
+      />
+      <BaseButton
         class="admin-topic-notifications-compose-section__btn"
+        variant="outline"
+        size="medium"
+        shape="rounded"
+        text="Сохранить как шаблон"
         @click="emit('save-as-template')"
-      >
-        Сохранить как шаблон
-      </button>
+      />
     </div>
   </section>
 </template>
@@ -214,35 +217,32 @@ const onTemplateSelect = (template: AdminTopicNotificationTemplate) => {
   max-width: 794px;
 }
 
-.admin-topic-notifications-compose-section__btn {
-  margin: 0;
+:deep(.admin-topic-notifications-compose-section__btn.base-button) {
+  height: auto;
   padding: var(--sp-10);
-  border: 1px solid #010307;
-  border-radius: var(--radius-10);
-  background-color: var(--white);
+  border-color: #010307;
   font-family: var(--font-family);
   font-weight: var(--font-semi-bold);
   font-size: var(--size-20);
   line-height: normal;
   color: #010307;
-  cursor: pointer;
-  white-space: nowrap;
+}
 
-  &:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring-main);
-  }
+:deep(
+  .admin-topic-notifications-compose-section__btn.base-button_outline:hover:not(.base-button_disabled)
+) {
+  background-color: var(--text-accent);
+  border-color: var(--text-accent);
+  color: var(--white);
+  transform: none;
+}
 
-  &:hover {
-    background-color: var(--text-accent);
-    border-color: var(--text-accent);
-    color: var(--white);
-  }
-
-  &:active {
-    background-color: color-mix(in srgb, var(--text-accent) 88%, #000);
-    border-color: color-mix(in srgb, var(--text-accent) 88%, #000);
-    color: var(--white);
-  }
+:deep(
+  .admin-topic-notifications-compose-section__btn.base-button_outline:active:not(.base-button_disabled)
+) {
+  background-color: color-mix(in srgb, var(--text-accent) 88%, #000);
+  border-color: color-mix(in srgb, var(--text-accent) 88%, #000);
+  color: var(--white);
+  transform: none;
 }
 </style>

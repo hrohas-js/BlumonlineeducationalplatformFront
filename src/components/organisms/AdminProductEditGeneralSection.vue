@@ -97,8 +97,6 @@ const emit = defineEmits<Emits>()
       </AdminLabeledControlRow>
     </div>
 
-    <hr class="admin-product-edit-general-section__rule" />
-
     <div class="admin-product-edit-general-section__actions">
       <BaseButton variant="primary" size="medium" text="Сохранить" @click="emit('save')" />
       <BaseButton variant="outline" size="medium" text="Отмена" @click="emit('cancel')" />
@@ -145,10 +143,18 @@ const emit = defineEmits<Emits>()
 }
 
 .admin-product-edit-general-section__deadline-row {
-  :deep(.admin-labeled-control-row__control) {
-    padding: 0;
-    border-radius: 0;
+  :deep(.admin-date-field__field) {
+    border: none;
     background-color: transparent;
+  }
+
+  :deep(.admin-date-field__input) {
+    padding: 0;
+    min-height: 0;
+    font: inherit;
+    font-weight: inherit;
+    font-size: inherit;
+    text-align: left;
   }
 }
 

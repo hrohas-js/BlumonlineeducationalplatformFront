@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import LessonVideoPlayer from '@/components/organisms/LessonVideoPlayer.vue'
 import { validateAdminTopicVideoFile } from '@/utils/adminTopicVideoFile'
 
 const title = defineModel<string>('title', { required: true })
@@ -13,48 +14,13 @@ interface Emits {
 
 const emit = defineEmits<Emits>()
 
-const videoRef = ref<HTMLVideoElement | null>(null)
 const fileInputRef = ref<HTMLInputElement | null>(null)
-const currentTime = ref(0)
-const duration = ref(0)
 const addFileError = ref('')
 const isValidatingFile = ref(false)
 
 const hasVideo = computed(() => Boolean(videoSrc.value?.trim()))
 
 const ACCEPT_INPUT = 'video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov'
-
-const timeLabel = computed(
-  () => `${formatTime(currentTime.value)} / ${formatTime(duration.value)}`,
-)
-
-const progressPct = computed(() => {
-  if (!duration.value) return 0
-  return Math.min(100, Math.max(0, (currentTime.value / duration.value) * 100))
-})
-
-function formatTime(sec: number): string {
-  if (!Number.isFinite(sec) || sec < 0) return '0:00'
-  const h = Math.floor(sec / 3600)
-  const m = Math.floor((sec % 3600) / 60)
-  const s = Math.floor(sec % 60)
-  if (h > 0) {
-    return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-  }
-  return `${m}:${String(s).padStart(2, '0')}`
-}
-
-function syncFromVideo() {
-  const v = videoRef.value
-  if (!v) return
-  currentTime.value = v.currentTime
-  duration.value = Number.isFinite(v.duration) ? v.duration : 0
-}
-
-function resetPlaybackState() {
-  currentTime.value = 0
-  duration.value = 0
-}
 
 function revokeBlobUrl(url: string | undefined) {
   if (url?.startsWith('blob:')) {
@@ -94,18 +60,6 @@ async function onFileInputChange(event: Event) {
   }
 }
 
-function togglePlay() {
-  const v = videoRef.value
-  if (!v) return
-  if (v.paused) {
-    void v.play().catch(() => {
-      /* decode / autoplay */
-    })
-  } else {
-    v.pause()
-  }
-}
-
 const toggleTimecode = () => {
   timecodeEnabled.value = !timecodeEnabled.value
 }
@@ -114,7 +68,6 @@ watch(videoSrc, (next, prev) => {
   if (prev && prev !== next) {
     revokeBlobUrl(prev)
   }
-  resetPlaybackState()
   if (!next?.trim()) {
     timecodeEnabled.value = false
   }
@@ -153,83 +106,12 @@ onBeforeUnmount(() => {
 
     <div class="admin-topic-edit-video-row__body">
       <div
-        v-if="hasVideo"
+        v-if="hasVideo && videoSrc"
         class="admin-topic-edit-video-row__player"
         role="region"
         aria-label="Предпросмотр видео"
       >
-        <video
-          ref="videoRef"
-          class="admin-topic-edit-video-row__video"
-          :src="videoSrc"
-          playsinline
-          preload="metadata"
-          @loadedmetadata="syncFromVideo"
-          @timeupdate="syncFromVideo"
-          @durationchange="syncFromVideo"
-        />
-        <div class="admin-topic-edit-video-row__progress-track" aria-hidden="true">
-          <div
-            class="admin-topic-edit-video-row__progress-fill"
-            :style="{ width: `${progressPct}%` }"
-          />
-        </div>
-        <div class="admin-topic-edit-video-row__player-chrome">
-          <div class="admin-topic-edit-video-row__chrome-left">
-            <button
-              type="button"
-              class="admin-topic-edit-video-row__icon-btn"
-              aria-label="Воспроизведение / пауза"
-              @click="togglePlay"
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path
-                  d="M9 6.5v11l9-5.5L9 6.5z"
-                  stroke="currentColor"
-                  stroke-width="1.2"
-                  stroke-linejoin="round"
-                  fill="currentColor"
-                />
-              </svg>
-            </button>
-            <span class="admin-topic-edit-video-row__icon-btn" aria-hidden="true">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M11 5L6 9H3v6h3l5 4V5zM16 9a4 4 0 010 6"
-                  stroke="currentColor"
-                  stroke-width="1.2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </span>
-          </div>
-          <span class="admin-topic-edit-video-row__time" aria-live="polite">{{ timeLabel }}</span>
-          <div class="admin-topic-edit-video-row__chrome-right">
-            <span class="admin-topic-edit-video-row__speed">1х</span>
-            <span class="admin-topic-edit-video-row__icon-btn" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="1.2" />
-                <path
-                  d="M19 12a7 7 0 00-.11-1.23l2-1.15-2-3.46-2 .12a7.2 7.2 0 00-1-.58l-.31-2.07h-4l-.31 2.07c-.35.17-.68.36-1 .58l-2-.12-2 3.46 2 1.15A7 7 0 005 12a7 7 0 00.11 1.23l-2 1.15 2 3.46 2-.12c.32.22.65.41 1 .58l.31 2.07h4l.31-2.07c.35-.17.68-.36 1-.58l2 .12 2-3.46-2-1.15c.07-.4.11-.81.11-1.23z"
-                  stroke="currentColor"
-                  stroke-width="1"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </span>
-            <span class="admin-topic-edit-video-row__icon-btn" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4"
-                  stroke="currentColor"
-                  stroke-width="1.2"
-                  stroke-linecap="round"
-                />
-              </svg>
-            </span>
-          </div>
-        </div>
+        <LessonVideoPlayer :src="videoSrc" />
       </div>
 
       <div v-if="!hasVideo" class="admin-topic-edit-video-row__add-only">
@@ -355,85 +237,15 @@ onBeforeUnmount(() => {
   overflow: hidden;
   background: #1a1a1a;
   flex-shrink: 0;
-}
-
-.admin-topic-edit-video-row__video {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.admin-topic-edit-video-row__progress-track {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 44px;
-  height: 5px;
-  background: var(--white);
-  z-index: 1;
-}
-
-.admin-topic-edit-video-row__progress-fill {
-  height: 5px;
-  background: #178ef0;
-  transition: width 0.1s linear;
-}
-
-.admin-topic-edit-video-row__player-chrome {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-15);
-  padding: 10px 15px;
-  background: #010307;
-  box-sizing: border-box;
-  z-index: 1;
-}
+  flex-direction: column;
 
-.admin-topic-edit-video-row__chrome-left,
-.admin-topic-edit-video-row__chrome-right {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-15);
-}
-
-.admin-topic-edit-video-row__chrome-right {
-  justify-content: flex-end;
-  min-width: 0;
-}
-
-.admin-topic-edit-video-row__icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: var(--white);
-  flex-shrink: 0;
-  cursor: pointer;
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring-main);
+  :deep(.lesson-video-player) {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: unset;
+    border-radius: 0;
   }
-}
-
-.admin-topic-edit-video-row__time,
-.admin-topic-edit-video-row__speed {
-  font-family: var(--font-family);
-  font-weight: var(--font-semi-bold);
-  font-size: 13px;
-  line-height: normal;
-  color: var(--white);
-  white-space: nowrap;
 }
 
 .admin-topic-edit-video-row__add-only {

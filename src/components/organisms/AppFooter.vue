@@ -173,7 +173,7 @@ const instagramGradientId = 'app-footer-instagram-gradient'
   }
 
   &__link {
-    font-family: var(--second-family);
+    font-family: var(--font-family);
     font-weight: var(--font-medium);
     font-size: clamp(20px, calc(20px + 10 * ((100vw - 430px) / 594)), 30px);
     text-align: center;
@@ -190,7 +190,7 @@ const instagramGradientId = 'app-footer-instagram-gradient'
   }
 
   &__legal-link {
-    font-family: var(--second-family);
+    font-family: var(--font-family);
     font-weight: var(--font-medium);
     font-size: clamp(15px, calc(15px + 10 * ((100vw - 430px) / 594)), 25px);
     text-align: right;
@@ -209,7 +209,7 @@ const instagramGradientId = 'app-footer-instagram-gradient'
 
   &__bottom-text {
     margin: 0;
-    font-family: var(--second-family);
+    font-family: var(--font-family);
     font-weight: var(--font-regular);
     font-size: clamp(15px, calc(15px + 10 * ((100vw - 430px) / 594)), 25px);
     color: var(--osnovnoy-tekst);

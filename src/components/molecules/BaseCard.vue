@@ -92,7 +92,7 @@ withDefaults(defineProps<Props>(), {
   }
 
   &__title {
-    @include inter-semi-bold;
+    @include font-main($font-semi-bold);
     font-size: var(--fs-lg);
     color: var(--black);
     margin: 0;

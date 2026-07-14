@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import BaseButton from '@/components/atoms/BaseButton.vue'
 import AdminStudentAutocompleteField, {
   type AddStudentRow,
 } from '@/components/molecules/AdminStudentAutocompleteField.vue'
@@ -69,17 +70,23 @@ const onSubmit = () => {
     </div>
 
     <div class="admin-add-students-form__footer">
-      <button type="button" class="admin-add-students-form__excel-btn" @click="onExcelClick">
-        Загрузить из Excel
-      </button>
-      <button
-        type="button"
+      <BaseButton
+        class="admin-add-students-form__excel-btn"
+        variant="outline"
+        size="medium"
+        shape="rounded"
+        text="Загрузить из Excel"
+        @click="onExcelClick"
+      />
+      <BaseButton
         class="admin-add-students-form__submit-btn"
+        variant="outline"
+        size="medium"
+        shape="rounded"
+        :text="submitting ? 'Добавляем…' : 'Добавить учеников'"
         :disabled="submitting"
         @click="onSubmit"
-      >
-        {{ submitting ? 'Добавляем…' : 'Добавить учеников' }}
-      </button>
+      />
     </div>
   </div>
 </template>
@@ -109,54 +116,35 @@ const onSubmit = () => {
 
 .admin-add-students-form__excel-btn {
   margin: 0;
-  padding: 10px;
-  border: 1px solid #010307;
-  border-radius: 10px;
-  background: var(--white);
-  color: #010307;
-  font-family: var(--font-family);
-  font-weight: var(--font-semi-bold);
-  font-size: var(--size-20);
-  line-height: normal;
-  cursor: pointer;
-
-  &:hover {
-    filter: brightness(0.98);
-  }
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring-main);
-  }
 }
 
 .admin-add-students-form__submit-btn {
   margin: 0;
   margin-left: auto;
+}
+
+:deep(.admin-add-students-form__excel-btn.base-button),
+:deep(.admin-add-students-form__submit-btn.base-button) {
+  height: auto;
   padding: 10px;
-  border: 1px solid #178ef0;
-  border-radius: 10px;
-  background: var(--white);
-  color: #010307;
   font-family: var(--font-family);
   font-weight: var(--font-semi-bold);
   font-size: var(--size-20);
   line-height: normal;
-  cursor: pointer;
+}
 
-  &:hover:not(:disabled) {
-    background-color: rgba(23, 142, 240, 0.06);
-  }
+:deep(.admin-add-students-form__excel-btn.base-button) {
+  border-color: #010307;
+  color: #010307;
+}
 
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
+:deep(.admin-add-students-form__submit-btn.base-button) {
+  border-color: var(--knopka);
+  color: #010307;
+}
 
-  &:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring-main);
-  }
+:deep(.admin-add-students-form__submit-btn.base-button_outline:hover:not(.base-button_disabled)) {
+  background-color: rgba(23, 142, 240, 0.06);
 }
 
 @media (max-width: 479px) {
@@ -168,7 +156,6 @@ const onSubmit = () => {
   .admin-add-students-form__excel-btn,
   .admin-add-students-form__submit-btn {
     width: 100%;
-    min-height: 44px;
   }
 
   .admin-add-students-form__submit-btn {

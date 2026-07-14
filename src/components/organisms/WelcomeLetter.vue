@@ -75,7 +75,7 @@ import avatarImg from '@/assets/img/webp/avatar.webp'
   }
 
   &__paragraph {
-    font-family: var(--second-family);
+    font-family: var(--font-family);
     font-style: italic;
     font-weight: 600;
     font-size: var(--size-15);

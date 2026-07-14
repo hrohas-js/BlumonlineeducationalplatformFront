@@ -72,7 +72,7 @@ const showBootLoader = computed(() => !authStore.sessionInitialized)
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  font-family: Inter, system-ui, sans-serif;
+  font-family: Montserrat, system-ui, sans-serif;
   font-size: 1rem;
   color: #4a5568;
 }

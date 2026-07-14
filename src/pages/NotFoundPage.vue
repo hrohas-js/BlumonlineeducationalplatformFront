@@ -46,7 +46,7 @@ import AppLayout from '@/components/layouts/AppLayout.vue'
     display: flex;
     flex-direction: column;
     align-items: center;
-    font-family: var(--second-family);
+    font-family: var(--font-family);
     font-weight: 500;
     font-size: clamp(20px, calc(20px + 15 * ((100vw - 430px) / 594)), 35px);
     text-align: center;
@@ -65,7 +65,7 @@ import AppLayout from '@/components/layouts/AppLayout.vue'
     border: 3px solid var(--dopolnitelnyy-tekst);
     border-radius: var(--radius-10);
     background: var(--fon-bloka);
-    font-family: var(--second-family);
+    font-family: var(--font-family);
     font-weight: 500;
     font-size: clamp(var(--size-20), calc(var(--size-20) + (25 - 20) * ((100vw - 430px) / (1024 - 430))), var(--size-25));
     text-align: center;

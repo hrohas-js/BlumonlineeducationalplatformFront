@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseButton from '@/components/atoms/BaseButton.vue'
 import AdminTopicEditVideoRow from '@/components/molecules/AdminTopicEditVideoRow.vue'
 import type { AdminTopicEditVideoMock } from '@/utils/adminMaterialCatalog'
 
@@ -39,9 +40,14 @@ const onDelete = (videoId: string) => {
       />
     </div>
     <div class="admin-topic-edit-videos-section__add-wrap">
-      <button type="button" class="admin-topic-edit-videos-section__add-btn" @click="emit('add-video')">
-        Добавить видеофайл
-      </button>
+      <BaseButton
+        class="admin-topic-edit-videos-section__add-btn"
+        variant="outline"
+        size="medium"
+        shape="rounded"
+        text="Добавить видеофайл"
+        @click="emit('add-video')"
+      />
     </div>
   </section>
 </template>
@@ -78,27 +84,14 @@ const onDelete = (videoId: string) => {
   width: 100%;
 }
 
-.admin-topic-edit-videos-section__add-btn {
-  margin: 0;
+:deep(.admin-topic-edit-videos-section__add-btn.base-button) {
+  height: auto;
   padding: 10px;
-  border: 1px solid #010307;
-  border-radius: var(--radius-10);
-  background-color: var(--white);
+  border-color: #010307;
   font-family: var(--font-family);
   font-weight: var(--font-semi-bold);
   font-size: var(--size-20);
   line-height: normal;
   color: #010307;
-  cursor: pointer;
-  box-sizing: border-box;
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring-main);
-  }
-
-  &:hover {
-    filter: brightness(0.98);
-  }
 }
 </style>

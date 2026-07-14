@@ -58,7 +58,7 @@ defineEmits<Emits>()
 }
 
 .notification {
-  @include inter-medium;
+  @include font-main($font-medium);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -97,7 +97,7 @@ defineEmits<Emits>()
   }
 
   &__close {
-    @include inter-bold;
+    @include font-main($font-bold);
     font-size: var(--size-18);
     line-height: 1;
     opacity: var(--opacity-muted);

@@ -157,7 +157,7 @@ onUnmounted(() => {
   }
 
   &__nav-link {
-    font-family: var(--second-family);
+    font-family: var(--font-family);
     font-weight: var(--font-regular);
     font-size: var(--size-20);
     text-align: center;
@@ -181,7 +181,7 @@ onUnmounted(() => {
   }
 
   &__support-button {
-    font-family: var(--second-family);
+    font-family: var(--font-family);
     font-weight: var(--font-medium);
     font-size: var(--size-20);
     white-space: nowrap;

@@ -5,7 +5,7 @@
  * - Алиас @ → src/ повторяет путь ~/  из Nuxt-проекта mirror-frontend
  * - additionalData инжектирует variables.scss и placeholder-файлы в каждый
  *   SCSS-файл компонента автоматически — точно как в nuxt.config.ts исходного проекта.
- *   Это позволяет использовать $main, @include inter-medium, @extend %u-mt-16
+ *   Это позволяет использовать $main, @include font-main, @extend %u-mt-16
  *   в <style lang="scss" scoped> без ручных @import.
  */
 import path from 'node:path'

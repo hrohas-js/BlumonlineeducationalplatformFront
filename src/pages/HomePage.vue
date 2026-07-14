@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/components/layouts/AppLayout.vue'
 import StudentProfileLayout from '@/components/layouts/StudentProfileLayout.vue'
+import BaseButton from '@/components/atoms/BaseButton.vue'
 import HomeProfileInfoTableItem from '@/components/atoms/HomeProfileInfoTableItem.vue'
 import HomeProfileAvatarPanel from '@/components/organisms/HomeProfileAvatarPanel.vue'
 import LearningCourseCard from '@/components/organisms/LearningCourseCard.vue'
@@ -473,14 +474,15 @@ watch(
           </article>
         </Transition>
 
-        <button
+        <BaseButton
           v-if="activeSection === 'profile'"
-          type="button"
           class="home-profile__learning-cta"
+          variant="primary"
+          size="medium"
+          shape="rounded"
+          text="Приступить к изучению"
           @click="goToLearningSection"
-        >
-          Приступить к изучению
-        </button>
+        />
     </StudentProfileLayout>
   </AppLayout>
 </template>
@@ -597,9 +599,15 @@ watch(
     max-width: var(--size-294);
     margin: var(--sp-40) auto 0;
 
-    border: none;
-    border-radius: var(--radius-10);
-    background: var(--dopolnitelnyy-tekst);
+    @media (max-width: 1023px) {
+      display: inline-flex;
+    }
+  }
+
+  :deep(.home-profile__learning-cta.base-button_primary) {
+    height: auto;
+    background-color: var(--knopka);
+    border-color: var(--knopka);
     padding: var(--sp-12) var(--sp-20);
     font-family: var(--font-family);
     font-weight: var(--font-semi-bold);
@@ -611,12 +619,16 @@ watch(
       ),
       var(--fs-18)
     );
-    text-align: center;
     color: var(--fon-bloka);
-    cursor: pointer;
 
-    @media (max-width: 1023px) {
-      display: block;
+    &:hover:not(.base-button_disabled) {
+      background-color: color-mix(in srgb, var(--knopka) 92%, black);
+      border-color: color-mix(in srgb, var(--knopka) 92%, black);
+    }
+
+    &:active:not(.base-button_disabled) {
+      background-color: color-mix(in srgb, var(--knopka) 86%, black);
+      border-color: color-mix(in srgb, var(--knopka) 86%, black);
     }
   }
 }

@@ -87,22 +87,10 @@ npm run type-check   # vue-tsc --noEmit
 npm run lint         # eslint --fix
 ```
 
-### Шрифты Inter
+### Шрифты Montserrat
 
-Папка `src/assets/fonts/Inter/` — **заглушка**. Скопируй TTF-файлы шрифта Inter (300–800) из исходного проекта:
-
-```bash
-cp -r /path/to/mirror-frontend-main/assets/fonts/Inter/* \
-      src/assets/fonts/Inter/
-```
-
-Нужные файлы (из `variables.scss`):
-- `Inter_18pt-Light.ttf` (300)
-- `Inter_18pt-Regular.ttf` (400)
-- `Inter_18pt-Medium.ttf` (500)
-- `Inter_18pt-SemiBold.ttf` (600)
-- `Inter_18pt-Bold.ttf` (700)
-- `Inter_18pt-ExtraBold.ttf` (800)
+Шрифт подключается через `@fontsource/montserrat` в `src/main.ts` (веса 300–800 + 600 italic).
+Локальные TTF-файлы не требуются — Vite копирует woff2 из `node_modules` в `dist/`.
 
 ---
 
@@ -161,10 +149,10 @@ const classes = computed(() => [
 </template>
 
 <style lang="scss" scoped>
-/* Переменные $main, $black и миксины @include inter-medium доступны
+/* Переменные $main, $black и миксины @include font-main доступны
    без @import благодаря vite.config.ts → additionalData */
 .my-component {
-  @include inter-regular;
+  @include font-main($font-regular);
   color: $black;
 
   &_primary {
@@ -281,15 +269,15 @@ const { data: doctors, loading, error } = useFetch(() => doctorsService.getAll()
 
 ```scss
 .my-element {
-  @include inter-light;       // font-weight: 300
-  @include inter-regular;     // font-weight: 400
-  @include inter-medium;      // font-weight: 500
-  @include inter-semi-bold;   // font-weight: 600
-  @include inter-bold;        // font-weight: 700
-  @include inter-extra-bold;  // font-weight: 800
+  @include font-main($font-light);       // font-weight: 300
+  @include font-main($font-regular);     // font-weight: 400
+  @include font-main($font-medium);      // font-weight: 500
+  @include font-main($font-semi-bold);   // font-weight: 600
+  @include font-main($font-bold);        // font-weight: 700
+  @include font-main($font-extra-bold);  // font-weight: 800
 
   // Или напрямую с нужным весом:
-  @include font-inter(500);
+  @include font-main(500);
 }
 ```
 

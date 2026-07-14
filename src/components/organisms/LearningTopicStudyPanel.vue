@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import BaseButton from '@/components/atoms/BaseButton.vue'
 import LearningCourseAccessProgress from '@/components/molecules/LearningCourseAccessProgress.vue'
 import LearningCollapsibleChip from '@/components/molecules/LearningCollapsibleChip.vue'
 import LearningTopicCompleteToggle from '@/components/molecules/LearningTopicCompleteToggle.vue'
@@ -79,14 +80,15 @@ const goNextTopic = () => {
         <h3 class="learning-topic-study-panel__title">{{ topic.title }}</h3>
         <p class="learning-topic-study-panel__access">Срок доступа: {{ accessLabel }}</p>
       </div>
-      <button
+      <BaseButton
         v-if="nextTopicId"
-        type="button"
         class="learning-topic-study-panel__next"
+        variant="outline"
+        size="small"
+        shape="rounded"
+        text="Следующая тема"
         @click="goNextTopic"
-      >
-        Следующая тема
-      </button>
+      />
     </header>
 
     <template v-if="lessonLayout">
@@ -192,16 +194,17 @@ const goNextTopic = () => {
 
   &__next {
     flex-shrink: 0;
-    border: var(--border-2) solid var(--dopolnitelnyy-tekst);
-    border-radius: var(--radius-10);
+  }
+
+  :deep(.learning-topic-study-panel__next.base-button) {
+    height: auto;
+    border-color: var(--dopolnitelnyy-tekst);
     padding: var(--sp-4) var(--sp-10);
     background: transparent;
     font-family: var(--font-family);
     font-weight: var(--font-medium);
     font-size: var(--size-15);
     color: var(--dopolnitelnyy-tekst);
-    cursor: pointer;
-    white-space: nowrap;
   }
 
   &__materials,
@@ -237,6 +240,9 @@ const goNextTopic = () => {
 
     &__next {
       align-self: flex-start;
+    }
+
+    :deep(.learning-topic-study-panel__next.base-button) {
       font-size: var(--size-13);
     }
   }

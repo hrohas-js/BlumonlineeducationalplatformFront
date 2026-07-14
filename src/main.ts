@@ -23,11 +23,8 @@ import { bootstrapAuthSession } from './bootstrap/auth'
 
 library.add(faEye, faEyeSlash)
 
-// Локальные шрифты (Figma design system)
+// Локальные шрифты (Montserrat only)
 // @fontsource bundlе woff2-файлы, Vite автоматически копирует их в dist/
-import '@fontsource/inter/400.css'             // Inter Regular
-import '@fontsource/inter/500.css'             // Inter Medium
-import '@fontsource/inter/600.css'             // Inter SemiBold
 import '@fontsource/montserrat/300.css'        // Montserrat Light
 import '@fontsource/montserrat/400.css'        // Montserrat Regular
 import '@fontsource/montserrat/500.css'        // Montserrat Medium
@@ -35,11 +32,6 @@ import '@fontsource/montserrat/600.css'        // Montserrat SemiBold
 import '@fontsource/montserrat/600-italic.css' // Montserrat SemiBold Italic
 import '@fontsource/montserrat/700.css'        // Montserrat Bold
 import '@fontsource/montserrat/800.css'        // Montserrat ExtraBold
-import '@fontsource/roboto/300.css'         // Roboto Light
-import '@fontsource/roboto/400.css'         // Roboto Regular
-import '@fontsource/roboto/500.css'         // Roboto Medium
-import '@fontsource/roboto/600.css'         // Roboto SemiBold
-import '@fontsource/roboto/800.css'         // Roboto ExtraBold
 
 // Глобальные стили (reset + typography + spacing utilities)
 // Зеркало порядка css[] из nuxt.config.ts (см. ARCHITECTURE_ANALYSIS.md §2)

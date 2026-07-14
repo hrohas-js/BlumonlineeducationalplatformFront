@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/components/layouts/AppLayout.vue'
+import BaseButton from '@/components/atoms/BaseButton.vue'
 import { paymentsService } from '@/services/api/endpoints/payments'
 import type { PaymentStatusResponse } from '@/services/api/types'
 
@@ -84,12 +85,20 @@ onMounted(load)
         </template>
 
         <div class="payment-result__actions">
-          <button type="button" class="payment-result__primary" @click="goToRenewal">
-            Повторить оплату
-          </button>
-          <button type="button" class="payment-result__secondary" @click="goToProfile">
-            В профиль
-          </button>
+          <BaseButton
+            class="payment-result__primary"
+            variant="primary"
+            shape="rounded"
+            text="Повторить оплату"
+            @click="goToRenewal"
+          />
+          <BaseButton
+            class="payment-result__secondary"
+            variant="outline"
+            shape="rounded"
+            text="В профиль"
+            @click="goToProfile"
+          />
         </div>
       </div>
     </section>
@@ -134,7 +143,7 @@ onMounted(load)
 
   &__hint {
     margin: 0;
-    font-family: var(--second-family);
+    font-family: var(--font-family);
     font-weight: var(--font-medium);
     font-size: var(--size-15);
     color: var(--osnovnoy-tekst);
@@ -157,7 +166,7 @@ onMounted(load)
     display: flex;
     justify-content: space-between;
     gap: var(--sp-20);
-    font-family: var(--second-family);
+    font-family: var(--font-family);
     font-size: var(--size-15);
 
     dt {
@@ -182,38 +191,34 @@ onMounted(load)
     justify-content: center;
   }
 
-  &__primary {
-    background: var(--knopka);
+  :deep(.payment-result__primary.base-button_primary) {
+    background-color: var(--knopka);
+    border-color: var(--knopka);
     color: var(--cvet-v-knopke);
-    border: none;
-    border-radius: var(--radius-10);
+    height: auto;
     padding: var(--sp-10) var(--sp-32);
-    font-family: var(--font-family);
     font-weight: var(--font-semi-bold);
     font-size: var(--size-20);
-    cursor: pointer;
-    transition: background-color 0.2s ease;
 
-    &:hover {
-      background: color-mix(in srgb, var(--knopka) 92%, black);
+    &:hover:not(.base-button_disabled) {
+      background-color: color-mix(in srgb, var(--knopka) 92%, black);
+      border-color: color-mix(in srgb, var(--knopka) 92%, black);
+      transform: none;
     }
   }
 
-  &__secondary {
-    background: transparent;
+  :deep(.payment-result__secondary.base-button_outline) {
+    border-color: var(--knopka);
     color: var(--osnovnoy-tekst);
-    border: var(--border-2) solid var(--knopka);
-    border-radius: var(--radius-10);
+    height: auto;
     padding: var(--sp-10) var(--sp-32);
-    font-family: var(--font-family);
     font-weight: var(--font-semi-bold);
     font-size: var(--size-20);
-    cursor: pointer;
-    transition: background-color 0.2s ease;
 
-    &:hover {
-      background: var(--knopka);
+    &:hover:not(.base-button_disabled) {
+      background-color: var(--knopka);
       color: var(--cvet-v-knopke);
+      transform: none;
     }
   }
 }

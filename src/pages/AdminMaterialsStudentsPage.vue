@@ -46,7 +46,11 @@ const sourceRows = computed<AdminStudentRow[]>(() => {
 const filteredRows = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
   if (!q) return sourceRows.value
-  return sourceRows.value.filter((row) => row.email.toLowerCase().includes(q))
+  return sourceRows.value.filter(
+    (row) =>
+      row.email.toLowerCase().includes(q) ||
+      row.name.toLowerCase().includes(q),
+  )
 })
 
 const displayRows = computed(() => {

@@ -99,7 +99,7 @@ onUnmounted(() => {
   pointer-events: none;
   user-select: none;
   -webkit-user-select: none;
-  font-family: var(--second-family);
+  font-family: var(--font-family);
   font-weight: var(--font-semi-bold);
   font-size: clamp(11px, 1.4vw, 14px);
   color: var(--white);

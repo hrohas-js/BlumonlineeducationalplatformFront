@@ -158,7 +158,7 @@ const handleInput = (event: Event) => {
   gap: var(--sp-6);
 
   &__label {
-    @include inter-medium;
+    @include font-main($font-medium);
     font-size: var(--fs-sm);
     color: var(--black);
 
@@ -206,7 +206,7 @@ const handleInput = (event: Event) => {
   }
 
   &__field {
-    @include inter-regular;
+    @include font-main($font-regular);
     font-size: var(--fs-base);
     color: var(--black);
     background-color: var(--white);
@@ -354,14 +354,14 @@ const handleInput = (event: Event) => {
   }
 
   &__error {
-    @include inter-regular;
+    @include font-main($font-regular);
     font-size: var(--fs-xs);
     color: var(--error);
     margin: 0;
   }
 
   &__hint {
-    @include inter-regular;
+    @include font-main($font-regular);
     font-size: var(--fs-xs);
     color: var(--gray);
     margin: 0;

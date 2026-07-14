@@ -72,7 +72,7 @@ const onLinkClick = () => {
     display: flex;
     align-items: flex-start;
     gap: var(--sp-12);
-    font-family: var(--second-family);
+    font-family: var(--font-family);
     font-weight: var(--font-semi-bold);
     font-size: var(--size-20);
     line-height: 1.2;

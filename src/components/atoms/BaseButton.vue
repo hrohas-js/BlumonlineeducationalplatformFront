@@ -13,8 +13,10 @@
 import { computed } from 'vue'
 
 interface Props {
-  variant?: 'primary' | 'outline' | 'secondary' | 'light' | 'white' | 'danger'
+  variant?: 'primary' | 'outline' | 'secondary' | 'light' | 'white' | 'danger' | 'ghost'
   size?: 'small' | 'medium' | 'large'
+  shape?: 'pill' | 'rounded'
+  type?: 'button' | 'submit' | 'reset'
   disabled?: boolean
   text?: string
   block?: boolean
@@ -28,6 +30,8 @@ interface Emits {
 const props = withDefaults(defineProps<Props>(), {
   variant: 'outline',
   size: 'medium',
+  shape: 'pill',
+  type: 'button',
   disabled: false,
   text: '',
   block: false,
@@ -40,6 +44,7 @@ const buttonClasses = computed(() => [
   'base-button',
   `base-button_${props.variant}`,
   `base-button_${props.size}`,
+  `base-button_shape-${props.shape}`,
   props.size === 'small' && 'text-sm leading-snug',
   props.size === 'medium' && 'text-lg leading-normal',
   props.size === 'large' && 'text-xl leading-relaxed',
@@ -61,7 +66,7 @@ const handleClick = (event: MouseEvent) => {
   <button
     :class="buttonClasses"
     :disabled="disabled || loading"
-    type="button"
+    :type="type"
     @click="handleClick"
   >
     <span v-if="loading" class="base-button__spinner" aria-hidden="true" />
@@ -74,12 +79,11 @@ const handleClick = (event: MouseEvent) => {
 // благодаря vite.config.ts → additionalData (см. ARCHITECTURE_ANALYSIS.md §2)
 
 .base-button {
-  @include inter-medium;
+  @include font-main($font-medium);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--sp-8);
-  border-radius: var(--radius-pill);
   border: var(--border-2) solid transparent;
   box-sizing: border-box;
   max-width: 100%;
@@ -90,6 +94,14 @@ const handleClick = (event: MouseEvent) => {
   white-space: nowrap;
   height: var(--size-60);
   position: relative;
+
+  &_shape-pill {
+    border-radius: var(--radius-pill);
+  }
+
+  &_shape-rounded {
+    border-radius: var(--radius-10);
+  }
 
   &:focus {
     outline: none;
@@ -227,6 +239,30 @@ const handleClick = (event: MouseEvent) => {
     }
   }
 
+  &_ghost {
+    background-color: transparent;
+    border-color: transparent;
+    color: var(--main);
+    height: auto;
+    padding: 0;
+    box-shadow: none;
+
+    &:hover:not(.base-button_disabled) {
+      color: var(--main-hover);
+      text-decoration: underline;
+    }
+
+    &:active:not(.base-button_disabled) {
+      color: var(--main-active);
+    }
+
+    &:focus {
+      box-shadow: none;
+      outline: 2px solid var(--main);
+      outline-offset: 2px;
+    }
+  }
+
   &_disabled {
     cursor: not-allowed;
     opacity: 0.6;
@@ -234,6 +270,11 @@ const handleClick = (event: MouseEvent) => {
     border-color: var(--disabled-border);
     color: var(--gray);
     transform: none !important;
+
+    &.base-button_ghost {
+      background-color: transparent;
+      border-color: transparent;
+    }
   }
 
   &_block {

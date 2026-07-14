@@ -96,7 +96,7 @@ withDefaults(defineProps<Props>(), {
     background: transparent;
     font: inherit;
     color: inherit;
-    text-align: right;
+    text-align: left;
     white-space: nowrap;
     outline: none;
     box-sizing: border-box;

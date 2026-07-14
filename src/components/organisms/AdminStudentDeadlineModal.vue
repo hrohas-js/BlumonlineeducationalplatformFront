@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import BaseButton from '@/components/atoms/BaseButton.vue'
 import AdminDateField from '@/components/molecules/AdminDateField.vue'
 import {
   deadlineRuLabelToIso,
@@ -156,12 +157,20 @@ const onApply = () => {
         </div>
 
         <div class="admin-student-deadline-modal__actions">
-          <button type="button" class="admin-student-deadline-modal__btn admin-student-deadline-modal__btn_primary" @click="onApply">
-            Применить
-          </button>
-          <button type="button" class="admin-student-deadline-modal__btn admin-student-deadline-modal__btn_secondary" @click="closeModal">
-            Отмена
-          </button>
+          <BaseButton
+            class="admin-student-deadline-modal__btn"
+            variant="primary"
+            shape="rounded"
+            text="Применить"
+            @click="onApply"
+          />
+          <BaseButton
+            class="admin-student-deadline-modal__btn"
+            variant="outline"
+            shape="rounded"
+            text="Отмена"
+            @click="closeModal"
+          />
         </div>
       </div>
     </div>
@@ -301,40 +310,13 @@ const onApply = () => {
   margin-top: var(--sp-4);
 }
 
-.admin-student-deadline-modal__btn {
-  margin: 0;
-  padding: 10px;
-  border-radius: 10px;
-  font-family: var(--font-family);
-  font-weight: var(--font-semi-bold);
-  font-size: 20px;
-  line-height: normal;
-  cursor: pointer;
-  white-space: nowrap;
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring-main);
-  }
-}
-
-.admin-student-deadline-modal__btn_primary {
-  border: none;
+:deep(.admin-student-deadline-modal__btn.base-button_primary) {
   background-color: var(--knopka);
-  color: var(--white);
+  border-color: var(--knopka);
 
-  &:hover {
-    filter: brightness(1.03);
-  }
-}
-
-.admin-student-deadline-modal__btn_secondary {
-  border: 1px solid #010307;
-  background-color: var(--white);
-  color: #010307;
-
-  &:hover {
-    filter: brightness(0.98);
+  &:hover:not(.base-button_disabled) {
+    background-color: color-mix(in srgb, var(--knopka) 92%, black);
+    border-color: color-mix(in srgb, var(--knopka) 92%, black);
   }
 }
 
@@ -359,7 +341,7 @@ const onApply = () => {
     gap: var(--sp-16);
   }
 
-  .admin-student-deadline-modal__btn {
+  :deep(.admin-student-deadline-modal__btn) {
     width: 100%;
   }
 }

@@ -145,7 +145,7 @@ onUnmounted(() => {
   gap: 38px;
   box-sizing: border-box;
   width: 100%;
-  max-width: 496px;
+  max-width: 627px;
   padding: var(--sp-20);
   border: 1px solid #010307;
   border-radius: var(--radius-10);

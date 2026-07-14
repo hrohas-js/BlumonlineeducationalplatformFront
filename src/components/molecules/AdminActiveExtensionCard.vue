@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import BaseButton from '@/components/atoms/BaseButton.vue'
+
 interface Props {
   topicLabel: string
   productBadge: string
@@ -26,9 +28,11 @@ const emit = defineEmits<Emits>()
         </div>
       </div>
       <p class="admin-active-extension-card__text">{{ extensionText }}</p>
-      <button
-        type="button"
+      <BaseButton
         class="admin-active-extension-card__pay"
+        variant="outline"
+        size="small"
+        shape="rounded"
         @click="emit('pay-click')"
       >
         <span class="admin-active-extension-card__pay-label">Перейти к оплате</span>
@@ -43,17 +47,18 @@ const emit = defineEmits<Emits>()
             />
           </svg>
         </span>
-      </button>
+      </BaseButton>
     </article>
 
     <!-- Figma 477:2284 / 477:2286 — button_удалить -->
-    <button
-      type="button"
+    <BaseButton
       class="admin-active-extension-card__delete"
+      variant="danger"
+      size="small"
+      shape="rounded"
+      text="Удалить"
       @click="emit('delete-click')"
-    >
-      Удалить
-    </button>
+    />
   </div>
 </template>
 
@@ -122,41 +127,30 @@ const emit = defineEmits<Emits>()
   color: #010307;
 }
 
-/* Figma 145:1054 — button */
-.admin-active-extension-card__pay {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+:deep(.admin-active-extension-card__pay.base-button) {
+  height: auto;
   gap: var(--size-5);
-  margin: 0;
   padding: var(--size-5);
-  border: 1px solid #178ef0;
-  border-radius: var(--radius-10);
-  background-color: var(--white);
+  border-color: var(--knopka);
   font-family: var(--font-family);
   font-weight: var(--font-medium);
   font-size: var(--size-15);
   line-height: normal;
   color: #010307;
-  cursor: pointer;
-  white-space: nowrap;
+}
 
-  &:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring-main);
-  }
+:deep(.admin-active-extension-card__pay.base-button_outline:hover:not(.base-button_disabled)) {
+  background-color: var(--text-accent);
+  border-color: var(--text-accent);
+  color: var(--white);
+  transform: none;
+}
 
-  &:hover {
-    background-color: var(--text-accent);
-    border-color: var(--text-accent);
-    color: var(--white);
-  }
-
-  &:active {
-    background-color: color-mix(in srgb, var(--text-accent) 88%, #000);
-    border-color: color-mix(in srgb, var(--text-accent) 88%, #000);
-    color: var(--white);
-  }
+:deep(.admin-active-extension-card__pay.base-button_outline:active:not(.base-button_disabled)) {
+  background-color: color-mix(in srgb, var(--text-accent) 88%, #000);
+  border-color: color-mix(in srgb, var(--text-accent) 88%, #000);
+  color: var(--white);
+  transform: none;
 }
 
 .admin-active-extension-card__pay-label {
@@ -170,40 +164,13 @@ const emit = defineEmits<Emits>()
   justify-content: center;
 }
 
-.admin-active-extension-card__delete {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  margin: 0;
-  padding: var(--size-5) var(--sp-10);
+:deep(.admin-active-extension-card__delete.base-button) {
+  height: auto;
   min-height: 34px;
-  border: 2px solid #178ef0;
-  border-radius: var(--radius-10);
-  background-color: transparent;
+  padding: var(--size-5) var(--sp-10);
   font-family: var(--font-family);
   font-weight: var(--font-semi-bold);
   font-size: var(--size-20);
   line-height: normal;
-  color: #010307;
-  cursor: pointer;
-  white-space: nowrap;
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring-main);
-  }
-
-  &:hover {
-    background-color: var(--text-accent);
-    border-color: var(--text-accent);
-    color: var(--white);
-  }
-
-  &:active {
-    background-color: color-mix(in srgb, var(--text-accent) 88%, #000);
-    border-color: color-mix(in srgb, var(--text-accent) 88%, #000);
-    color: var(--white);
-  }
 }
 </style>

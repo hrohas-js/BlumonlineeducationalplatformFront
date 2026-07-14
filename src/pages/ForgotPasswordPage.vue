@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import AppLayout from '@/components/layouts/AppLayout.vue'
+import BaseButton from '@/components/atoms/BaseButton.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useNotification } from '@/composables/useNotification'
 
@@ -65,25 +66,23 @@ const handleResend = async () => {
         </div>
 
         <div class="reset-pwd__actions">
-          <button
-            type="button"
+          <BaseButton
             class="reset-pwd__submit"
-            :disabled="authStore.loading"
+            variant="primary"
+            shape="rounded"
+            text="Отправить"
+            :loading="authStore.loading"
             @click="handleSubmit"
-          >
-            Отправить
-          </button>
+          />
 
           <div class="reset-pwd__resend">
             <span class="reset-pwd__resend-text">Не получили письмо?</span>
-            <button
-              type="button"
-              class="reset-pwd__resend-link"
+            <BaseButton
+              variant="ghost"
+              text="Отправить повторно"
               :disabled="authStore.loading"
               @click="handleResend"
-            >
-              Отправить повторно
-            </button>
+            />
           </div>
         </div>
       </div>
@@ -140,7 +139,7 @@ const handleResend = async () => {
 
   &__hint {
     margin: 0;
-    font-family: var(--second-family);
+    font-family: var(--font-family);
     font-weight: var(--font-medium);
     font-size: var(--size-15);
     color: var(--osnovnoy-tekst);
@@ -184,7 +183,7 @@ const handleResend = async () => {
     border: none;
     border-radius: var(--radius-input);
     padding: var(--sp-10);
-    font-family: var(--second-family);
+    font-family: var(--font-family);
     font-weight: var(--font-medium);
     font-size: var(--size-15);
     color: var(--osnovnoy-tekst);
@@ -207,25 +206,19 @@ const handleResend = async () => {
     gap: var(--sp-20);
   }
 
-  &__submit {
-    background: var(--knopka);
+  :deep(.reset-pwd__submit.base-button_primary) {
+    background-color: var(--knopka);
+    border-color: var(--knopka);
     color: var(--cvet-v-knopke);
-    border: none;
-    border-radius: var(--radius-10);
+    height: auto;
     padding: var(--sp-10) var(--sp-40);
-    font-family: var(--font-family);
     font-weight: var(--font-semi-bold);
     font-size: var(--size-25);
-    cursor: pointer;
-    transition: background-color 0.2s ease;
 
-    &:hover:not(:disabled) {
-      background: color-mix(in srgb, var(--knopka) 92%, black);
-    }
-
-    &:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
+    &:hover:not(.base-button_disabled) {
+      background-color: color-mix(in srgb, var(--knopka) 92%, black);
+      border-color: color-mix(in srgb, var(--knopka) 92%, black);
+      transform: none;
     }
 
     @media (max-width: 1023px) {
@@ -241,7 +234,7 @@ const handleResend = async () => {
   }
 
   &__resend-text {
-    font-family: var(--second-family);
+    font-family: var(--font-family);
     font-weight: var(--font-medium);
     font-size: var(--size-15);
     color: var(--osnovnoy-tekst);
@@ -251,25 +244,9 @@ const handleResend = async () => {
     }
   }
 
-  &__resend-link {
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    font-family: var(--second-family);
-    font-weight: var(--font-medium);
+  :deep(.base-button_ghost) {
     font-size: var(--size-15);
     color: var(--text-accent);
-    text-decoration: none;
-
-    &:hover:not(:disabled) {
-      text-decoration: underline;
-    }
-
-    &:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
 
     @media (max-width: 1023px) {
       font-size: var(--size-13);

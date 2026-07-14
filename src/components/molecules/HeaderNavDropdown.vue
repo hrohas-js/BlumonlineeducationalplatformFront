@@ -116,7 +116,7 @@ onUnmounted(() => {
     border: none;
     border-bottom: var(--border-2) solid transparent;
     background: transparent;
-    font-family: var(--second-family);
+    font-family: var(--font-family);
     font-weight: var(--font-regular);
     font-size: var(--size-20);
     text-align: center;

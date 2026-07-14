@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseButton from '@/components/atoms/BaseButton.vue'
 import { glossaryAbbreviations } from '@/data/glossaryAbbreviations'
 import { useNotification } from '@/composables/useNotification'
 
@@ -25,9 +26,14 @@ const onEdit = () => {
       </li>
     </ul>
 
-    <button type="button" class="admin-glossary-panel__edit" @click="onEdit">
-      Редактировать
-    </button>
+    <BaseButton
+      class="admin-glossary-panel__edit"
+      variant="outline"
+      size="medium"
+      shape="rounded"
+      text="Редактировать"
+      @click="onEdit"
+    />
   </div>
 </template>
 
@@ -69,26 +75,21 @@ const onEdit = () => {
 
   &__edit {
     margin: var(--sp-20) 0 var(--sp-40);
+  }
+
+  :deep(.admin-glossary-panel__edit.base-button) {
+    height: auto;
     padding: var(--sp-10);
-    border: var(--border-2) solid #178ef0;
-    border-radius: var(--radius-10);
-    background-color: var(--white);
+    border-color: var(--knopka);
     font-family: var(--font-family);
     font-weight: var(--font-medium);
     font-size: var(--size-25);
     line-height: normal;
     color: var(--osnovnoy-tekst);
-    cursor: pointer;
-    white-space: nowrap;
+  }
 
-    &:hover {
-      background-color: rgba(23, 142, 240, 0.08);
-    }
-
-    &:focus-visible {
-      outline: none;
-      box-shadow: var(--focus-ring-main);
-    }
+  :deep(.admin-glossary-panel__edit.base-button_outline:hover:not(.base-button_disabled)) {
+    background-color: rgba(23, 142, 240, 0.08);
   }
 
   @media (max-width: 1023px) {
@@ -103,6 +104,10 @@ const onEdit = () => {
     &__edit {
       width: 100%;
       max-width: 320px;
+    }
+
+    :deep(.admin-glossary-panel__edit.base-button) {
+      width: 100%;
       font-size: var(--size-20);
     }
   }

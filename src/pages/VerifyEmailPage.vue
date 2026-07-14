@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/components/layouts/AppLayout.vue'
+import BaseButton from '@/components/atoms/BaseButton.vue'
 import { authService } from '@/services/api/endpoints/auth'
 import { useAuthStore } from '@/stores/auth'
 import { useNotification } from '@/composables/useNotification'
@@ -118,32 +119,28 @@ onMounted(verify)
         </div>
 
         <div class="verify-email__actions">
-          <button
+          <BaseButton
             v-if="status === 'success'"
-            type="button"
             class="verify-email__submit"
+            variant="primary"
+            shape="rounded"
+            text="Перейти ко входу"
             @click="goToLogin"
-          >
-            Перейти ко входу
-          </button>
+          />
 
           <template v-else-if="status === 'error'">
-            <button
-              type="button"
+            <BaseButton
               class="verify-email__submit"
-              :disabled="resendLoading"
+              variant="primary"
+              shape="rounded"
+              text="Отправить"
+              :loading="resendLoading"
               @click="handleResend"
-            >
-              Отправить
-            </button>
+            />
 
             <div class="verify-email__sub">
-              <button type="button" class="verify-email__sub-link" @click="retry">
-                Попробовать снова
-              </button>
-              <button type="button" class="verify-email__sub-link" @click="goToLogin">
-                Перейти ко входу
-              </button>
+              <BaseButton variant="ghost" text="Попробовать снова" @click="retry" />
+              <BaseButton variant="ghost" text="Перейти ко входу" @click="goToLogin" />
             </div>
           </template>
         </div>
@@ -200,7 +197,7 @@ onMounted(verify)
 
   &__hint {
     margin: 0;
-    font-family: var(--second-family);
+    font-family: var(--font-family);
     font-weight: var(--font-medium);
     font-size: var(--size-15);
     color: var(--osnovnoy-tekst);
@@ -248,7 +245,7 @@ onMounted(verify)
     border: none;
     border-radius: var(--radius-input);
     padding: var(--sp-10);
-    font-family: var(--second-family);
+    font-family: var(--font-family);
     font-weight: var(--font-medium);
     font-size: var(--size-15);
     color: var(--osnovnoy-tekst);
@@ -266,25 +263,19 @@ onMounted(verify)
     gap: var(--sp-20);
   }
 
-  &__submit {
-    background: var(--knopka);
+  :deep(.verify-email__submit.base-button_primary) {
+    background-color: var(--knopka);
+    border-color: var(--knopka);
     color: var(--cvet-v-knopke);
-    border: none;
-    border-radius: var(--radius-10);
+    height: auto;
     padding: var(--sp-10) var(--sp-40);
-    font-family: var(--font-family);
     font-weight: var(--font-semi-bold);
     font-size: var(--size-25);
-    cursor: pointer;
-    transition: background-color 0.2s ease;
 
-    &:hover:not(:disabled) {
-      background: color-mix(in srgb, var(--knopka) 92%, black);
-    }
-
-    &:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
+    &:hover:not(.base-button_disabled) {
+      background-color: color-mix(in srgb, var(--knopka) 92%, black);
+      border-color: color-mix(in srgb, var(--knopka) 92%, black);
+      transform: none;
     }
 
     @media (max-width: 1023px) {
@@ -299,19 +290,9 @@ onMounted(verify)
     gap: var(--size-10);
   }
 
-  &__sub-link {
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    font-family: var(--second-family);
-    font-weight: var(--font-medium);
+  :deep(.base-button_ghost) {
     font-size: var(--size-15);
     color: var(--text-accent);
-
-    &:hover {
-      text-decoration: underline;
-    }
 
     @media (max-width: 1023px) {
       font-size: var(--size-13);

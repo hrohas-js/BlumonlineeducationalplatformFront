@@ -259,9 +259,9 @@ const handleSubmit = async () => {
   }
 
   // ── Заголовок ─────────────────────────────────────────────────────────────
-  // Figma: Roboto SemiBold 35px desktop / 30px mobile.
+  // Figma: Montserrat SemiBold 35px desktop / 30px mobile.
   &__title {
-    font-family: var(--third-family);
+    font-family: var(--font-family);
     font-weight: var(--font-semi-bold);
     font-size: var(--size-35);
     color: var(--osnovnoy-tekst);
@@ -290,9 +290,9 @@ const handleSubmit = async () => {
     margin-top: var(--size-43);
   }
 
-  // Label — Figma: Roboto Medium 500 / 20px desk / 15px mobile.
+  // Label — Figma: Montserrat Medium 500 / 20px desk / 15px mobile.
   :deep(.base-input__label) {
-    font-family: var(--third-family);
+    font-family: var(--font-family);
     font-weight: var(--font-medium);
     font-size: var(--size-20);
     color: var(--osnovnoy-tekst);
@@ -331,7 +331,7 @@ const handleSubmit = async () => {
 
   // Placeholder
   :deep(.base-input .base-input__field::placeholder) {
-    font-family: var(--third-family);
+    font-family: var(--font-family);
     font-weight: 250;
     font-size: var(--size-15);
     color: var(--black);
@@ -339,7 +339,7 @@ const handleSubmit = async () => {
   }
 
   :deep(.base-input .base-input__field::-webkit-input-placeholder) {
-    font-family: var(--third-family);
+    font-family: var(--font-family);
     font-weight: 250;
     font-size: var(--size-15);
     color: var(--black);
@@ -413,9 +413,9 @@ const handleSubmit = async () => {
     }
   }
 
-  // Figma: Roboto Medium 500 / 20px desktop / 15px mobile.
+  // Figma: Montserrat Medium 500 / 20px desktop / 15px mobile.
   &__forgot {
-    font-family: var(--third-family);
+    font-family: var(--font-family);
     font-weight: var(--font-medium);
     font-size: var(--size-20);
     color: var(--osnovnoy-tekst);
@@ -432,11 +432,11 @@ const handleSubmit = async () => {
   }
 
   // ── Кнопка ────────────────────────────────────────────────────────────────
-  // Figma: radius 5px (--radius-input), Roboto SemiBold 25, fill #178EF0.
+  // Figma: radius 5px (--radius-input), Montserrat SemiBold 25, fill #178EF0.
   :deep(.base-button_primary) {
     background-color: var(--knopka);
     border-color: var(--knopka);
-    font-family: var(--third-family);
+    font-family: var(--font-family);
     font-weight: var(--font-semi-bold);
     font-size: var(--size-25);
     color: var(--cvet-v-knopke);

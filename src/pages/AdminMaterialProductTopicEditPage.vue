@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/components/layouts/AppLayout.vue'
+import BaseButton from '@/components/atoms/BaseButton.vue'
 import HomeProfileInfoTableItem from '@/components/atoms/HomeProfileInfoTableItem.vue'
 import AdminProductEditBreadcrumbs from '@/components/molecules/AdminProductEditBreadcrumbs.vue'
 import AdminLabeledControlRow from '@/components/molecules/AdminLabeledControlRow.vue'
@@ -232,17 +233,22 @@ const onSave = async () => {
         <AdminTopicEditMaterialsSection v-model:files="materialFiles" @material-upload="onMaterialUpload" />
 
         <div class="admin-material-product-topic-edit-page__actions">
-          <button type="button" class="admin-material-product-topic-edit-page__back" @click="goBackToProduct">
-            Назад
-          </button>
-          <button
-            type="button"
+          <BaseButton
+            class="admin-material-product-topic-edit-page__back"
+            variant="ghost"
+            size="small"
+            text="Назад"
+            @click="goBackToProduct"
+          />
+          <BaseButton
             class="admin-material-product-topic-edit-page__save"
+            variant="outline"
+            size="small"
+            shape="rounded"
+            :text="saving ? 'Сохраняем…' : 'Сохранить'"
             :disabled="saving"
             @click="onSave"
-          >
-            {{ saving ? 'Сохраняем…' : 'Сохранить' }}
-          </button>
+          />
         </div>
       </div>
     </section>
@@ -280,19 +286,22 @@ const onSave = async () => {
     justify-content: flex-end;
   }
 
-  &__back,
-  &__save {
+  :deep(.admin-material-product-topic-edit-page__back.base-button_ghost) {
     font-family: var(--font-family);
     font-size: var(--size-15);
-    cursor: pointer;
-    border: none;
-    background: none;
     color: var(--text-accent);
+
+    &:hover:not(.base-button_disabled) {
+      color: var(--text-accent);
+    }
   }
 
-  &__save:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+  :deep(.admin-material-product-topic-edit-page__save.base-button) {
+    height: auto;
+    font-family: var(--font-family);
+    font-size: var(--size-15);
+    border-color: var(--knopka);
+    color: var(--text-accent);
   }
 }
 </style>

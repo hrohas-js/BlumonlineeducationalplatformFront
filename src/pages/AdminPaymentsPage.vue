@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import AppLayout from '@/components/layouts/AppLayout.vue'
+import BaseButton from '@/components/atoms/BaseButton.vue'
 import { adminService } from '@/services/api/endpoints/admin'
 import type { AdminPaymentItem } from '@/services/api/types'
 import { useNotification } from '@/composables/useNotification'
@@ -82,8 +83,22 @@ onMounted(() => {
             class="admin-payments-page__input"
             placeholder="Email пользователя"
           />
-          <button type="button" class="admin-payments-page__btn" @click="searchByEmail">Найти</button>
-          <button type="button" class="admin-payments-page__btn" @click="load">Обновить</button>
+          <BaseButton
+            class="admin-payments-page__btn"
+            variant="primary"
+            size="small"
+            shape="rounded"
+            text="Найти"
+            @click="searchByEmail"
+          />
+          <BaseButton
+            class="admin-payments-page__btn"
+            variant="primary"
+            size="small"
+            shape="rounded"
+            text="Обновить"
+            @click="load"
+          />
         </div>
 
         <div v-if="loading" class="admin-payments-page__empty">Загружаем…</div>
@@ -158,14 +173,22 @@ onMounted(() => {
     font-family: var(--font-family);
   }
 
-  &__btn {
+  :deep(.admin-payments-page__btn.base-button_primary) {
+    height: auto;
     padding: var(--sp-8) var(--sp-16);
-    border-radius: var(--radius-10);
-    border: none;
-    background: var(--text-accent);
-    color: var(--white);
-    cursor: pointer;
+    background-color: var(--knopka);
+    border-color: var(--knopka);
     font-family: var(--font-family);
+
+    &:hover:not(.base-button_disabled) {
+      background-color: color-mix(in srgb, var(--knopka) 92%, black);
+      border-color: color-mix(in srgb, var(--knopka) 92%, black);
+    }
+
+    &:active:not(.base-button_disabled) {
+      background-color: color-mix(in srgb, var(--knopka) 86%, black);
+      border-color: color-mix(in srgb, var(--knopka) 86%, black);
+    }
   }
 
   &__empty {

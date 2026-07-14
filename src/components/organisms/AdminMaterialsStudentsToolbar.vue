@@ -232,7 +232,7 @@ const onMenuItemClick = () => {
         />
         <span class="admin-materials-students-toolbar__count" aria-live="polite">{{ usersCount }}</span>
         <label class="admin-materials-students-toolbar__search">
-          <span class="admin-materials-students-toolbar__search-visually-hidden">Поиск по почте ученика</span>
+          <span class="admin-materials-students-toolbar__search-visually-hidden">Поиск по имени или почте ученика</span>
           <span class="admin-materials-students-toolbar__search-icon" aria-hidden="true">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
@@ -493,7 +493,7 @@ const onMenuItemClick = () => {
 }
 
 .admin-materials-students-toolbar__count {
-  font-family: var(--second-family);
+  font-family: var(--font-family);
   font-weight: var(--font-medium);
   font-size: var(--size-20);
   color: var(--black);
@@ -537,7 +537,7 @@ const onMenuItemClick = () => {
   min-width: 0;
   border: none;
   background: transparent;
-  font-family: var(--second-family);
+  font-family: var(--font-family);
   font-weight: var(--font-regular);
   font-size: var(--size-20);
   color: var(--black);

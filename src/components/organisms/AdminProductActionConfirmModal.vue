@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import BaseButton from '@/components/atoms/BaseButton.vue'
 
 export type AdminProductActionConfirmVariant = 'move-archive' | 'delete-product' | 'delete-topic'
 
@@ -86,12 +87,20 @@ const onNo = () => {
           </template>
         </div>
         <div class="admin-product-action-confirm-modal__actions">
-          <button type="button" class="admin-product-action-confirm-modal__btn" @click="onYes">
-            Да
-          </button>
-          <button type="button" class="admin-product-action-confirm-modal__btn" @click="onNo">
-            Нет
-          </button>
+          <BaseButton
+            class="admin-product-action-confirm-modal__btn"
+            variant="primary"
+            shape="rounded"
+            text="Да"
+            @click="onYes"
+          />
+          <BaseButton
+            class="admin-product-action-confirm-modal__btn"
+            variant="outline"
+            shape="rounded"
+            text="Нет"
+            @click="onNo"
+          />
         </div>
       </div>
     </div>
@@ -160,7 +169,7 @@ const onNo = () => {
 }
 
 .admin-product-action-confirm-modal__accent_danger {
-  color: var(--danger);
+  color: var(--error);
 }
 
 .admin-product-action-confirm-modal__actions {
@@ -169,31 +178,6 @@ const onNo = () => {
   align-items: center;
   justify-content: center;
   gap: 47px;
-}
-
-.admin-product-action-confirm-modal__btn {
-  margin: 0;
-  padding: 7px var(--sp-20);
-  border: 1px solid #010307;
-  border-radius: var(--radius-10);
-  background-color: var(--white);
-  font-family: var(--font-family);
-  font-weight: var(--font-semi-bold);
-  font-size: var(--size-25);
-  line-height: normal;
-  color: #010307;
-  cursor: pointer;
-  white-space: nowrap;
-  box-sizing: border-box;
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring-main);
-  }
-
-  &:hover {
-    filter: brightness(0.98);
-  }
 }
 
 @media (max-width: 479px) {
@@ -213,7 +197,7 @@ const onNo = () => {
     gap: var(--sp-16);
   }
 
-  .admin-product-action-confirm-modal__btn {
+  :deep(.admin-product-action-confirm-modal__btn) {
     width: 100%;
     min-height: 44px;
   }

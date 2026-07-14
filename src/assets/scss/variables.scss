@@ -30,10 +30,8 @@ $danger: #ff6b4a;
 $danger-hover: #ff5c39;
 $danger-active: #ff4d28;
 
-// Font family
+// Font family (Montserrat only)
 $font-family: "Montserrat", sans-serif;
-$font-family-secondary: "Inter", sans-serif;
-$font-family-headings: "Roboto", sans-serif;
 
 // Font weights
 $font-light: 300;
@@ -114,8 +112,6 @@ $font-extra-bold: 800;
   
   // Typography
   --font-family: #{$font-family};
-  --second-family: #{$font-family-secondary};
-  --third-family: #{$font-family-headings};
   --font-light: #{$font-light};
   --font-extra-light: #{$font-extra-light};
   --font-regular: #{$font-regular};
@@ -317,52 +313,11 @@ $font-extra-bold: 800;
 }
 
 // ===== FONT SETUP =====
-// Шрифты подключаются через @fontsource в src/main.ts:
-//   @fontsource/inter/400.css            → Inter Regular (заголовки)
-//   @fontsource/montserrat/300.css       → Montserrat ExtraLight (основной текст)
-//   @fontsource/montserrat/600-italic.css→ Montserrat SemiBold Italic
-//   @fontsource/roboto/500.css           → Roboto Medium
-//   @fontsource/roboto/600.css           → Roboto SemiBold
-//   @fontsource/roboto/800.css           → Roboto ExtraBold
+// Шрифты подключаются через @fontsource в src/main.ts (Montserrat only).
 // Vite автоматически копирует woff2-файлы из node_modules в dist/assets/.
 
 // ===== HELPER MIXINS =====
-@mixin font-inter($weight: 400) {
-  font-family: $font-family-headings;
-  font-weight: $weight;
-}
-
 @mixin font-main($weight: 400) {
   font-family: $font-family;
   font-weight: $weight;
-}
-
-@mixin font-secondary($weight: 500) {
-  font-family: $font-family-secondary;
-  font-weight: $weight;
-}
-
-// Удобные миксины для быстрого применения
-@mixin inter-light {
-  @include font-inter($font-light);
-}
-
-@mixin inter-regular {
-  @include font-inter($font-regular);
-}
-
-@mixin inter-medium {
-  @include font-inter($font-medium);
-}
-
-@mixin inter-semi-bold {
-  @include font-inter($font-semi-bold);
-}
-
-@mixin inter-bold {
-  @include font-inter($font-bold);
-}
-
-@mixin inter-extra-bold {
-  @include font-inter($font-extra-bold);
 }

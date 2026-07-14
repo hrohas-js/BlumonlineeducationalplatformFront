@@ -140,6 +140,12 @@ async function onLogoutConfirm() {
     font-weight: var(--font-semi-bold);
     font-size: var(--size-20);
     padding: var(--sp-10);
+
+    &:hover:not(.base-button_disabled),
+    &:active:not(.base-button_disabled) {
+      background-color: var(--white);
+      transform: none;
+    }
   }
 
   :deep(.admin-start-panel__logout_active.base-button) {

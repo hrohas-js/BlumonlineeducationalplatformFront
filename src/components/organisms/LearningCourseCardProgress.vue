@@ -56,7 +56,7 @@ defineProps<{
   }
 
   &__value {
-    font-family: var(--third-family);
+    font-family: var(--font-family);
     font-weight: var(--font-bold);
     font-size: var(--size-10);
     color: var(--fon-bloka);

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from 'vue'
+import BaseButton from '@/components/atoms/BaseButton.vue'
 import ModalAvatarUpload from '@/components/molecules/ModalAvatarUpload.vue'
 import ModalProfileFieldRow from '@/components/molecules/ModalProfileFieldRow.vue'
 import ModalCloseButton from '@/components/atoms/ModalCloseButton.vue'
@@ -212,34 +213,35 @@ onUnmounted(() => {
           </div>
 
           <div class="profile-edit-modal__form-actions">
-            <button
-              type="button"
+            <BaseButton
               class="profile-edit-modal__action-button"
-              :disabled="saveLoading || forgotPasswordLoading"
+              variant="primary"
+              shape="rounded"
+              text="Сохранить"
+              :disabled="forgotPasswordLoading"
+              :loading="saveLoading"
               @click="onSave"
-            >
-              {{ saveLoading ? 'Сохраняем…' : 'Сохранить' }}
-            </button>
-            <button
-              type="button"
+            />
+            <BaseButton
               class="profile-edit-modal__action-button"
+              variant="outline"
+              shape="rounded"
+              text="Отмена"
               :disabled="saveLoading"
               @click="onCancel"
-            >
-              Отмена
-            </button>
+            />
           </div>
         </div>
 
         <div class="profile-edit-modal__bottom">
-          <button
-            type="button"
-            class="profile-edit-modal__action-button"
+          <BaseButton
+            class="profile-edit-modal__forgot"
+            variant="ghost"
+            text="Сменить пароль"
             :disabled="forgotPasswordLoading || saveLoading"
+            :loading="forgotPasswordLoading"
             @click="onForgotPassword"
-          >
-            {{ forgotPasswordLoading ? 'Отправляем…' : 'Сменить пароль' }}
-          </button>
+          />
         </div>
       </div>
     </div>
@@ -367,34 +369,6 @@ onUnmounted(() => {
 
     @media (max-width: 360px) {
       flex-wrap: wrap;
-    }
-  }
-
-  &__action-button {
-    border: var(--border-1) solid var(--black);
-    border-radius: var(--radius-10);
-    padding: var(--sp-10);
-    font-family: var(--font-family);
-    font-weight: var(--font-semi-bold);
-    font-size: var(--size-20);
-    line-height: 1;
-    color: var(--black);
-    background-color: var(--white);
-    cursor: pointer;
-    white-space: nowrap;
-
-    @media (max-width: 768px) {
-      font-size: var(--size-10);
-    }
-
-    &:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-    }
-
-    &:focus-visible {
-      outline: none;
-      box-shadow: var(--focus-ring-main);
     }
   }
 

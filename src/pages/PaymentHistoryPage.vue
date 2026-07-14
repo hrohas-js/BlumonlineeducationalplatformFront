@@ -177,7 +177,7 @@ onMounted(() => {
     td {
       padding: var(--sp-12) var(--sp-16);
       text-align: left;
-      font-family: var(--second-family);
+      font-family: var(--font-family);
       font-size: var(--size-15);
     }
 

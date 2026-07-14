@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onUnmounted, watch } from 'vue'
+import BaseButton from '@/components/atoms/BaseButton.vue'
 import ModalCloseButton from '@/components/atoms/ModalCloseButton.vue'
 import { buildDeadlineAlertRemainderText } from '@/utils/deadlineAlert'
 
@@ -77,9 +78,14 @@ onUnmounted(() => {
           {{ remainderText }}!
         </p>
 
-        <button type="button" class="course-deadline-alert-modal__renew" @click="onRenew">
-          Приобрести продление
-        </button>
+        <BaseButton
+          class="course-deadline-alert-modal__renew"
+          variant="primary"
+          shape="rounded"
+          block
+          text="Приобрести продление"
+          @click="onRenew"
+        />
       </div>
     </div>
   </Teleport>
@@ -155,27 +161,13 @@ onUnmounted(() => {
   color: var(--text-accent);
 }
 
-.course-deadline-alert-modal__renew {
-  width: 100%;
-  margin: 0;
-  padding: 10px;
-  border: none;
-  border-radius: 10px;
+:deep(.course-deadline-alert-modal__renew.base-button_primary) {
   background-color: var(--knopka);
-  color: var(--white);
-  font-family: var(--font-family);
-  font-weight: var(--font-semi-bold);
-  font-size: 20px;
-  line-height: normal;
-  cursor: pointer;
+  border-color: var(--knopka);
 
-  &:hover {
-    filter: brightness(1.03);
-  }
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring-main);
+  &:hover:not(.base-button_disabled) {
+    background-color: color-mix(in srgb, var(--knopka) 92%, black);
+    border-color: color-mix(in srgb, var(--knopka) 92%, black);
   }
 }
 
@@ -190,7 +182,7 @@ onUnmounted(() => {
     font-size: var(--size-20);
   }
 
-  .course-deadline-alert-modal__renew {
+  :deep(.course-deadline-alert-modal__renew) {
     min-height: 44px;
   }
 }
