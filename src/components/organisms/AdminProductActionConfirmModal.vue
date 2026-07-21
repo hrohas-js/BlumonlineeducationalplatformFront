@@ -2,7 +2,11 @@
 import { computed } from 'vue'
 import BaseButton from '@/components/atoms/BaseButton.vue'
 
-export type AdminProductActionConfirmVariant = 'move-archive' | 'delete-product' | 'delete-topic'
+export type AdminProductActionConfirmVariant =
+  | 'move-archive'
+  | 'unarchive'
+  | 'delete-product'
+  | 'delete-topic'
 
 interface Props {
   isOpen: boolean
@@ -55,6 +59,17 @@ const onNo = () => {
           <template v-if="props.variant === 'move-archive'">
             <h2 :id="titleId" class="admin-product-action-confirm-modal__title">
               Вы действительно хотите переместить продукт целиком в папку «Архив»?
+            </h2>
+            <p class="admin-product-action-confirm-modal__note">
+              <span>Все дедлайны учеников и иные настройки </span>
+              <span class="admin-product-action-confirm-modal__accent admin-product-action-confirm-modal__accent_positive">
+                сохраняются!
+              </span>
+            </p>
+          </template>
+          <template v-else-if="props.variant === 'unarchive'">
+            <h2 :id="titleId" class="admin-product-action-confirm-modal__title">
+              Вы действительно хотите вернуть продукт из архива?
             </h2>
             <p class="admin-product-action-confirm-modal__note">
               <span>Все дедлайны учеников и иные настройки </span>

@@ -4,11 +4,7 @@ import {
   ADMIN_MATERIAL_SECTION_LIST,
   type AdminMaterialSectionId,
 } from '@/constants/adminMaterials'
-import {
-  MOCK_ADMIN_CATEGORY_SECTIONS,
-  getProductTopicsList,
-  type AdminMaterialProductTopicRow,
-} from '@/utils/adminMaterialCatalog'
+import { useAdminStore } from '@/stores/admin'
 
 interface SelectOption {
   id: string
@@ -31,7 +27,12 @@ interface Emits {
 
 const emit = defineEmits<Emits>()
 
+const adminStore = useAdminStore()
+
 const FILTER_SECTION_IDS = ['courses', 'projects', 'other'] as const satisfies readonly AdminMaterialSectionId[]
+
+const loadingProducts = ref(false)
+const loadingTopics = ref(false)
 
 const sectionOptions = computed(() =>
   ADMIN_MATERIAL_SECTION_LIST.filter((s) =>
@@ -41,28 +42,34 @@ const sectionOptions = computed(() =>
 
 const productOptions = computed((): SelectOption[] => {
   if (!props.sectionId) return []
-  const section = MOCK_ADMIN_CATEGORY_SECTIONS.find((s) => s.sectionId === props.sectionId)
-  return (section?.cards ?? []).map((card) => ({ id: card.id, label: card.title }))
+  const products = adminStore.productsBySection[props.sectionId] ?? []
+  return products.map((p) => ({ id: p.id, label: p.title }))
 })
 
 const topicOptions = computed((): SelectOption[] => {
-  if (!props.sectionId || !props.productId) return []
-  const section = MOCK_ADMIN_CATEGORY_SECTIONS.find((s) => s.sectionId === props.sectionId)
-  const card = section?.cards.find((c) => c.id === props.productId)
-  if (!card) return []
-  const topics: AdminMaterialProductTopicRow[] = getProductTopicsList(card.id, card.edit.topics)
-  return topics.map((t) => ({ id: t.id, label: t.title }))
+  if (!props.productId) return []
+  const detail = adminStore.productDetails[props.productId]
+  const modules = detail?.modules ?? []
+  return modules.map((m) => ({ id: m.id, label: m.title }))
 })
 
 const sectionLabel = computed(
   () => sectionOptions.value.find((o) => o.id === props.sectionId)?.label ?? 'Выберите папку',
 )
-const productLabel = computed(
-  () => productOptions.value.find((o) => o.id === props.productId)?.label ?? 'Выберите продукт',
-)
-const topicLabel = computed(
-  () => topicOptions.value.find((o) => o.id === props.topicId)?.label ?? 'Выберите тему',
-)
+
+const productLabel = computed(() => {
+  if (loadingProducts.value) return 'Загрузка…'
+  if (!props.sectionId) return 'Выберите продукт'
+  if (productOptions.value.length === 0) return 'Нет продуктов'
+  return productOptions.value.find((o) => o.id === props.productId)?.label ?? 'Выберите продукт'
+})
+
+const topicLabel = computed(() => {
+  if (loadingTopics.value) return 'Загрузка…'
+  if (!props.productId) return 'Выберите тему'
+  if (topicOptions.value.length === 0) return 'Нет тем'
+  return topicOptions.value.find((o) => o.id === props.topicId)?.label ?? 'Выберите тему'
+})
 
 const openField = ref<'section' | 'product' | 'topic' | null>(null)
 const rootRef = ref<HTMLElement | null>(null)
@@ -100,6 +107,37 @@ const onDocumentPointerDown = (event: MouseEvent) => {
   closeMenus()
 }
 
+async function loadProducts(sectionId: AdminMaterialSectionId) {
+  loadingProducts.value = true
+  await adminStore.fetchProductsForSection(sectionId)
+  loadingProducts.value = false
+
+  const options = productOptions.value
+  if (options.length === 0) {
+    if (props.productId) emit('update:productId', null)
+    if (props.topicId) emit('update:topicId', null)
+    return
+  }
+  if (!props.productId || !options.some((o) => o.id === props.productId)) {
+    emit('update:productId', options[0].id)
+  }
+}
+
+async function loadTopics(productId: string) {
+  loadingTopics.value = true
+  await adminStore.fetchProductDetail(productId)
+  loadingTopics.value = false
+
+  const options = topicOptions.value
+  if (options.length === 0) {
+    if (props.topicId) emit('update:topicId', null)
+    return
+  }
+  if (!props.topicId || !options.some((o) => o.id === props.topicId)) {
+    emit('update:topicId', options[0].id)
+  }
+}
+
 onMounted(() => {
   document.addEventListener('pointerdown', onDocumentPointerDown, true)
 })
@@ -113,20 +151,44 @@ watch(
   (sectionId) => {
     if (!sectionId && sectionOptions.value.length > 0) {
       emit('update:sectionId', sectionOptions.value[0].id as AdminMaterialSectionId)
+      return
+    }
+    if (sectionId) {
+      void loadProducts(sectionId)
     }
   },
   { immediate: true },
 )
 
 watch(productOptions, (options) => {
-  if (options.length === 0) return
+  if (loadingProducts.value) return
+  if (options.length === 0) {
+    if (props.productId) emit('update:productId', null)
+    if (props.topicId) emit('update:topicId', null)
+    return
+  }
   if (!props.productId || !options.some((o) => o.id === props.productId)) {
     emit('update:productId', options[0].id)
   }
 })
 
+watch(
+  () => props.productId,
+  (productId) => {
+    if (productId) {
+      void loadTopics(productId)
+    } else if (props.topicId) {
+      emit('update:topicId', null)
+    }
+  },
+)
+
 watch(topicOptions, (options) => {
-  if (options.length === 0) return
+  if (loadingTopics.value) return
+  if (options.length === 0) {
+    if (props.topicId) emit('update:topicId', null)
+    return
+  }
   if (!props.topicId || !options.some((o) => o.id === props.topicId)) {
     emit('update:topicId', options[0].id)
   }
@@ -184,7 +246,7 @@ watch(topicOptions, (options) => {
         <button
           type="button"
           class="admin-notifications-create-filters-section__trigger"
-          :disabled="!sectionId"
+          :disabled="!sectionId || loadingProducts"
           :aria-expanded="openField === 'product'"
           aria-haspopup="listbox"
           @click.stop="toggleField('product')"
@@ -228,7 +290,7 @@ watch(topicOptions, (options) => {
         <button
           type="button"
           class="admin-notifications-create-filters-section__trigger"
-          :disabled="!productId"
+          :disabled="!productId || loadingTopics"
           :aria-expanded="openField === 'topic'"
           aria-haspopup="listbox"
           @click.stop="toggleField('topic')"
@@ -379,6 +441,14 @@ watch(topicOptions, (options) => {
   &:focus-visible {
     outline: none;
     box-shadow: var(--focus-ring-main);
+  }
+}
+
+@media (max-width: 1023px) {
+  .admin-notifications-create-filters-section__label,
+  .admin-notifications-create-filters-section__trigger,
+  .admin-notifications-create-filters-section__option {
+    font-size: var(--size-15);
   }
 }
 </style>

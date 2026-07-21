@@ -50,7 +50,7 @@ function lessonToVideo(
     progressPercent: isCompleted ? 100 : watchTime > 0 ? 10 : 0,
     currentTimeLabel: isCompleted ? formatWatchLabel(100) : '00:00',
     durationLabel: '—',
-    hasTimecode: Boolean(lesson.description),
+    hasTimecode: (lesson.chapters?.length ?? 0) > 0,
     files: lesson.files.map(mapFileResponseToLearningTopicFile),
   }
 }

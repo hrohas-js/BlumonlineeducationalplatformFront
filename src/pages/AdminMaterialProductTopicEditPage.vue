@@ -6,9 +6,11 @@ import BaseButton from '@/components/atoms/BaseButton.vue'
 import HomeProfileInfoTableItem from '@/components/atoms/HomeProfileInfoTableItem.vue'
 import AdminProductEditBreadcrumbs from '@/components/molecules/AdminProductEditBreadcrumbs.vue'
 import AdminLabeledControlRow from '@/components/molecules/AdminLabeledControlRow.vue'
+import AdminTopicChaptersModal from '@/components/organisms/AdminTopicChaptersModal.vue'
 import AdminTopicEditMaterialsSection from '@/components/organisms/AdminTopicEditMaterialsSection.vue'
 import AdminTopicEditVideosSection from '@/components/organisms/AdminTopicEditVideosSection.vue'
 import type { AdminTopicEditMaterialFileMock, AdminTopicEditVideoMock } from '@/utils/adminMaterialCatalog'
+import type { LessonChapter } from '@/services/api/types'
 import { useAdminStore } from '@/stores/admin'
 import { adminService } from '@/services/api/endpoints/admin'
 import {
@@ -30,8 +32,11 @@ const topicId = computed(() => route.params.topicId as string)
 const lessonTitle = ref('')
 const materialFiles = ref<AdminTopicEditMaterialFileMock[]>([])
 const videos = ref<AdminTopicEditVideoMock[]>([])
+const lessonChapters = ref<LessonChapter[]>([])
 const loading = ref(true)
 const saving = ref(false)
+const chaptersSaving = ref(false)
+const chaptersModalOpen = ref(false)
 const primaryLessonId = ref<string | null>(null)
 
 const productDetail = computed(() => adminStore.productDetails[productId.value] ?? null)
@@ -42,15 +47,24 @@ const moduleData = computed(() =>
 
 function mapFilesFromLesson() {
   const mod = moduleData.value
-  if (!mod || mod.lessons.length === 0) {
+  if (!mod) {
     materialFiles.value = []
     videos.value = [{ id: 'v1', title: 'Видео 1', timecodeEnabled: false, videoSrc: '' }]
     primaryLessonId.value = null
+    lessonChapters.value = []
+    return
+  }
+  lessonTitle.value = mod.title
+  if (mod.lessons.length === 0) {
+    materialFiles.value = []
+    videos.value = [{ id: 'v1', title: 'Видео 1', timecodeEnabled: false, videoSrc: '' }]
+    primaryLessonId.value = null
+    lessonChapters.value = []
     return
   }
   const lesson = [...mod.lessons].sort((a, b) => a.order_index - b.order_index)[0]
   primaryLessonId.value = lesson.id
-  lessonTitle.value = mod.title
+  lessonChapters.value = lesson.chapters ?? []
   materialFiles.value = lesson.files.map((f) => ({
     id: f.id,
     fileName: f.file_name,
@@ -59,7 +73,7 @@ function mapFilesFromLesson() {
     {
       id: lesson.id,
       title: lesson.title,
-      timecodeEnabled: false,
+      timecodeEnabled: lessonChapters.value.length > 0,
       videoSrc: lesson.video_url ?? '',
       fileName: lesson.video_url ? 'video' : undefined,
     },
@@ -174,16 +188,28 @@ const onMaterialUpload = async (file: File) => {
   await load()
 }
 
-const onAddVideo = () => {
-  videos.value = [
-    ...videos.value,
-    {
-      id: crypto.randomUUID(),
-      title: `Видео ${videos.value.length + 1}`,
-      timecodeEnabled: false,
-      videoSrc: '',
-    },
-  ]
+const onOpenTimecodeModal = () => {
+  chaptersModalOpen.value = true
+}
+
+const onCloseChaptersModal = () => {
+  chaptersModalOpen.value = false
+}
+
+const onSaveChapters = async (chapters: LessonChapter[]) => {
+  const lessonId = await ensureLesson()
+  if (!lessonId) return
+  chaptersSaving.value = true
+  const result = await adminService.updateLesson(lessonId, { chapters })
+  chaptersSaving.value = false
+  if (!result.success) {
+    notify({ type: 'error', message: result.error || 'Не удалось сохранить тайм-коды' })
+    return
+  }
+  lessonChapters.value = chapters
+  chaptersModalOpen.value = false
+  notify({ type: 'success', message: 'Тайм-коды сохранены' })
+  await load()
 }
 
 const onSave = async () => {
@@ -222,12 +248,19 @@ const onSave = async () => {
 
         <hr class="admin-material-product-topic-edit-page__rule" />
 
-        <AdminLabeledControlRow v-model="lessonTitle" label="Название темы:" control-type="input" />
+        <AdminLabeledControlRow label="Название темы:">
+          <input
+            v-model="lessonTitle"
+            class="admin-labeled-control-row__input"
+            type="text"
+            autocomplete="off"
+          />
+        </AdminLabeledControlRow>
 
         <AdminTopicEditVideosSection
           v-model:videos="videos"
-          @add-video="onAddVideo"
           @video-file-selected="onVideoFileSelected"
+          @open-timecode-modal="onOpenTimecodeModal"
         />
 
         <AdminTopicEditMaterialsSection v-model:files="materialFiles" @material-upload="onMaterialUpload" />
@@ -253,6 +286,14 @@ const onSave = async () => {
       </div>
     </section>
     <p v-else-if="loading" class="admin-material-product-topic-edit-page__loading">Загружаем…</p>
+
+    <AdminTopicChaptersModal
+      :is-open="chaptersModalOpen"
+      :chapters="lessonChapters"
+      :saving="chaptersSaving"
+      @close="onCloseChaptersModal"
+      @save="onSaveChapters"
+    />
   </AppLayout>
 </template>
 

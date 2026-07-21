@@ -10,6 +10,7 @@ const videoSrc = defineModel<string | undefined>('videoSrc')
 interface Emits {
   (e: 'delete-video'): void
   (e: 'file-selected', file: File): void
+  (e: 'open-timecode-modal'): void
 }
 
 const emit = defineEmits<Emits>()
@@ -32,6 +33,8 @@ function openFilePicker() {
   addFileError.value = ''
   fileInputRef.value?.click()
 }
+
+defineExpose({ openFilePicker })
 
 async function onFileInputChange(event: Event) {
   const input = event.target as HTMLInputElement
@@ -58,10 +61,6 @@ async function onFileInputChange(event: Event) {
     isValidatingFile.value = false
     input.value = ''
   }
-}
-
-const toggleTimecode = () => {
-  timecodeEnabled.value = !timecodeEnabled.value
 }
 
 watch(videoSrc, (next, prev) => {
@@ -133,7 +132,7 @@ onBeforeUnmount(() => {
           class="admin-topic-edit-video-row__side-btn-timecode"
           :aria-pressed="timecodeEnabled"
           aria-label="Добавить тайм-код"
-          @click="toggleTimecode"
+          @click="emit('open-timecode-modal')"
         >
           <span class="admin-topic-edit-video-row__timecode-icon" aria-hidden="true">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">

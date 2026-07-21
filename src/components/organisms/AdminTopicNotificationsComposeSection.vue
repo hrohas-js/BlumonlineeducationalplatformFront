@@ -1,19 +1,36 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import BaseButton from '@/components/atoms/BaseButton.vue'
 import AdminDateField from '@/components/molecules/AdminDateField.vue'
 import AdminTopicNotificationsTemplateSelect from '@/components/molecules/AdminTopicNotificationsTemplateSelect.vue'
 import type { AdminTopicNotificationTemplate } from '@/utils/adminTopicNotifications'
 
-interface Props {
-  templates: AdminTopicNotificationTemplate[]
+export interface AdminTopicNotificationsComposePayload {
+  sendDateIso: string
+  subject: string
+  body: string
+  templateId: string | null
 }
 
-defineProps<Props>()
+export interface AdminTopicNotificationsComposePrefill {
+  sendDateIso?: string
+  subject?: string
+  body?: string
+  templateId?: string | null
+}
+
+interface Props {
+  templates: AdminTopicNotificationTemplate[]
+  saving?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  saving: false,
+})
 
 interface Emits {
-  (e: 'save-and-send'): void
-  (e: 'save-as-template'): void
+  (e: 'save-and-send', payload: AdminTopicNotificationsComposePayload): void
+  (e: 'save-as-template', payload: AdminTopicNotificationsComposePayload): void
 }
 
 const emit = defineEmits<Emits>()
@@ -23,10 +40,47 @@ const templateId = ref<string | null>(null)
 const subject = ref('')
 const body = ref('')
 
+const templatePlaceholder = computed(() =>
+  props.templates.length > 0 ? 'Выберите шаблон' : 'Нет шаблонов',
+)
+
 const onTemplateSelect = (template: AdminTopicNotificationTemplate) => {
   subject.value = template.subject
   body.value = template.body
 }
+
+const buildPayload = (): AdminTopicNotificationsComposePayload => ({
+  sendDateIso: sendDateIso.value,
+  subject: subject.value,
+  body: body.value,
+  templateId: templateId.value,
+})
+
+const onSaveAndSend = () => {
+  if (props.saving) return
+  emit('save-and-send', buildPayload())
+}
+
+const onSaveAsTemplate = () => {
+  if (props.saving) return
+  emit('save-as-template', buildPayload())
+}
+
+const applyPrefill = (prefill: AdminTopicNotificationsComposePrefill) => {
+  if (prefill.sendDateIso !== undefined) sendDateIso.value = prefill.sendDateIso
+  if (prefill.subject !== undefined) subject.value = prefill.subject
+  if (prefill.body !== undefined) body.value = prefill.body
+  if (prefill.templateId !== undefined) templateId.value = prefill.templateId
+}
+
+const resetForm = () => {
+  sendDateIso.value = ''
+  templateId.value = null
+  subject.value = ''
+  body.value = ''
+}
+
+defineExpose({ applyPrefill, resetForm })
 </script>
 
 <template>
@@ -52,6 +106,7 @@ const onTemplateSelect = (template: AdminTopicNotificationTemplate) => {
       <AdminTopicNotificationsTemplateSelect
         v-model="templateId"
         :templates="templates"
+        :placeholder="templatePlaceholder"
         @select="onTemplateSelect"
       />
     </div>
@@ -66,6 +121,7 @@ const onTemplateSelect = (template: AdminTopicNotificationTemplate) => {
         class="admin-topic-notifications-compose-section__input"
         type="text"
         autocomplete="off"
+        :disabled="saving"
       />
     </div>
 
@@ -74,7 +130,12 @@ const onTemplateSelect = (template: AdminTopicNotificationTemplate) => {
         <span>Текст письма </span>
         <span class="admin-topic-notifications-compose-section__required">*</span>
       </p>
-      <textarea v-model="body" class="admin-topic-notifications-compose-section__textarea" rows="12" />
+      <textarea
+        v-model="body"
+        class="admin-topic-notifications-compose-section__textarea"
+        rows="12"
+        :disabled="saving"
+      />
     </div>
 
     <div class="admin-topic-notifications-compose-section__actions">
@@ -84,7 +145,8 @@ const onTemplateSelect = (template: AdminTopicNotificationTemplate) => {
         size="medium"
         shape="rounded"
         text="Сохранить и отправить"
-        @click="emit('save-and-send')"
+        :disabled="saving"
+        @click="onSaveAndSend"
       />
       <BaseButton
         class="admin-topic-notifications-compose-section__btn"
@@ -92,7 +154,8 @@ const onTemplateSelect = (template: AdminTopicNotificationTemplate) => {
         size="medium"
         shape="rounded"
         text="Сохранить как шаблон"
-        @click="emit('save-as-template')"
+        :disabled="saving"
+        @click="onSaveAsTemplate"
       />
     </div>
   </section>
@@ -244,5 +307,24 @@ const onTemplateSelect = (template: AdminTopicNotificationTemplate) => {
   border-color: color-mix(in srgb, var(--text-accent) 88%, #000);
   color: var(--white);
   transform: none;
+}
+
+@media (max-width: 1023px) {
+  .admin-topic-notifications-compose-section__label,
+  .admin-topic-notifications-compose-section__input,
+  .admin-topic-notifications-compose-section__textarea {
+    font-size: var(--size-15);
+  }
+
+  .admin-topic-notifications-compose-section__date-wrap {
+    :deep(.admin-date-field__input),
+    :deep(.admin-date-field__format-hint) {
+      font-size: var(--size-15);
+    }
+  }
+
+  :deep(.admin-topic-notifications-compose-section__btn.base-button) {
+    font-size: var(--size-15);
+  }
 }
 </style>

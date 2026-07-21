@@ -26,12 +26,6 @@ async function loadSections() {
   loading.value = true
   const configs: AdminCategorySectionConfig[] = []
   for (const section of ADMIN_MATERIAL_SECTION_LIST) {
-    if (section.id === 'archive') {
-      configs.push(
-        buildSectionConfig(section.id, [], undefined, adminStore.productDetails)
-      )
-      continue
-    }
     const agg = await adminStore.aggregateStudentsForSection(section.id as AdminMaterialSectionId)
     const products = adminStore.productsBySection[section.id] ?? []
     configs.push(

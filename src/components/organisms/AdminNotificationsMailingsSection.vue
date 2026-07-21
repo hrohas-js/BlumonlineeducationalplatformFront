@@ -2,31 +2,34 @@
 import { ref } from 'vue'
 import AdminNotificationMailingActions from '@/components/molecules/AdminNotificationMailingActions.vue'
 import AdminInfoModal from '@/components/organisms/AdminInfoModal.vue'
-import { useNotification } from '@/composables/useNotification'
 import {
-  ADMIN_NOTIFICATION_MAILING_STATUS_LABELS,
+  getMailingStatusLabel,
   type AdminNotificationMailingRow,
 } from '@/utils/adminNotificationsMailings'
 
 interface Props {
   mailings: AdminNotificationMailingRow[]
+  loading?: boolean
+  deleting?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  loading: false,
+  deleting: false,
+})
 
 interface Emits {
-  (e: 'update:mailings', value: AdminNotificationMailingRow[]): void
+  (e: 'copy', row: AdminNotificationMailingRow): void
+  (e: 'delete', id: string): void
 }
 
 const emit = defineEmits<Emits>()
 
-const { notify } = useNotification()
-
 const deleteTargetId = ref<string | null>(null)
 const deleteModalOpen = ref(false)
 
-const onCopy = (_row: AdminNotificationMailingRow) => {
-  notify({ type: 'info', message: 'Копирование рассылки — до API' })
+const onCopy = (row: AdminNotificationMailingRow) => {
+  emit('copy', row)
 }
 
 const onDeleteRequest = (row: AdminNotificationMailingRow) => {
@@ -35,6 +38,7 @@ const onDeleteRequest = (row: AdminNotificationMailingRow) => {
 }
 
 const closeDeleteModal = () => {
+  if (props.deleting) return
   deleteModalOpen.value = false
   deleteTargetId.value = null
 }
@@ -42,61 +46,73 @@ const closeDeleteModal = () => {
 const onDeleteConfirm = () => {
   const id = deleteTargetId.value
   if (!id) return
-  const next = props.mailings.filter((row) => row.id !== id)
-  emit('update:mailings', next)
-  notify({ type: 'success', message: 'Рассылка удалена (мок)' })
-  closeDeleteModal()
+  emit('delete', id)
 }
+
+const closeDeleteModalAfterSuccess = () => {
+  deleteModalOpen.value = false
+  deleteTargetId.value = null
+}
+
+defineExpose({ closeDeleteModalAfterSuccess })
 </script>
 
 <template>
   <section class="admin-notifications-mailings-section">
-    <div v-if="mailings.length === 0" class="admin-notifications-mailings-section__empty">
+    <div v-if="loading" class="admin-notifications-mailings-section__empty">
+      Загружаем рассылки…
+    </div>
+
+    <div v-else-if="mailings.length === 0" class="admin-notifications-mailings-section__empty">
       Рассылок пока нет
     </div>
 
     <template v-else>
-      <div class="admin-notifications-mailings-section__head" role="row">
-        <span class="admin-notifications-mailings-section__col admin-notifications-mailings-section__col_subject">
-          Заголовок письма
-        </span>
-        <span class="admin-notifications-mailings-section__col">Продукт</span>
-        <span class="admin-notifications-mailings-section__col">Тема</span>
-        <span class="admin-notifications-mailings-section__col">Отослано</span>
-        <span class="admin-notifications-mailings-section__col">Дата</span>
-        <span class="admin-notifications-mailings-section__col">Статус</span>
-        <span class="admin-notifications-mailings-section__col admin-notifications-mailings-section__col_actions">
-          Действия
-        </span>
-      </div>
+      <div class="admin-notifications-mailings-section__scroll">
+        <div class="admin-notifications-mailings-section__table">
+          <div class="admin-notifications-mailings-section__head" role="row">
+            <span class="admin-notifications-mailings-section__col admin-notifications-mailings-section__col_subject">
+              Заголовок письма
+            </span>
+            <span class="admin-notifications-mailings-section__col">Продукт</span>
+            <span class="admin-notifications-mailings-section__col">Тема</span>
+            <span class="admin-notifications-mailings-section__col">Отослано</span>
+            <span class="admin-notifications-mailings-section__col">Дата</span>
+            <span class="admin-notifications-mailings-section__col">Статус</span>
+            <span class="admin-notifications-mailings-section__col admin-notifications-mailings-section__col_actions">
+              Действия
+            </span>
+          </div>
 
-      <ul class="admin-notifications-mailings-section__list" aria-label="Список рассылок">
-        <li
-          v-for="row in mailings"
-          :key="row.id"
-          class="admin-notifications-mailings-section__row"
-          role="row"
-        >
-          <span
-            class="admin-notifications-mailings-section__cell admin-notifications-mailings-section__cell_subject"
-          >
-            {{ row.subject }}
-          </span>
-          <span class="admin-notifications-mailings-section__cell">{{ row.productTitle }}</span>
-          <span class="admin-notifications-mailings-section__cell">{{ row.topicTitle }}</span>
-          <span class="admin-notifications-mailings-section__cell">{{ row.sentCount }}</span>
-          <span class="admin-notifications-mailings-section__cell">{{ row.sentDate }}</span>
-          <span class="admin-notifications-mailings-section__cell">
-            {{ ADMIN_NOTIFICATION_MAILING_STATUS_LABELS[row.status] }}
-          </span>
-          <span class="admin-notifications-mailings-section__cell admin-notifications-mailings-section__cell_actions">
-            <AdminNotificationMailingActions
-              @copy="onCopy(row)"
-              @delete="onDeleteRequest(row)"
-            />
-          </span>
-        </li>
-      </ul>
+          <ul class="admin-notifications-mailings-section__list" aria-label="Список рассылок">
+            <li
+              v-for="row in mailings"
+              :key="row.id"
+              class="admin-notifications-mailings-section__row"
+              role="row"
+            >
+              <span
+                class="admin-notifications-mailings-section__cell admin-notifications-mailings-section__cell_subject"
+              >
+                {{ row.subject }}
+              </span>
+              <span class="admin-notifications-mailings-section__cell">{{ row.productTitle }}</span>
+              <span class="admin-notifications-mailings-section__cell">{{ row.topicTitle }}</span>
+              <span class="admin-notifications-mailings-section__cell">{{ row.sentCount }}</span>
+              <span class="admin-notifications-mailings-section__cell">{{ row.sentDate }}</span>
+              <span class="admin-notifications-mailings-section__cell">
+                {{ getMailingStatusLabel(row.status) }}
+              </span>
+              <span class="admin-notifications-mailings-section__cell admin-notifications-mailings-section__cell_actions">
+                <AdminNotificationMailingActions
+                  @copy="onCopy(row)"
+                  @delete="onDeleteRequest(row)"
+                />
+              </span>
+            </li>
+          </ul>
+        </div>
+      </div>
     </template>
 
     <AdminInfoModal
@@ -126,6 +142,17 @@ const onDeleteConfirm = () => {
   padding: var(--sp-40) 0;
 }
 
+.admin-notifications-mailings-section__scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-notifications-mailings-section__table {
+  width: 100%;
+  min-width: 900px;
+}
+
 .admin-notifications-mailings-section__head {
   display: grid;
   grid-template-columns: 112px 1fr 1fr 0.6fr 0.8fr 1fr auto;
@@ -135,10 +162,6 @@ const onDeleteConfirm = () => {
   padding-bottom: var(--sp-10);
   border-bottom: 1px solid var(--osnovnoy-tekst);
   box-sizing: border-box;
-
-  @media (max-width: 1023px) {
-    display: none;
-  }
 }
 
 .admin-notifications-mailings-section__col {
@@ -173,12 +196,6 @@ const onDeleteConfirm = () => {
   padding: var(--sp-20) 0;
   border-bottom: 1px solid var(--osnovnoy-tekst);
   box-sizing: border-box;
-
-  @media (max-width: 1023px) {
-    grid-template-columns: 1fr;
-    gap: var(--sp-10);
-    padding: var(--sp-16) 0;
-  }
 }
 
 .admin-notifications-mailings-section__cell {
@@ -198,36 +215,12 @@ const onDeleteConfirm = () => {
     display: flex;
     justify-content: center;
   }
-
-  @media (max-width: 1023px) {
-    &::before {
-      display: block;
-      font-size: var(--size-13);
-      font-weight: var(--font-medium);
-      color: rgba(1, 3, 7, 0.55);
-      margin-bottom: var(--sp-4);
-    }
-  }
 }
 
 @media (max-width: 1023px) {
-  .admin-notifications-mailings-section__row .admin-notifications-mailings-section__cell:nth-child(1)::before {
-    content: 'Заголовок: ';
-  }
-  .admin-notifications-mailings-section__row .admin-notifications-mailings-section__cell:nth-child(2)::before {
-    content: 'Продукт: ';
-  }
-  .admin-notifications-mailings-section__row .admin-notifications-mailings-section__cell:nth-child(3)::before {
-    content: 'Тема: ';
-  }
-  .admin-notifications-mailings-section__row .admin-notifications-mailings-section__cell:nth-child(4)::before {
-    content: 'Отослано: ';
-  }
-  .admin-notifications-mailings-section__row .admin-notifications-mailings-section__cell:nth-child(5)::before {
-    content: 'Дата: ';
-  }
-  .admin-notifications-mailings-section__row .admin-notifications-mailings-section__cell:nth-child(6)::before {
-    content: 'Статус: ';
+  .admin-notifications-mailings-section__col,
+  .admin-notifications-mailings-section__cell {
+    font-size: var(--size-15);
   }
 }
 </style>

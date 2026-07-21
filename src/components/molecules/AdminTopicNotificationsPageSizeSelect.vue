@@ -172,4 +172,11 @@ onUnmounted(() => {
     background-color: rgba(23, 142, 240, 0.12);
   }
 }
+
+@media (max-width: 1023px) {
+  .admin-topic-notifications-page-size-select__trigger,
+  .admin-topic-notifications-page-size-select__option {
+    font-size: var(--size-15);
+  }
+}
 </style>

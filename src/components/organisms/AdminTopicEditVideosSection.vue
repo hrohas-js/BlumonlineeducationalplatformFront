@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed, nextTick, ref } from 'vue'
 import BaseButton from '@/components/atoms/BaseButton.vue'
 import AdminTopicEditVideoRow from '@/components/molecules/AdminTopicEditVideoRow.vue'
 import type { AdminTopicEditVideoMock } from '@/utils/adminMaterialCatalog'
@@ -6,11 +7,23 @@ import type { AdminTopicEditVideoMock } from '@/utils/adminMaterialCatalog'
 const videos = defineModel<AdminTopicEditVideoMock[]>('videos', { required: true })
 
 interface Emits {
-  (e: 'add-video'): void
   (e: 'video-file-selected', payload: { videoId: string; file: File }): void
+  (e: 'open-timecode-modal', videoId: string): void
 }
 
 const emit = defineEmits<Emits>()
+
+type VideoRowExpose = { openFilePicker: () => void }
+
+const rowRefs = ref<Record<string, VideoRowExpose | null>>({})
+
+function setRowRef(id: string, el: unknown) {
+  if (el && typeof el === 'object' && 'openFilePicker' in el) {
+    rowRefs.value[id] = el as VideoRowExpose
+  } else {
+    delete rowRefs.value[id]
+  }
+}
 
 function revokeBlobUrl(url: string | undefined) {
   if (url?.startsWith('blob:')) {
@@ -22,6 +35,35 @@ const onDelete = (videoId: string) => {
   const item = videos.value.find((v) => v.id === videoId)
   revokeBlobUrl(item?.videoSrc)
   videos.value = videos.value.filter((v) => v.id !== videoId)
+  delete rowRefs.value[videoId]
+}
+
+const hasEmptyVideoSlot = computed(() =>
+  videos.value.some((v) => !v.videoSrc?.trim()),
+)
+
+async function openPickerForVideo(videoId: string) {
+  await nextTick()
+  rowRefs.value[videoId]?.openFilePicker()
+}
+
+const onAddVideoClick = async () => {
+  const empty = videos.value.find((v) => !v.videoSrc?.trim())
+  if (empty) {
+    await openPickerForVideo(empty.id)
+    return
+  }
+  const id = crypto.randomUUID()
+  videos.value = [
+    ...videos.value,
+    {
+      id,
+      title: `Видео ${videos.value.length + 1}`,
+      timecodeEnabled: false,
+      videoSrc: '',
+    },
+  ]
+  await openPickerForVideo(id)
 }
 </script>
 
@@ -32,21 +74,26 @@ const onDelete = (videoId: string) => {
       <AdminTopicEditVideoRow
         v-for="v in videos"
         :key="v.id"
+        :ref="(el) => setRowRef(v.id, el)"
         v-model:title="v.title"
         v-model:timecode-enabled="v.timecodeEnabled"
         v-model:video-src="v.videoSrc"
         @delete-video="onDelete(v.id)"
         @file-selected="(file) => emit('video-file-selected', { videoId: v.id, file })"
+        @open-timecode-modal="emit('open-timecode-modal', v.id)"
       />
     </div>
-    <div class="admin-topic-edit-videos-section__add-wrap">
+    <div
+      v-if="!hasEmptyVideoSlot"
+      class="admin-topic-edit-videos-section__add-wrap"
+    >
       <BaseButton
         class="admin-topic-edit-videos-section__add-btn"
         variant="outline"
         size="medium"
         shape="rounded"
         text="Добавить видеофайл"
-        @click="emit('add-video')"
+        @click="onAddVideoClick"
       />
     </div>
   </section>

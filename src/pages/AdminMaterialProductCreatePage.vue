@@ -102,6 +102,11 @@ const onSubmit = async () => {
   }
   submitting.value = true
   const productType = sectionIdToProductType(sectionId.value as AdminMaterialSectionId)
+  if (!productType) {
+    submitting.value = false
+    notify({ type: 'error', message: 'Создание продукта в этой секции недоступно' })
+    return
+  }
   const created = await adminStore.createProduct({
     product_type: productType,
     title,

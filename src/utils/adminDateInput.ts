@@ -56,3 +56,29 @@ export function parseIsoDateToTime(iso: string): number {
   if (!ISO_DATE.test(t)) return Number.NaN
   return Date.parse(`${t}T12:00:00`)
 }
+
+/** `ДД.ММ.ГГГГ` → `YYYY-MM-DDT00:00:00Z`; пустая/невалидная строка → `null`. */
+export function ruDeadlineToAccessDuration(label: string): string | null {
+  const trimmed = label.trim()
+  if (!trimmed) return null
+  const iso = deadlineRuLabelToIso(trimmed)
+  if (!iso) return null
+  return `${iso}T00:00:00Z`
+}
+
+/** Datetime / date-only → `ДД.ММ.ГГГГ`; иначе пустая строка. */
+export function accessDurationToRuLabel(value: string | null | undefined): string {
+  if (!value) return ''
+  const t = value.trim()
+  if (!t) return ''
+  const datePart = t.slice(0, 10)
+  if (ISO_DATE.test(datePart)) {
+    return isoDateToRuLabel(datePart)
+  }
+  const d = new Date(t)
+  if (Number.isNaN(d.getTime())) return ''
+  const yyyy = d.getUTCFullYear()
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0')
+  const dd = String(d.getUTCDate()).padStart(2, '0')
+  return isoDateToRuLabel(`${yyyy}-${mm}-${dd}`)
+}

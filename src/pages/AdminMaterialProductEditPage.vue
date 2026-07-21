@@ -17,6 +17,11 @@ import {
   type AdminMaterialSectionId,
 } from '@/constants/adminMaterials'
 import { useNotification } from '@/composables/useNotification'
+import {
+  accessDurationToRuLabel,
+  isRuDeadlineFormat,
+  ruDeadlineToAccessDuration,
+} from '@/utils/adminDateInput'
 
 const route = useRoute()
 const router = useRouter()
@@ -60,7 +65,8 @@ async function loadProduct() {
   const p = result.data
   formTitle.value = p.title
   formDescription.value = p.description ?? ''
-  formDeadline.value = ''
+  const hasAnyTopicDeadline = p.modules.some((m) => m.access_duration != null)
+  formDeadline.value = hasAnyTopicDeadline ? '' : accessDurationToRuLabel(p.access_duration)
   breadcrumbProductTitle.value = p.title
   folderLabel.value = `Папка «${sectionTitle.value}»`
   topics.value = [...p.modules]
@@ -68,7 +74,7 @@ async function loadProduct() {
     .map((m) => ({
       id: m.id,
       title: m.title,
-      accessUntil: '—',
+      accessUntil: (m.access_duration ? accessDurationToRuLabel(m.access_duration) : '') || '—',
     }))
   activeExtensions.value = []
 }
@@ -100,16 +106,35 @@ const onCancel = () => {
 }
 
 const onSave = async () => {
+  const hasAnyTopicDeadline = topics.value.some(
+    (t) => t.accessUntil !== '—' && t.accessUntil.trim().length > 0,
+  )
+
+  let accessDuration: string | null = null
+  if (!hasAnyTopicDeadline) {
+    const deadlineRaw = formDeadline.value.trim()
+    if (deadlineRaw && !isRuDeadlineFormat(deadlineRaw)) {
+      notify({ type: 'warning', message: 'Укажите дату в формате ДД.ММ.ГГГГ' })
+      return
+    }
+    accessDuration = ruDeadlineToAccessDuration(formDeadline.value)
+    if (deadlineRaw && accessDuration === null) {
+      notify({ type: 'warning', message: 'Укажите дату в формате ДД.ММ.ГГГГ' })
+      return
+    }
+  }
+
   const result = await adminStore.updateProduct(productId.value, {
     title: formTitle.value.trim(),
     description: formDescription.value.trim(),
+    access_duration: hasAnyTopicDeadline ? null : accessDuration,
   })
   if (!result.success) {
     notify({ type: 'error', message: result.error || 'Не удалось сохранить' })
     return
   }
+  await loadProduct()
   notify({ type: 'success', message: 'Продукт сохранён' })
-  breadcrumbProductTitle.value = formTitle.value
 }
 
 const onCreateTopic = async () => {
@@ -160,8 +185,8 @@ const onTopicMenuAction = async ({
       notify({ type: 'error', message: result.error || 'Не удалось удалить тему' })
       return
     }
-    topics.value = topics.value.filter((topic) => topic.id !== topicId)
     await loadProduct()
+    notify({ type: 'success', message: 'Тема удалена' })
     return
   }
 
@@ -185,16 +210,39 @@ const onTopicMenuAction = async ({
   }
 }
 
-const onTopicDeadlineSave = ({
+const onTopicDeadlineSave = async ({
   topicId,
   accessUntil,
 }: {
   topicId: string
   accessUntil: string
 }) => {
-  topics.value = topics.value.map((topic) =>
-    topic.id === topicId ? { ...topic, accessUntil } : topic,
-  )
+  const accessDuration = ruDeadlineToAccessDuration(accessUntil)
+  if (!accessDuration) {
+    notify({ type: 'warning', message: 'Укажите дату в формате ДД.ММ.ГГГГ' })
+    return
+  }
+
+  const moduleResult = await adminStore.updateModule(topicId, productId.value, {
+    access_duration: accessDuration,
+  })
+
+  if (!moduleResult.success) {
+    notify({ type: 'error', message: moduleResult.error || 'Не удалось сохранить дедлайн темы' })
+    return
+  }
+
+  const productResult = await adminStore.updateProduct(productId.value, {
+    access_duration: null,
+  })
+  if (!productResult.success) {
+    notify({ type: 'error', message: productResult.error || 'Не удалось сбросить общий дедлайн' })
+    return
+  }
+
+  formDeadline.value = ''
+  await loadProduct()
+  notify({ type: 'success', message: 'Дедлайн темы сохранён' })
 }
 
 const onDeleteProduct = async () => {
@@ -205,6 +253,31 @@ const onDeleteProduct = async () => {
     return
   }
   notify({ type: 'success', message: 'Продукт удалён' })
+  void router.push({ name: 'admin-materials' })
+}
+
+const isProductArchived = computed(
+  () =>
+    productDetail.value?.is_archived === true || sectionId.value === 'archive',
+)
+
+const onMoveArchive = async () => {
+  const result = await adminStore.archiveProduct(productId.value)
+  if (!result.success) {
+    notify({ type: 'error', message: result.error || 'Не удалось переместить в архив' })
+    return
+  }
+  notify({ type: 'success', message: 'Продукт перемещён в архив' })
+  void router.push({ name: 'admin-materials' })
+}
+
+const onUnarchive = async () => {
+  const result = await adminStore.unarchiveProduct(productId.value)
+  if (!result.success) {
+    notify({ type: 'error', message: result.error || 'Не удалось вернуть из архива' })
+    return
+  }
+  notify({ type: 'success', message: 'Продукт возвращён из архива' })
   void router.push({ name: 'admin-materials' })
 }
 
@@ -248,7 +321,12 @@ const onDeleteProduct = async () => {
           @delete-click="onActiveExtensionDelete"
         />
 
-        <AdminProductOtherSettingsSection @move-archive="() => {}" @delete-product="onDeleteProduct" />
+        <AdminProductOtherSettingsSection
+          :is-archived="isProductArchived"
+          @move-archive="onMoveArchive"
+          @unarchive="onUnarchive"
+          @delete-product="onDeleteProduct"
+        />
       </div>
     </section>
     <p v-else-if="loading" class="admin-material-product-edit-page__loading">Загружаем…</p>

@@ -26,6 +26,13 @@ import type {
   AdminStudentsListResponse,
   AdminPaymentsQuery,
   AdminPaymentsListResponse,
+  AdminBroadcastTemplate,
+  AdminBroadcastTemplateCreateRequest,
+  AdminBroadcastTemplateUpdateRequest,
+  AdminBroadcastItem,
+  AdminBroadcastsListQuery,
+  AdminBroadcastsListResponse,
+  AdminBroadcastCreateRequest,
   MessageResponse,
   ApiServiceResponse,
 } from '../types'
@@ -59,6 +66,16 @@ export const adminService = {
   async deleteProduct(id: string): ApiServiceResponse<MessageResponse> {
     const api = useApi()
     return api.delete<MessageResponse>(ADMIN_ENDPOINTS.productById(id))
+  },
+
+  async archiveProduct(id: string): ApiServiceResponse<ProductResponse> {
+    const api = useApi()
+    return api.post<ProductResponse>(ADMIN_ENDPOINTS.productArchive(id))
+  },
+
+  async unarchiveProduct(id: string): ApiServiceResponse<ProductResponse> {
+    const api = useApi()
+    return api.post<ProductResponse>(ADMIN_ENDPOINTS.productUnarchive(id))
   },
 
   async uploadProductImage(
@@ -222,6 +239,65 @@ export const adminService = {
   async paymentsByUserEmail(email: string): ApiServiceResponse<AdminPaymentsListResponse> {
     const api = useApi()
     return api.get<AdminPaymentsListResponse>(ADMIN_ENDPOINTS.paymentsByUserEmail(email))
+  },
+
+  // --- Broadcast templates ---
+  async listBroadcastTemplates(): ApiServiceResponse<AdminBroadcastTemplate[]> {
+    const api = useApi()
+    return api.get<AdminBroadcastTemplate[]>(ADMIN_ENDPOINTS.broadcastTemplates)
+  },
+
+  async createBroadcastTemplate(
+    body: AdminBroadcastTemplateCreateRequest
+  ): ApiServiceResponse<AdminBroadcastTemplate> {
+    const api = useApi()
+    return api.post<AdminBroadcastTemplate>(ADMIN_ENDPOINTS.broadcastTemplates, body)
+  },
+
+  async updateBroadcastTemplate(
+    id: string,
+    body: AdminBroadcastTemplateUpdateRequest
+  ): ApiServiceResponse<AdminBroadcastTemplate> {
+    const api = useApi()
+    return api.put<AdminBroadcastTemplate>(ADMIN_ENDPOINTS.broadcastTemplateById(id), body)
+  },
+
+  async deleteBroadcastTemplate(id: string): ApiServiceResponse<null> {
+    const api = useApi()
+    return api.delete<null>(ADMIN_ENDPOINTS.broadcastTemplateById(id))
+  },
+
+  // --- Broadcasts ---
+  async listBroadcasts(
+    query?: AdminBroadcastsListQuery
+  ): ApiServiceResponse<AdminBroadcastsListResponse> {
+    const api = useApi()
+    return api.get<AdminBroadcastsListResponse>(ADMIN_ENDPOINTS.broadcasts, { params: query })
+  },
+
+  async createBroadcast(body: AdminBroadcastCreateRequest): ApiServiceResponse<AdminBroadcastItem> {
+    const api = useApi()
+    return api.post<AdminBroadcastItem>(ADMIN_ENDPOINTS.broadcasts, body)
+  },
+
+  async getBroadcast(id: string): ApiServiceResponse<AdminBroadcastItem> {
+    const api = useApi()
+    return api.get<AdminBroadcastItem>(ADMIN_ENDPOINTS.broadcastById(id))
+  },
+
+  async deleteBroadcast(id: string): ApiServiceResponse<null> {
+    const api = useApi()
+    return api.delete<null>(ADMIN_ENDPOINTS.broadcastById(id))
+  },
+
+  async startBroadcast(id: string): ApiServiceResponse<AdminBroadcastItem> {
+    const api = useApi()
+    return api.post<AdminBroadcastItem>(ADMIN_ENDPOINTS.broadcastStart(id))
+  },
+
+  async stopBroadcast(id: string): ApiServiceResponse<AdminBroadcastItem> {
+    const api = useApi()
+    return api.post<AdminBroadcastItem>(ADMIN_ENDPOINTS.broadcastStop(id))
   },
 }
 

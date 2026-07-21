@@ -58,6 +58,9 @@ const emit = defineEmits<Emits>()
   font-size: var(--size-20);
   line-height: normal;
   color: #010307;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -67,7 +70,17 @@ const emit = defineEmits<Emits>()
   font-size: var(--size-20);
   line-height: normal;
   color: #010307;
-  text-align: center;
-  white-space: nowrap;
+  text-align: right;
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 1023px) {
+  .admin-topic-notification-recipient-row__name,
+  .admin-topic-notification-recipient-row__email {
+    font-size: var(--size-15);
+  }
 }
 </style>

@@ -9,9 +9,12 @@ interface Props {
   recipients: AdminTopicNotificationRecipient[]
   totalRecipients: number
   selectedById: Record<string, boolean>
+  loading?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  loading: false,
+})
 
 interface Emits {
   (e: 'update:selectedById', value: Record<string, boolean>): void
@@ -56,7 +59,18 @@ const selectAllVisible = () => {
       Всего получателей: {{ totalRecipients }}
     </p>
 
-    <div class="admin-topic-notifications-recipients-section__main">
+    <p v-if="loading" class="admin-topic-notifications-recipients-section__status">
+      Загружаем получателей…
+    </p>
+
+    <p
+      v-else-if="recipients.length === 0"
+      class="admin-topic-notifications-recipients-section__status"
+    >
+      Нет получателей для выбранного продукта
+    </p>
+
+    <div v-else class="admin-topic-notifications-recipients-section__main">
       <button
         type="button"
         class="admin-topic-notifications-recipients-section__select-all"
@@ -72,22 +86,7 @@ const selectAllVisible = () => {
             class="admin-topic-notifications-recipients-section__sort"
             @click="toggleSort"
           >
-            <span>Пользователь</span>
-            <span
-              class="admin-topic-notifications-recipients-section__sort-icon"
-              :class="{ 'admin-topic-notifications-recipients-section__sort-icon_desc': !sortAscending }"
-              aria-hidden="true"
-            >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M5 7.5L10 12.5L15 7.5"
-                  stroke="currentColor"
-                  stroke-width="1.2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </span>
+            Пользователь
           </button>
           <span class="admin-topic-notifications-recipients-section__contacts-col">Контакты</span>
         </div>
@@ -131,6 +130,17 @@ const selectAllVisible = () => {
   font-size: var(--size-20);
   line-height: normal;
   color: #010307;
+  text-align: left;
+}
+
+.admin-topic-notifications-recipients-section__status {
+  margin: 0;
+  width: 100%;
+  font-family: var(--font-family);
+  font-weight: var(--font-medium);
+  font-size: var(--size-15);
+  line-height: normal;
+  color: var(--osnovnoy-tekst);
   text-align: left;
 }
 
@@ -203,7 +213,6 @@ const selectAllVisible = () => {
 .admin-topic-notifications-recipients-section__sort {
   display: inline-flex;
   align-items: center;
-  gap: 15px;
   margin: 0;
   padding: 0;
   border: none;
@@ -221,23 +230,13 @@ const selectAllVisible = () => {
   }
 }
 
-.admin-topic-notifications-recipients-section__sort-icon {
-  display: inline-flex;
-  transform: rotate(-90deg);
-  transition: transform 0.15s ease;
-}
-
-.admin-topic-notifications-recipients-section__sort-icon_desc {
-  transform: rotate(90deg);
-}
-
 .admin-topic-notifications-recipients-section__contacts-col {
   font-family: var(--font-family);
   font-weight: var(--font-semi-bold);
   font-size: var(--size-20);
   line-height: normal;
   color: #010307;
-  text-align: center;
+  text-align: right;
 }
 
 .admin-topic-notifications-recipients-section__list {
@@ -265,5 +264,15 @@ const selectAllVisible = () => {
   font-size: var(--size-20);
   line-height: normal;
   color: #010307;
+}
+
+@media (max-width: 1023px) {
+  .admin-topic-notifications-recipients-section__total,
+  .admin-topic-notifications-recipients-section__select-all,
+  .admin-topic-notifications-recipients-section__sort,
+  .admin-topic-notifications-recipients-section__contacts-col,
+  .admin-topic-notifications-recipients-section__pagination-label {
+    font-size: var(--size-15);
+  }
 }
 </style>

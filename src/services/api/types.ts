@@ -124,6 +124,8 @@ export interface ProductResponse {
   image_url: string | null
   created_by: string
   is_published: boolean
+  is_archived?: boolean
+  access_duration?: string | null
   created_at: string
   updated_at: string
 }
@@ -148,6 +150,11 @@ export interface FileResponse {
   created_at: string
 }
 
+export interface LessonChapter {
+  time_seconds: number
+  title: string
+}
+
 export interface LessonResponse {
   id: string
   module_id: string
@@ -155,6 +162,8 @@ export interface LessonResponse {
   description: string | null
   video_url: string | null
   order_index: number
+  /** Пустые/`null` с бэка нормализуются как `[]`. */
+  chapters?: LessonChapter[] | null
   files: FileResponse[]
   created_at: string
   updated_at: string
@@ -166,6 +175,8 @@ export interface ModuleResponse {
   title: string
   description: string | null
   order_index: number
+  /** Дедлайн (общий) для конкретной темы/модуля. */
+  access_duration?: string | null
   lessons: LessonResponse[]
   created_at: string
   updated_at: string
@@ -306,6 +317,7 @@ export interface PaginationParams {
 export interface AdminProductsQuery {
   product_type?: string
   is_published?: boolean
+  is_archived?: boolean
   skip?: number
   limit?: number
 }
@@ -323,6 +335,7 @@ export interface AdminProductUpdateRequest {
   description?: string
   price?: number | string
   is_published?: boolean
+  access_duration?: string | null
 }
 
 export interface AdminProductListResponse {
@@ -340,18 +353,22 @@ export interface AdminModuleCreateRequest {
 export interface AdminModuleUpdateRequest {
   title?: string
   description?: string
+  access_duration?: string | null
 }
 
 export interface AdminLessonCreateRequest {
   title: string
   description?: string
   video_url?: string
+  chapters?: LessonChapter[]
 }
 
 export interface AdminLessonUpdateRequest {
   title?: string
   description?: string
   video_url?: string
+  /** Передать `[]` — очистить таймкоды. Не передавать поле — оставить как есть. */
+  chapters?: LessonChapter[]
 }
 
 export interface AdminModuleReorderItem {
@@ -440,65 +457,60 @@ export interface AdminPaymentsListResponse {
   total: number
 }
 
-// ===== ADMIN NOTIFICATIONS (TODO: API) =====
+// ===== ADMIN BROADCASTS =====
 
-export type AdminNotificationMailingStatusApi = 'completed' | 'pending' | 'failed'
-
-export interface AdminNotificationMailingItem {
-  id: string
-  subject: string
-  product_id: string
-  product_title?: string
-  topic_id: string
-  topic_title?: string
-  sent_count: number
-  sent_at: string
-  status: AdminNotificationMailingStatusApi
-}
-
-export interface AdminNotificationsListQuery {
-  product_id?: string
-  topic_id?: string
-  skip?: number
-  limit?: number
-}
-
-export interface AdminNotificationsListResponse {
-  items: AdminNotificationMailingItem[]
-  total: number
-}
-
-export interface AdminNotificationRecipientsQuery {
-  product_id: string
-  topic_id: string
-  skip?: number
-  limit?: number
-}
-
-export interface AdminNotificationRecipientItem {
+export interface AdminBroadcastTemplate {
   id: string
   name: string
-  email: string
+  subject: string
+  body: string
+  created_at: string
 }
 
-export interface AdminNotificationRecipientsResponse {
-  items: AdminNotificationRecipientItem[]
+export interface AdminBroadcastTemplateCreateRequest {
+  name: string
+  subject: string
+  body: string
+}
+
+export type AdminBroadcastTemplateUpdateRequest = AdminBroadcastTemplateCreateRequest
+
+export interface AdminBroadcastItem {
+  id: string
+  subject: string
+  body: string
+  product_id: string
+  product_title?: string | null
+  module_id: string
+  module_title?: string | null
+  template_id?: string | null
+  status: string
+  scheduled_at?: string | null
+  total_recipients: number
+  sent_count: number
+  created_at: string
+  started_at?: string | null
+  completed_at?: string | null
+}
+
+export interface AdminBroadcastsListQuery {
+  skip?: number
+  limit?: number
+}
+
+export interface AdminBroadcastsListResponse {
+  items: AdminBroadcastItem[]
   total: number
 }
 
-export interface AdminNotificationSendRequest {
+export interface AdminBroadcastCreateRequest {
+  subject: string
+  body: string
   product_id: string
-  topic_id: string
-  recipient_ids: string[]
-  send_at: string
-  subject: string
-  body: string
-  template_id?: string
-}
-
-export interface AdminNotificationTemplateItem {
-  id: string
-  label: string
-  subject: string
-  body: string
+  module_id: string
+  template_id?: string | null
+  scheduled_at?: string | null
+  user_ids?: string[]
+  all_recipients?: boolean
+  send?: boolean
 }

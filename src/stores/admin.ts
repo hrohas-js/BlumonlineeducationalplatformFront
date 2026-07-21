@@ -19,6 +19,7 @@ import type {
   AdminProductCreateRequest,
   AdminProductUpdateRequest,
   AdminModuleCreateRequest,
+  AdminModuleUpdateRequest,
   AdminLessonCreateRequest,
   AdminGrantAccessRequest,
 } from '@/services/api/types'
@@ -44,9 +45,11 @@ export const useAdminStore = defineStore('admin', () => {
   async function fetchProductsForSection(sectionId: AdminMaterialSectionId) {
     loading.value = true
     error.value = null
+    const isArchive = sectionId === 'archive'
     const productType = sectionIdToProductType(sectionId)
     const result = await adminService.listProducts({
-      product_type: productType,
+      ...(productType ? { product_type: productType } : {}),
+      is_archived: isArchive,
       skip: 0,
       limit: 100,
     })
@@ -96,6 +99,14 @@ export const useAdminStore = defineStore('admin', () => {
 
   async function deleteProduct(productId: string) {
     return adminService.deleteProduct(productId)
+  }
+
+  async function archiveProduct(productId: string) {
+    return adminService.archiveProduct(productId)
+  }
+
+  async function unarchiveProduct(productId: string) {
+    return adminService.unarchiveProduct(productId)
   }
 
   async function fetchStudentsForProduct(productId: string) {
@@ -174,6 +185,16 @@ export const useAdminStore = defineStore('admin', () => {
     return result
   }
 
+  async function updateModule(
+    moduleId: string,
+    productId: string,
+    body: AdminModuleUpdateRequest
+  ) {
+    const result = await adminService.updateModule(moduleId, body)
+    if (result.success) await fetchProductDetail(productId)
+    return result
+  }
+
   async function createLesson(moduleId: string, courseId: string, body: AdminLessonCreateRequest) {
     const result = await adminService.createLesson(moduleId, body)
     if (result.success) await fetchProductDetail(courseId)
@@ -230,7 +251,6 @@ export const useAdminStore = defineStore('admin', () => {
 
   async function aggregateAllSections() {
     for (const section of ADMIN_MATERIAL_SECTION_LIST) {
-      if (section.id === 'archive') continue
       await aggregateStudentsForSection(section.id)
     }
     const map = new Map<string, AggregatedAdminStudentRow>()
@@ -257,7 +277,6 @@ export const useAdminStore = defineStore('admin', () => {
     if (scope === ADMIN_STUDENTS_SCOPE_ALL) {
       const result: ProductResponse[] = []
       for (const section of ADMIN_MATERIAL_SECTION_LIST) {
-        if (section.id === 'archive') continue
         const res = await fetchProductsForSection(section.id)
         if (res.success) result.push(...res.data)
       }
@@ -290,6 +309,8 @@ export const useAdminStore = defineStore('admin', () => {
     createProduct,
     updateProduct,
     deleteProduct,
+    archiveProduct,
+    unarchiveProduct,
     fetchStudentsForProduct,
     aggregateStudentsForSection,
     grantAccess,
@@ -297,6 +318,7 @@ export const useAdminStore = defineStore('admin', () => {
     updateDeadline,
     revokeAccess,
     createModule,
+    updateModule,
     createLesson,
     invalidateProduct,
     findAggregatedStudent,

@@ -1,14 +1,13 @@
 import type { AdminMaterialSectionId } from '@/constants/adminMaterials'
 
-/** Маппинг секций админки → product_type API. */
-const SECTION_TO_PRODUCT_TYPE: Record<AdminMaterialSectionId, string> = {
+/** Маппинг активных секций админки → product_type API. Архив — не тип продукта. */
+const SECTION_TO_PRODUCT_TYPE: Partial<Record<AdminMaterialSectionId, string>> = {
   courses: 'course',
   projects: 'project',
   other: 'webinar',
-  archive: 'course',
 }
 
-export function sectionIdToProductType(sectionId: AdminMaterialSectionId): string {
+export function sectionIdToProductType(sectionId: AdminMaterialSectionId): string | undefined {
   return SECTION_TO_PRODUCT_TYPE[sectionId]
 }
 

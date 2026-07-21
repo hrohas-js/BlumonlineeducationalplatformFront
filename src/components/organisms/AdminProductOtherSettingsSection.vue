@@ -1,11 +1,20 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import BaseButton from '@/components/atoms/BaseButton.vue'
 import AdminProductActionConfirmModal from '@/components/organisms/AdminProductActionConfirmModal.vue'
 
+interface Props {
+  isArchived?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  isArchived: false,
+})
+
 interface Emits {
   (e: 'move-archive'): void
+  (e: 'unarchive'): void
   (e: 'delete-product'): void
 }
 
@@ -13,6 +22,10 @@ const emit = defineEmits<Emits>()
 
 const isArchiveConfirmOpen = ref(false)
 const isDeleteConfirmOpen = ref(false)
+
+const archiveConfirmVariant = computed(() =>
+  props.isArchived ? 'unarchive' : 'move-archive',
+)
 
 const openArchiveConfirm = () => {
   isArchiveConfirmOpen.value = true
@@ -31,7 +44,11 @@ const closeDeleteConfirm = () => {
 }
 
 const onArchiveConfirm = () => {
-  emit('move-archive')
+  if (props.isArchived) {
+    emit('unarchive')
+  } else {
+    emit('move-archive')
+  }
   closeArchiveConfirm()
 }
 
@@ -53,7 +70,11 @@ const onDeleteConfirm = () => {
         block
         @click="openArchiveConfirm"
       >
-        Переместить продукт в папку «Архив»
+        {{
+          isArchived
+            ? 'Вернуть продукт из архива'
+            : 'Переместить продукт в папку «Архив»'
+        }}
       </BaseButton>
       <BaseButton
         class="admin-product-other-settings-section__btn"
@@ -67,7 +88,7 @@ const onDeleteConfirm = () => {
     </div>
     <AdminProductActionConfirmModal
       :is-open="isArchiveConfirmOpen"
-      variant="move-archive"
+      :variant="archiveConfirmVariant"
       @close="closeArchiveConfirm"
       @confirm="onArchiveConfirm"
     />

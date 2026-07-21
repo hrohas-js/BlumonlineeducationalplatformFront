@@ -1,6 +1,8 @@
 export const ADMIN_ENDPOINTS = {
   products: '/api/v1/admin/products',
   productById: (id: string) => `/api/v1/admin/products/${id}`,
+  productArchive: (id: string) => `/api/v1/admin/products/${id}/archive`,
+  productUnarchive: (id: string) => `/api/v1/admin/products/${id}/unarchive`,
   productImage: (id: string) => `/api/v1/admin/products/${id}/image`,
   productStudents: (id: string) => `/api/v1/admin/products/${id}/students`,
   productStudentsExport: (id: string) => `/api/v1/admin/products/${id}/students/export`,
@@ -28,10 +30,10 @@ export const ADMIN_ENDPOINTS = {
   paymentsSuccessful: '/api/v1/admin/payments/successful',
   paymentsPending: '/api/v1/admin/payments/pending',
   paymentsByUserEmail: (email: string) => `/api/v1/admin/payments/user/${encodeURIComponent(email)}`,
-  /** TODO: подключить после согласования контракта API */
-  notifications: '/api/v1/admin/notifications',
-  notificationById: (id: string) => `/api/v1/admin/notifications/${id}`,
-  notificationRecipients: '/api/v1/admin/notifications/recipients',
-  notificationSend: '/api/v1/admin/notifications/send',
-  notificationTemplates: '/api/v1/admin/notifications/templates',
+  broadcastTemplates: '/api/v1/admin/broadcast-templates',
+  broadcastTemplateById: (id: string) => `/api/v1/admin/broadcast-templates/${id}`,
+  broadcasts: '/api/v1/admin/broadcasts',
+  broadcastById: (id: string) => `/api/v1/admin/broadcasts/${id}`,
+  broadcastStart: (id: string) => `/api/v1/admin/broadcasts/${id}/start`,
+  broadcastStop: (id: string) => `/api/v1/admin/broadcasts/${id}/stop`,
 } as const
