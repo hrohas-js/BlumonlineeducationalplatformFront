@@ -5,7 +5,6 @@ import AdminStudentAutocompleteField, {
   type AddStudentRow,
 } from '@/components/molecules/AdminStudentAutocompleteField.vue'
 import type { AggregatedAdminStudentRow } from '@/stores/admin'
-import { useNotification } from '@/composables/useNotification'
 
 interface Props {
   candidates: AggregatedAdminStudentRow[]
@@ -18,10 +17,12 @@ withDefaults(defineProps<Props>(), {
 
 interface Emits {
   (e: 'submit', rows: AddStudentRow[]): void
+  (e: 'excel', file: File): void
 }
 
 const emit = defineEmits<Emits>()
-const { notify } = useNotification()
+
+const fileInputRef = ref<HTMLInputElement | null>(null)
 
 function createEmptyRow(): AddStudentRow {
   return {
@@ -48,7 +49,16 @@ const updateRow = (index: number, row: AddStudentRow) => {
 }
 
 const onExcelClick = () => {
-  notify({ type: 'info', message: 'Загрузка из Excel будет доступна позже' })
+  fileInputRef.value?.click()
+}
+
+const onExcelChange = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (file) {
+    emit('excel', file)
+  }
+  input.value = ''
 }
 
 const onSubmit = () => {
@@ -69,6 +79,14 @@ const onSubmit = () => {
       />
     </div>
 
+    <input
+      ref="fileInputRef"
+      class="admin-add-students-form__file-input"
+      type="file"
+      accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      @change="onExcelChange"
+    />
+
     <div class="admin-add-students-form__footer">
       <BaseButton
         class="admin-add-students-form__excel-btn"
@@ -76,6 +94,7 @@ const onSubmit = () => {
         size="medium"
         shape="rounded"
         text="Загрузить из Excel"
+        :disabled="submitting"
         @click="onExcelClick"
       />
       <BaseButton
@@ -104,6 +123,18 @@ const onSubmit = () => {
   flex-direction: column;
   gap: var(--sp-20);
   width: 100%;
+}
+
+.admin-add-students-form__file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .admin-add-students-form__footer {

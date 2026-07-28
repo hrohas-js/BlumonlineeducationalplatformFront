@@ -146,7 +146,7 @@ onUnmounted(() => {
         role="listbox"
       >
         <li v-if="matches.length === 0" class="admin-student-autocomplete-row__empty" role="presentation">
-          Ничего не найдено
+          Будет создан новый ученик
         </li>
         <li v-for="student in matches" :key="student.user_id" role="presentation">
           <button
@@ -177,7 +177,7 @@ onUnmounted(() => {
         role="listbox"
       >
         <li v-if="matches.length === 0" class="admin-student-autocomplete-row__empty" role="presentation">
-          Ничего не найдено
+          Будет создан новый ученик
         </li>
         <li v-for="student in matches" :key="student.user_id" role="presentation">
           <button
@@ -208,7 +208,7 @@ onUnmounted(() => {
         role="listbox"
       >
         <li v-if="matches.length === 0" class="admin-student-autocomplete-row__empty" role="presentation">
-          Ничего не найдено
+          Будет создан новый ученик
         </li>
         <li v-for="student in matches" :key="student.user_id" role="presentation">
           <button

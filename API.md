@@ -290,6 +290,16 @@ GET    /admin/products/{id}/students?skip=&limit=
                       access_granted_at, deadline, is_completed, progress_percent }], total }
 
 GET    /admin/products/{id}/students/export    ← скачать CSV
+
+POST   /admin/students/bulk
+       { "students": [{ "email", "first_name", "last_name" }], "product_id"? }
+       → { results: [{ email, user_id, first_name, last_name, created, password, access_granted }],
+           created_count, existing_count }
+       ← есть email — берём; нет — создаём с автопаролем; product_id опционально выдаёт доступ
+
+POST   /admin/students/bulk/excel?product_id=
+       multipart: file (.xlsx, колонки Email | Имя | Фамилия, 1-я строка — заголовок)
+       → тот же ответ, что /admin/students/bulk
 ```
 
 ### Платежи

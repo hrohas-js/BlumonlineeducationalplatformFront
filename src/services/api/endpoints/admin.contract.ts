@@ -26,6 +26,8 @@ export const ADMIN_ENDPOINTS = {
     `/api/v1/admin/products/users/${userId}/products/${productId}/deadline`,
   userProductAccess: (userId: string, productId: string) =>
     `/api/v1/admin/products/users/${userId}/products/${productId}`,
+  studentsBulk: '/api/v1/admin/students/bulk',
+  studentsBulkExcel: '/api/v1/admin/students/bulk/excel',
   payments: '/api/v1/admin/payments',
   paymentsSuccessful: '/api/v1/admin/payments/successful',
   paymentsPending: '/api/v1/admin/payments/pending',

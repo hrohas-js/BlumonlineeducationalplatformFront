@@ -436,6 +436,33 @@ export interface AdminStudentsListResponse {
   limit?: number
 }
 
+export interface AdminBulkStudentItem {
+  email: string
+  first_name: string
+  last_name: string
+}
+
+export interface AdminBulkStudentsRequest {
+  students: AdminBulkStudentItem[]
+  product_id?: string | null
+}
+
+export interface AdminBulkStudentResult {
+  email: string
+  user_id: string
+  first_name: string
+  last_name: string
+  created: boolean
+  password: string | null
+  access_granted: boolean
+}
+
+export interface AdminBulkStudentsResponse {
+  results: AdminBulkStudentResult[]
+  created_count: number
+  existing_count: number
+}
+
 export interface AdminPaymentsQuery {
   status_filter?: string
   limit?: number

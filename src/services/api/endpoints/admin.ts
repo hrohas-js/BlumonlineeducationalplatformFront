@@ -24,6 +24,8 @@ import type {
   AdminGrantAccessRequest,
   AdminDeadlineUpdateRequest,
   AdminStudentsListResponse,
+  AdminBulkStudentsRequest,
+  AdminBulkStudentsResponse,
   AdminPaymentsQuery,
   AdminPaymentsListResponse,
   AdminBroadcastTemplate,
@@ -214,6 +216,23 @@ export const adminService = {
       () => api.raw.get(ADMIN_ENDPOINTS.productStudentsExport(productId), { responseType: 'blob' }),
       'Export students failed'
     )
+  },
+
+  async bulkAddStudents(body: AdminBulkStudentsRequest): ApiServiceResponse<AdminBulkStudentsResponse> {
+    const api = useApi()
+    return api.post<AdminBulkStudentsResponse>(ADMIN_ENDPOINTS.studentsBulk, body)
+  },
+
+  async bulkAddStudentsExcel(
+    file: File,
+    productId?: string | null
+  ): ApiServiceResponse<AdminBulkStudentsResponse> {
+    const api = useApi()
+    const form = new FormData()
+    form.append('file', file)
+    const params =
+      productId != null && productId !== '' ? { product_id: productId } : undefined
+    return api.post<AdminBulkStudentsResponse>(ADMIN_ENDPOINTS.studentsBulkExcel, form, { params })
   },
 
   // --- Payments ---

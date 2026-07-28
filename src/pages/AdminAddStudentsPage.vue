@@ -16,6 +16,10 @@ import {
 import { useAdminStore } from '@/stores/admin'
 import { useAuthStore } from '@/stores/auth'
 import { useNotification } from '@/composables/useNotification'
+import { adminService } from '@/services/api/endpoints/admin'
+import type { AdminBulkStudentItem } from '@/services/api/types'
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const route = useRoute()
 const router = useRouter()
@@ -26,7 +30,6 @@ const { notify } = useNotification()
 const loading = ref(true)
 const submitting = ref(false)
 const successModalOpen = ref(false)
-const targetProducts = ref<{ id: string }[]>([])
 
 const sectionId = computed(() => route.params.sectionId as string)
 
@@ -57,18 +60,6 @@ async function loadPageData() {
     return
   }
 
-  const products = await adminStore.fetchProductsForStudentsScope(scope)
-  if (products.length === 0) {
-    loading.value = false
-    notify({ type: 'warning', message: 'Нет продуктов для добавления учеников' })
-    void router.replace({
-      name: 'admin-materials-students',
-      params: { sectionId: scope },
-    })
-    return
-  }
-
-  targetProducts.value = products
   await adminStore.aggregateAllSections()
   loading.value = false
 }
@@ -77,63 +68,83 @@ onMounted(() => {
   void loadPageData()
 })
 
-const onSubmit = async (rows: AddStudentRow[]) => {
-  const scope = validatedScope.value
-  if (!scope) return
-
-  const withUserId = rows.filter((row) => row.selectedUserId)
-  if (withUserId.length === 0) {
-    notify({ type: 'warning', message: 'Выберите учеников из списка или заполните данные' })
-    return
+function buildBulkPayload(rows: AddStudentRow[]): AdminBulkStudentItem[] | null {
+  const filled = rows.filter((row) => row.email.trim() || row.firstName.trim() || row.lastName.trim())
+  if (filled.length === 0) {
+    notify({ type: 'warning', message: 'Заполните e-mail, имя и фамилию учеников' })
+    return null
   }
 
+  const students: AdminBulkStudentItem[] = []
   const seen = new Set<string>()
-  const uniqueRows: AddStudentRow[] = []
-  for (const row of withUserId) {
-    const uid = row.selectedUserId!
-    if (seen.has(uid)) continue
-    seen.add(uid)
-    uniqueRows.push(row)
-  }
 
-  const products = targetProducts.value
-  if (products.length === 0) {
-    const loaded = await adminStore.fetchProductsForStudentsScope(scope)
-    targetProducts.value = loaded
-    if (loaded.length === 0) {
-      notify({ type: 'warning', message: 'Нет продуктов для добавления учеников' })
-      return
+  for (const row of filled) {
+    const email = row.email.trim()
+    const first_name = row.firstName.trim()
+    const last_name = row.lastName.trim()
+
+    if (!email || !first_name || !last_name) {
+      notify({ type: 'warning', message: 'Заполните e-mail, имя и фамилию учеников' })
+      return null
     }
-  }
 
-  const grantPairs: { userId: string; productId: string }[] = []
-  for (const row of uniqueRows) {
-    const student = studentCandidates.value.find((s) => s.user_id === row.selectedUserId)
-    for (const product of targetProducts.value) {
-      if (student?.productIds.includes(product.id)) continue
-      grantPairs.push({ userId: row.selectedUserId!, productId: product.id })
+    if (!EMAIL_RE.test(email)) {
+      notify({ type: 'warning', message: `Некорректный e-mail: ${email}` })
+      return null
     }
+
+    const key = email.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    students.push({ email, first_name, last_name })
   }
 
-  if (grantPairs.length === 0) {
-    notify({ type: 'info', message: 'Выбранные ученики уже имеют доступ ко всем продуктам' })
-    return
+  if (students.length === 0) {
+    notify({ type: 'warning', message: 'Заполните e-mail, имя и фамилию учеников' })
+    return null
   }
+
+  return students
+}
+
+const onSubmit = async (rows: AddStudentRow[]) => {
+  const students = buildBulkPayload(rows)
+  if (!students) return
 
   submitting.value = true
-  for (const { userId, productId } of grantPairs) {
-    const result = await adminStore.grantAccess(userId, {
-      product_id: productId,
-      access_type: 'immediate',
-    })
-    if (!result.success) {
-      notify({ type: 'error', message: result.error || 'Не удалось добавить ученика' })
-      submitting.value = false
-      return
-    }
+  const result = await adminService.bulkAddStudents({ students })
+  submitting.value = false
+
+  if (!result.success || !result.data) {
+    notify({ type: 'error', message: result.error || 'Не удалось добавить учеников' })
+    return
   }
 
+  const { created_count, existing_count } = result.data
+  notify({
+    type: 'success',
+    message: `Создано ${created_count}, уже было ${existing_count}`,
+  })
+  void adminStore.aggregateAllSections()
+  successModalOpen.value = true
+}
+
+const onExcelUpload = async (file: File) => {
+  submitting.value = true
+  const result = await adminService.bulkAddStudentsExcel(file)
   submitting.value = false
+
+  if (!result.success || !result.data) {
+    notify({ type: 'error', message: result.error || 'Не удалось загрузить Excel' })
+    return
+  }
+
+  const { created_count, existing_count } = result.data
+  notify({
+    type: 'success',
+    message: `Создано ${created_count}, уже было ${existing_count}`,
+  })
+  void adminStore.aggregateAllSections()
   successModalOpen.value = true
 }
 
@@ -196,6 +207,7 @@ const onSuccessModalConfirm = () => {
             :candidates="studentCandidates"
             :submitting="submitting"
             @submit="onSubmit"
+            @excel="onExcelUpload"
           />
         </div>
       </div>
