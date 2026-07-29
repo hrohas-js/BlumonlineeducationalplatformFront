@@ -440,12 +440,17 @@ const onDeadlineModalSave = async (payload: { newDeadlineDisplay: string }) => {
   }
 
   .admin-student-profile-page__title {
-    font-size: var(--size-20);
+    font-size: var(--size-15);
     line-height: 1.3;
   }
 
   .admin-student-profile-page__user-name {
-    font-size: var(--size-18);
+    font-size: var(--size-15);
+  }
+
+  .admin-student-profile-page__back,
+  .admin-student-profile-page__back-text {
+    font-size: var(--size-15);
   }
 
   .admin-student-profile-page__user {
@@ -471,7 +476,7 @@ const onDeadlineModalSave = async (payload: { newDeadlineDisplay: string }) => {
   }
 
   .admin-student-profile-page__back {
-    font-size: var(--size-18);
+    font-size: var(--size-15);
   }
 }
 </style>

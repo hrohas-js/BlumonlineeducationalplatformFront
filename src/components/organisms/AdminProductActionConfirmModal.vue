@@ -195,6 +195,13 @@ const onNo = () => {
   gap: 47px;
 }
 
+@media (max-width: 1023px) {
+  .admin-product-action-confirm-modal__title,
+  .admin-product-action-confirm-modal__note {
+    font-size: var(--size-15);
+  }
+}
+
 @media (max-width: 479px) {
   .admin-product-action-confirm-modal__content {
     gap: var(--sp-24);
@@ -203,7 +210,7 @@ const onNo = () => {
 
   .admin-product-action-confirm-modal__title,
   .admin-product-action-confirm-modal__note {
-    font-size: var(--size-20);
+    font-size: var(--size-15);
   }
 
   .admin-product-action-confirm-modal__actions {

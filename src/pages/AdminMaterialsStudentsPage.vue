@@ -436,14 +436,32 @@ const onExportXlsx = async () => {
     padding: var(--sp-20) var(--sp-24) var(--sp-32);
   }
 
+  .admin-materials-students-page__sort-btn {
+    font-size: var(--size-15);
+  }
+
+  .admin-materials-students-page__col-products {
+    font-size: var(--size-15);
+  }
+
   .admin-materials-students-page__row {
     flex-wrap: wrap;
+  }
+
+  .admin-materials-students-page__user-name,
+  .admin-materials-students-page__user-email {
+    font-size: var(--size-15);
   }
 
   .admin-materials-students-page__products-count {
     width: fit-content;
     margin-left: auto;
     align-self: flex-end;
+    font-size: var(--size-15);
+  }
+
+  .admin-materials-students-page__empty {
+    font-size: var(--size-15);
   }
 }
 </style>

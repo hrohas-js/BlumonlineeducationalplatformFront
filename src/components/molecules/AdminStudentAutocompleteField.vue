@@ -315,6 +315,24 @@ onUnmounted(() => {
   }
 }
 
+@media (max-width: 1023px) {
+  .admin-student-autocomplete-row__index {
+    font-size: var(--size-15);
+  }
+
+  .admin-student-autocomplete-row__input {
+    font-size: var(--size-15);
+  }
+
+  .admin-student-autocomplete-row__empty {
+    font-size: var(--size-15);
+  }
+
+  .admin-student-autocomplete-row__option {
+    font-size: var(--size-15);
+  }
+}
+
 @media (max-width: 767px) {
   .admin-student-autocomplete-row {
     grid-template-columns: 24px 1fr;

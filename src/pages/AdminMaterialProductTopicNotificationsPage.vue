@@ -365,6 +365,10 @@ watch([productId, topicId], () => {
     &__panel {
       padding: var(--sp-24);
     }
+
+    &__title {
+      font-size: var(--size-15);
+    }
   }
 }
 </style>

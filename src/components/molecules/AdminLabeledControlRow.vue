@@ -44,8 +44,6 @@ withDefaults(defineProps<Props>(), {
       align-items: center;
       justify-content: center;
       box-sizing: border-box;
-      width: 200px;
-      min-width: 200px;
       max-width: 200px;
     }
   }
@@ -117,6 +115,16 @@ withDefaults(defineProps<Props>(), {
     outline: none;
     box-sizing: border-box;
     white-space: pre-wrap;
+  }
+
+  @media (max-width: 1023px) {
+    &__label {
+      font-size: var(--size-15);
+    }
+
+    &__control {
+      font-size: var(--size-15);
+    }
   }
 }
 </style>

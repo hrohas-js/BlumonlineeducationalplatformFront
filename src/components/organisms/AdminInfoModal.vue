@@ -115,6 +115,13 @@ const onConfirm = () => {
   }
 }
 
+@media (max-width: 1023px) {
+  .admin-info-modal__title,
+  .admin-info-modal__message {
+    font-size: var(--size-15);
+  }
+}
+
 @media (max-width: 479px) {
   .admin-info-modal__content {
     padding: var(--sp-24);
@@ -123,7 +130,7 @@ const onConfirm = () => {
 
   .admin-info-modal__title,
   .admin-info-modal__message {
-    font-size: var(--size-20);
+    font-size: var(--size-15);
   }
 
   :deep(.admin-info-modal__confirm) {

@@ -427,11 +427,13 @@ const onTopicTitleInput = (id: string, value: string) => {
       justify-self: start;
       text-align: left;
       white-space: normal;
+      font-size: var(--size-15);
     }
 
     &__control {
       grid-column: 1;
       width: 100%;
+      font-size: var(--size-15);
     }
 
     &__add-topic {
@@ -440,9 +442,23 @@ const onTopicTitleInput = (id: string, value: string) => {
       text-align: left;
     }
 
+    :deep(.admin-material-product-create-page__add-topic.base-button_ghost) {
+      font-size: var(--size-15);
+    }
+
     &__notify-group {
       grid-column: 1;
       justify-content: flex-start;
+    }
+
+    &__notify-text {
+      font-size: var(--size-15);
+    }
+
+    &__submit-wrap {
+      :deep(.base-button_outline) {
+        font-size: var(--size-15);
+      }
     }
   }
 

@@ -109,4 +109,14 @@ const emit = defineEmits<Emits>()
     box-shadow: var(--focus-ring-main);
   }
 }
+
+@media (max-width: 1023px) {
+  .admin-product-topic-module-row__title {
+    font-size: var(--size-15);
+  }
+
+  .admin-product-topic-module-row__access {
+    font-size: var(--size-15);
+  }
+}
 </style>

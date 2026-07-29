@@ -499,4 +499,26 @@ onUnmounted(() => {
   border-color: #178ef0;
   color: var(--white);
 }
+
+@media (max-width: 1023px) {
+  .admin-product-extension-section__title {
+    font-size: var(--size-15);
+  }
+
+  .admin-product-extension-section__pill {
+    font-size: var(--size-15);
+  }
+
+  .admin-product-extension-section__dropdown-row {
+    font-size: var(--size-15);
+  }
+
+  .admin-product-extension-section__payment-label {
+    font-size: var(--size-15);
+  }
+
+  .admin-product-extension-section__payment-input {
+    font-size: var(--size-15);
+  }
+}
 </style>

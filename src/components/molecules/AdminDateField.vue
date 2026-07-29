@@ -188,4 +188,10 @@ const onInput = (event: Event) => {
     cursor: not-allowed;
   }
 }
+
+@media (max-width: 1023px) {
+  .admin-date-field__format-hint {
+    font-size: var(--size-15);
+  }
+}
 </style>

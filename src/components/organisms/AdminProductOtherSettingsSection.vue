@@ -156,4 +156,10 @@ const onDeleteConfirm = () => {
   border-color: color-mix(in srgb, var(--text-accent) 88%, #000);
   color: var(--white);
 }
+
+@media (max-width: 1023px) {
+  .admin-product-other-settings-section__title {
+    font-size: var(--size-15);
+  }
+}
 </style>

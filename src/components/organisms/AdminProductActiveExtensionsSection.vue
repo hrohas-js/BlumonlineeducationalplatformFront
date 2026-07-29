@@ -78,4 +78,10 @@ const emit = defineEmits<Emits>()
   flex-direction: column;
   align-items: flex-start;
 }
+
+@media (max-width: 1023px) {
+  .admin-product-active-extensions-section__title {
+    font-size: var(--size-15);
+  }
+}
 </style>

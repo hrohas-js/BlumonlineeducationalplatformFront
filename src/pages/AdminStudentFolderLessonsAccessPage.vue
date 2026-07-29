@@ -673,16 +673,21 @@ const onSuccessModalConfirm = () => {
   }
 
   .admin-student-folder-lessons-access-page__title {
-    font-size: var(--size-20);
+    font-size: var(--size-15);
     line-height: 1.3;
   }
 
   .admin-student-folder-lessons-access-page__user-name {
-    font-size: var(--size-18);
+    font-size: var(--size-15);
   }
 
   .admin-student-folder-lessons-access-page__intro {
-    font-size: var(--size-18);
+    font-size: var(--size-15);
+  }
+
+  .admin-student-folder-lessons-access-page__back,
+  .admin-student-folder-lessons-access-page__add-btn {
+    font-size: var(--size-15);
   }
 
   .admin-student-folder-lessons-access-page__user {
@@ -719,7 +724,7 @@ const onSuccessModalConfirm = () => {
   }
 
   .admin-student-folder-lessons-access-page__back {
-    font-size: var(--size-18);
+    font-size: var(--size-15);
   }
 
   .admin-student-folder-lessons-access-page__add-btn {

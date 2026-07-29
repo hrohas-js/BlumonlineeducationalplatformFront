@@ -320,6 +320,24 @@ const onApply = () => {
   }
 }
 
+@media (max-width: 1023px) {
+  .admin-student-deadline-modal__title {
+    font-size: var(--size-15);
+  }
+
+  .admin-student-deadline-modal__user-name {
+    font-size: var(--size-15);
+  }
+
+  .admin-student-deadline-modal__label {
+    font-size: var(--size-15);
+  }
+
+  .admin-student-deadline-modal__current-value {
+    font-size: var(--size-15);
+  }
+}
+
 @media (max-width: 479px) {
   .admin-student-deadline-modal__content {
     padding: var(--sp-24);

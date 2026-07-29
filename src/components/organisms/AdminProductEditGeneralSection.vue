@@ -221,4 +221,10 @@ const emit = defineEmits<Emits>()
   border-color: color-mix(in srgb, var(--text-accent) 88%, #000);
   color: var(--white);
 }
+
+@media (max-width: 1023px) {
+  :deep(.admin-product-edit-general-section__actions .base-button_primary) {
+    font-size: var(--size-15);
+  }
+}
 </style>

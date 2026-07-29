@@ -626,6 +626,15 @@ const onMenuItemClick = () => {
   .admin-materials-students-toolbar__back {
     align-self: stretch;
     width: 100%;
+    font-size: var(--size-15);
+  }
+
+  .admin-materials-students-toolbar__crumb {
+    font-size: var(--size-15);
+  }
+
+  .admin-materials-students-toolbar__menu-item-text {
+    font-size: var(--size-15);
   }
 
   .admin-materials-students-toolbar__center {
@@ -634,13 +643,25 @@ const onMenuItemClick = () => {
     width: 100%;
   }
 
+  .admin-materials-students-toolbar__count {
+    font-size: var(--size-15);
+  }
+
   .admin-materials-students-toolbar__search {
     max-width: none;
+  }
+
+  .admin-materials-students-toolbar__search-input {
+    font-size: var(--size-15);
   }
 
   .admin-materials-students-toolbar__right {
     justify-content: flex-end;
     width: 100%;
+  }
+
+  .admin-materials-students-toolbar__add-btn-text {
+    font-size: var(--size-15);
   }
 }
 </style>

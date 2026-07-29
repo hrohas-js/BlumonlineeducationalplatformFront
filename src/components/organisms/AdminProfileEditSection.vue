@@ -312,7 +312,7 @@ const onChangePassword = async () => {
     }
 
     :deep(.admin-profile-edit-section__save.base-button) {
-      font-size: var(--size-13);
+      font-size: var(--size-15);
     }
 
     :deep(.admin-profile-edit-section__name-field .base-input__field),

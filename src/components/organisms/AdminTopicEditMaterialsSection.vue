@@ -334,4 +334,26 @@ const cancelEditing = () => {
     filter: brightness(0.98);
   }
 }
+
+@media (max-width: 1023px) {
+  .admin-topic-edit-materials-section__heading {
+    font-size: var(--size-15);
+  }
+
+  .admin-topic-edit-materials-section__name {
+    font-size: var(--size-15);
+  }
+
+  .admin-topic-edit-materials-section__error {
+    font-size: var(--size-15);
+  }
+
+  .admin-topic-edit-materials-section__edit-btn {
+    font-size: var(--size-15);
+  }
+
+  .admin-topic-edit-materials-section__toolbar-btn {
+    font-size: var(--size-15);
+  }
+}
 </style>

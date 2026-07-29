@@ -627,9 +627,21 @@ const onGeneralAccess = (productId: string) => {
     align-items: flex-start;
   }
 
+  .admin-student-profile-category-section__item-title {
+    font-size: var(--size-15);
+  }
+
   .admin-student-profile-category-section__item-right {
     width: 100%;
     justify-content: space-between;
+  }
+
+  .admin-student-profile-category-section__stat-value {
+    font-size: var(--size-15);
+  }
+
+  .admin-student-profile-category-section__add-btn {
+    font-size: var(--size-15);
   }
 
   .admin-student-profile-category-section__product-row {
@@ -652,6 +664,10 @@ const onGeneralAccess = (productId: string) => {
   .admin-student-profile-category-section__deadline {
     width: 100%;
   }
+
+  .admin-student-profile-category-section__empty {
+    font-size: var(--size-15);
+  }
 }
 
 @media (max-width: 639px) {
@@ -660,11 +676,11 @@ const onGeneralAccess = (productId: string) => {
   }
 
   .admin-student-profile-category-section__item-title {
-    font-size: var(--size-20);
+    font-size: var(--size-15);
   }
 
   .admin-student-profile-category-section__stat-value {
-    font-size: var(--size-20);
+    font-size: var(--size-15);
   }
 
   .admin-student-profile-category-section__panel {

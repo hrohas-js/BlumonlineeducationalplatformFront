@@ -160,7 +160,8 @@ const onOpenStudents = (section: AdminCategorySectionConfig) => {
     }
 
     &__title {
-      font-size: var(--size-30);
+      font-size: var(--size-15);
+      text-align: center;
     }
   }
 }

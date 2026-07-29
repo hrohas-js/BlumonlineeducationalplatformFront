@@ -510,6 +510,32 @@ const setTopicEnabled = (id: string, value: boolean) => {
   flex-shrink: 0;
 }
 
+@media (max-width: 1023px) {
+  .admin-student-product-topics-page__back {
+    font-size: var(--size-15);
+  }
+
+  .admin-student-product-topics-page__title {
+    font-size: var(--size-15);
+  }
+
+  .admin-student-product-topics-page__user-name {
+    font-size: var(--size-15);
+  }
+
+  .admin-student-product-topics-page__crumb {
+    font-size: var(--size-15);
+  }
+
+  .admin-student-product-topics-page__open-all {
+    font-size: var(--size-15);
+  }
+
+  .admin-student-product-topics-page__topic-title {
+    font-size: var(--size-15);
+  }
+}
+
 @media (max-width: 767px) {
   .admin-student-product-topics-page__row {
     flex-direction: column;

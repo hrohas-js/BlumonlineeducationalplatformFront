@@ -147,6 +147,12 @@ onUnmounted(() => {
   gap: 47px;
 }
 
+@media (max-width: 1023px) {
+  .admin-logout-confirm-modal__title {
+    font-size: var(--size-15);
+  }
+}
+
 @media (max-width: 479px) {
   .admin-logout-confirm-modal__content {
     gap: var(--sp-24);
@@ -154,7 +160,7 @@ onUnmounted(() => {
   }
 
   .admin-logout-confirm-modal__title {
-    font-size: var(--size-20);
+    font-size: var(--size-15);
   }
 
   .admin-logout-confirm-modal__actions {

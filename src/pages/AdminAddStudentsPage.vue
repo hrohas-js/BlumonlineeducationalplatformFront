@@ -321,12 +321,24 @@ const onSuccessModalConfirm = () => {
 }
 
 @media (max-width: 1023px) {
+  .admin-add-students-page__loading {
+    font-size: var(--size-15);
+  }
+
   .admin-add-students-page__panel {
     padding: var(--sp-24);
   }
 
+  .admin-add-students-page__back {
+    font-size: var(--size-15);
+  }
+
   .admin-add-students-page__sheet {
     padding: var(--sp-24);
+  }
+
+  .admin-add-students-page__title {
+    font-size: var(--size-15);
   }
 }
 </style>

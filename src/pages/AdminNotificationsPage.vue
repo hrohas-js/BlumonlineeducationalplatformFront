@@ -395,9 +395,14 @@ onMounted(() => {
       padding: var(--sp-24);
     }
 
+    &__title {
+      font-size: var(--size-15);
+    }
+
     &__section-title {
       text-align: center;
       width: 100%;
+      font-size: var(--size-15);
     }
   }
 }

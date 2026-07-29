@@ -178,6 +178,13 @@ const onSubmit = () => {
   background-color: rgba(23, 142, 240, 0.06);
 }
 
+@media (max-width: 1023px) {
+  :deep(.admin-add-students-form__excel-btn.base-button),
+  :deep(.admin-add-students-form__submit-btn.base-button) {
+    font-size: var(--size-15);
+  }
+}
+
 @media (max-width: 479px) {
   .admin-add-students-form__footer {
     flex-direction: column;

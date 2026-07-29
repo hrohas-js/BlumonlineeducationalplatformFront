@@ -354,6 +354,12 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
+@media (max-width: 1023px) {
+  .admin-topic-edit-video-row__error {
+    font-size: var(--size-15);
+  }
+}
+
 @media (max-width: 900px) {
   .admin-topic-edit-video-row__body {
     flex-direction: column;

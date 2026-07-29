@@ -208,4 +208,10 @@ onUnmounted(() => {
   border-color: #010307;
   color: #010307;
 }
+
+@media (max-width: 1023px) {
+  .admin-topic-chapters-modal__error {
+    font-size: var(--size-15);
+  }
+}
 </style>

@@ -230,4 +230,24 @@ onUnmounted(() => {
   min-width: 120px;
   border-radius: var(--radius-10);
 }
+
+@media (max-width: 1023px) {
+  .admin-product-topic-deadline-modal__heading {
+    font-size: var(--size-15);
+  }
+
+  .admin-product-topic-deadline-modal__date {
+    :deep(.admin-date-field__input) {
+      font-size: var(--size-15);
+    }
+
+    :deep(.admin-date-field__format-hint) {
+      font-size: var(--size-15);
+    }
+  }
+
+  .admin-product-topic-deadline-modal__warning {
+    font-size: var(--size-15);
+  }
+}
 </style>

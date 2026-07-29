@@ -514,6 +514,28 @@ const onSave = () => {
   }
 }
 
+@media (max-width: 1023px) {
+  .admin-student-access-status-modal__title {
+    font-size: var(--size-15);
+  }
+
+  .admin-student-access-status-modal__user-name {
+    font-size: var(--size-15);
+  }
+
+  .admin-student-access-status-modal__option-text {
+    font-size: var(--size-15);
+  }
+
+  .admin-student-access-status-modal__notify-label {
+    font-size: var(--size-15);
+  }
+
+  .admin-student-access-status-modal__notify-email {
+    font-size: var(--size-15);
+  }
+}
+
 @media (max-width: 639px) {
   .admin-student-access-status-modal {
     align-items: stretch;
@@ -541,7 +563,7 @@ const onSave = () => {
 
   .admin-student-access-status-modal__title {
     padding: 0 var(--sp-32) 0 var(--sp-4);
-    font-size: var(--size-20);
+    font-size: var(--size-15);
     line-height: 1.3;
   }
 
@@ -555,7 +577,7 @@ const onSave = () => {
   }
 
   .admin-student-access-status-modal__user-name {
-    font-size: var(--size-18);
+    font-size: var(--size-15);
   }
 
   .admin-student-access-status-modal__options {
@@ -586,7 +608,7 @@ const onSave = () => {
   .admin-student-access-status-modal__option-text {
     grid-column: 1 / -1;
     grid-row: 2;
-    font-size: var(--size-18);
+    font-size: var(--size-15);
     line-height: 1.35;
   }
 
@@ -605,7 +627,7 @@ const onSave = () => {
   }
 
   .admin-student-access-status-modal__notify-label {
-    font-size: var(--size-18);
+    font-size: var(--size-15);
     padding: 0;
   }
 
@@ -616,7 +638,7 @@ const onSave = () => {
   }
 
   .admin-student-access-status-modal__notify-email {
-    font-size: var(--size-18);
+    font-size: var(--size-15);
   }
 
   :deep(.admin-student-access-status-modal__save) {

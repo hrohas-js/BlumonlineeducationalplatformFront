@@ -182,4 +182,10 @@ const onDeadlineSave = (payload: { accessUntil: string }) => {
   border-color: #178ef0;
   color: var(--white);
 }
+
+@media (max-width: 1023px) {
+  .admin-product-topics-section__title {
+    font-size: var(--size-15);
+  }
+}
 </style>

@@ -435,18 +435,33 @@ const toggleExpanded = () => {
 
 @media (max-width: 1023px) {
   .admin-materials-category-section__trigger {
-    flex-direction: column;
-    align-items: flex-start;
+    padding: var(--sp-10) 15px;
   }
 
   .admin-materials-category-section__item-right {
     width: 100%;
-    justify-content: space-between;
+    justify-content: flex-end;
   }
 
   .admin-materials-category-section__item-title,
   .admin-materials-category-section__stat-value {
-    font-size: var(--size-25);
+    font-size: var(--size-15) !important;
+    min-width: var(--size-70);
+  }
+
+  .admin-materials-category-section__accordion-toggle {
+    width: var(--size-20);
+    height: var(--size-20);
+    min-width: var(--size-20);
+    min-height: var(--size-20);
+  }
+
+  .admin-materials-category-section__panel {
+    padding: var(--sp-10);
+  }
+
+  .admin-materials-category-section__grid {
+    grid-template-columns: 1fr 1fr;
   }
 }
 </style>

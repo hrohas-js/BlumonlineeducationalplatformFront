@@ -173,4 +173,10 @@ const emit = defineEmits<Emits>()
   font-size: var(--size-20);
   line-height: normal;
 }
+
+@media (max-width: 1023px) {
+  :deep(.admin-active-extension-card__delete.base-button) {
+    font-size: var(--size-15);
+  }
+}
 </style>

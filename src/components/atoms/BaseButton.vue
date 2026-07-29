@@ -92,7 +92,6 @@ const handleClick = (event: MouseEvent) => {
   text-decoration: none;
   user-select: none;
   white-space: nowrap;
-  height: var(--size-60);
   position: relative;
 
   &_shape-pill {

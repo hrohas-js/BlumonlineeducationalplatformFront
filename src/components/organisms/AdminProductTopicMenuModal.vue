@@ -168,4 +168,10 @@ onUnmounted(() => {
   white-space: nowrap;
   transition: color 0.15s ease;
 }
+
+@media (max-width: 1023px) {
+  .admin-product-topic-menu-modal__label {
+    font-size: var(--size-15);
+  }
+}
 </style>

@@ -223,5 +223,12 @@ onUnmounted(() => {
     width: 32px;
     height: 15px;
   }
+
+  @media (max-width: 1023px) {
+    &__link,
+    &__text {
+      font-size: var(--size-15);
+    }
+  }
 }
 </style>

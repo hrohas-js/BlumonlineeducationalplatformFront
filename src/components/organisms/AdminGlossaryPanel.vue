@@ -94,7 +94,7 @@ const onEdit = () => {
 
   @media (max-width: 1023px) {
     &__title {
-      font-size: var(--size-20);
+      font-size: var(--size-15);
     }
 
     &__item {
@@ -108,7 +108,7 @@ const onEdit = () => {
 
     :deep(.admin-glossary-panel__edit.base-button) {
       width: 100%;
-      font-size: var(--size-20);
+      font-size: var(--size-15);
     }
   }
 }

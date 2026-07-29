@@ -141,4 +141,14 @@ const onAddVideoClick = async () => {
   line-height: normal;
   color: #010307;
 }
+
+@media (max-width: 1023px) {
+  .admin-topic-edit-videos-section__heading {
+    font-size: var(--size-15);
+  }
+
+  :deep(.admin-topic-edit-videos-section__add-btn.base-button) {
+    font-size: var(--size-15);
+  }
+}
 </style>

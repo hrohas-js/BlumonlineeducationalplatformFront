@@ -212,5 +212,11 @@ onMounted(() => {
       font-size: var(--size-15);
     }
   }
+
+  @media (max-width: 1023px) {
+    &__title {
+      font-size: var(--size-15);
+    }
+  }
 }
 </style>

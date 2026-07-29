@@ -92,6 +92,11 @@ const emit = defineEmits<Emits>()
   background-color: var(--white);
   box-sizing: border-box;
 
+  @media (max-width: 1023px) {
+    padding: var(--sp-10);
+    gap: var(--sp-10);
+  }
+
   &_courses {
     --accent: #178ef0;
   }
@@ -125,12 +130,20 @@ const emit = defineEmits<Emits>()
     line-height: normal;
     text-align: center;
     color: var(--white);
+
+    @media (max-width: 1023px) {
+      font-size: var(--size-15);
+    }
   }
 
   &__row {
     display: inline-flex;
     align-items: center;
     gap: var(--sp-20);
+
+    @media (max-width: 1023px) {
+      gap: var(--sp-10);
+    }
   }
 
   &__row_users {
@@ -143,6 +156,11 @@ const emit = defineEmits<Emits>()
     width: var(--size-20);
     height: var(--size-20);
     color: #010307;
+
+    @media (max-width: 1023px) {
+      width: var(--size-15);
+      height: var(--size-15);
+    }
   }
 
   &__value {
@@ -151,6 +169,10 @@ const emit = defineEmits<Emits>()
     font-size: var(--size-15);
     line-height: normal;
     color: #010307;
+
+    @media (max-width: 1023px) {
+      font-size: var(--size-15);
+    }
   }
 
   &__deadline {
@@ -160,6 +182,10 @@ const emit = defineEmits<Emits>()
     font-size: var(--size-15);
     line-height: normal;
     color: #010307;
+
+    @media (max-width: 1023px) {
+      font-size: var(--size-15);
+    }
   }
 
   :deep(.admin-material-course-card__edit.base-button) {
@@ -168,6 +194,10 @@ const emit = defineEmits<Emits>()
     padding: var(--size-5) var(--sp-10);
     min-height: 0;
     height: auto;
+
+    @media (max-width: 1023px) {
+      font-size: var(--size-15);
+    }
   }
 
   :deep(.admin-material-course-card__edit.base-button_outline:hover:not(.base-button_disabled)) {

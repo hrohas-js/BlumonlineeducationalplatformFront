@@ -105,7 +105,6 @@ async function onLogoutConfirm() {
     justify-content: stretch;
     padding-right: var(--sp-20);
     padding-top: var(--sp-40);
-    padding-bottom: var(--sp-20);
   }
 
   &__hub-column {
@@ -139,7 +138,7 @@ async function onLogoutConfirm() {
     font-family: var(--font-family);
     font-weight: var(--font-semi-bold);
     font-size: var(--size-20);
-    padding: var(--sp-10);
+    padding: 5px var(--sp-10);
 
     &:hover:not(.base-button_disabled),
     &:active:not(.base-button_disabled) {
@@ -198,7 +197,7 @@ async function onLogoutConfirm() {
       grid-row: 4;
       justify-self: end;
       margin-top: var(--sp-20);
-      font-size: var(--size-13) !important;
+      font-size: var(--size-15) !important;
     }
   }
 }

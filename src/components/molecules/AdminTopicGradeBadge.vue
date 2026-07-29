@@ -62,4 +62,10 @@ const emit = defineEmits<Emits>()
   background-color: #fff;
   color: #010307;
 }
+
+@media (max-width: 1023px) {
+  .admin-topic-grade-badge {
+    font-size: var(--size-15);
+  }
+}
 </style>
