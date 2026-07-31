@@ -30,6 +30,7 @@ const { notify } = useNotification()
 const loading = ref(true)
 const submitting = ref(false)
 const successModalOpen = ref(false)
+const productIds = ref<string[]>([])
 
 const sectionId = computed(() => route.params.sectionId as string)
 
@@ -60,7 +61,11 @@ async function loadPageData() {
     return
   }
 
-  await adminStore.aggregateAllSections()
+  const [, products] = await Promise.all([
+    adminStore.aggregateAllSections(),
+    adminStore.fetchProductsForStudentsScope(scope),
+  ])
+  productIds.value = products.map((p) => p.id)
   loading.value = false
 }
 
@@ -112,7 +117,10 @@ const onSubmit = async (rows: AddStudentRow[]) => {
   if (!students) return
 
   submitting.value = true
-  const result = await adminService.bulkAddStudents({ students })
+  const result = await adminService.bulkAddStudents({
+    students,
+    product_ids: productIds.value.length ? productIds.value : undefined,
+  })
   submitting.value = false
 
   if (!result.success || !result.data) {
@@ -131,7 +139,10 @@ const onSubmit = async (rows: AddStudentRow[]) => {
 
 const onExcelUpload = async (file: File) => {
   submitting.value = true
-  const result = await adminService.bulkAddStudentsExcel(file)
+  const result = await adminService.bulkAddStudentsExcel(
+    file,
+    productIds.value.length ? productIds.value : undefined,
+  )
   submitting.value = false
 
   if (!result.success || !result.data) {

@@ -404,6 +404,25 @@ export interface AdminFileUploadResponse {
   file_type: string
 }
 
+export interface AdminLessonVideoUploadUrlRequest {
+  filename: string
+  content_type: string
+}
+
+export interface AdminLessonVideoUploadUrlResponse {
+  upload_url: string
+  file_key: string
+}
+
+export interface AdminLessonVideoConfirmRequest {
+  file_key: string
+}
+
+export interface AdminLessonVideoConfirmResponse {
+  video_url: string
+  message: string
+}
+
 export type AdminAccessType = 'immediate' | 'delayed' | 'manual'
 
 export interface AdminGrantAccessRequest {
@@ -444,7 +463,7 @@ export interface AdminBulkStudentItem {
 
 export interface AdminBulkStudentsRequest {
   students: AdminBulkStudentItem[]
-  product_id?: string | null
+  product_ids?: string[]
 }
 
 export interface AdminBulkStudentResult {

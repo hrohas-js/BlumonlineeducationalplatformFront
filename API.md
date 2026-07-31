@@ -292,12 +292,12 @@ GET    /admin/products/{id}/students?skip=&limit=
 GET    /admin/products/{id}/students/export    ← скачать CSV
 
 POST   /admin/students/bulk
-       { "students": [{ "email", "first_name", "last_name" }], "product_id"? }
+       { "students": [{ "email", "first_name", "last_name" }], "product_ids"?: string[] }
        → { results: [{ email, user_id, first_name, last_name, created, password, access_granted }],
            created_count, existing_count }
-       ← есть email — берём; нет — создаём с автопаролем; product_id опционально выдаёт доступ
+       ← есть email — берём; нет — создаём с автопаролем; product_ids опционально выдаёт доступ ко всем указанным продуктам
 
-POST   /admin/students/bulk/excel?product_id=
+POST   /admin/students/bulk/excel?product_ids=&product_ids=
        multipart: file (.xlsx, колонки Email | Имя | Фамилия, 1-я строка — заголовок)
        → тот же ответ, что /admin/students/bulk
 ```

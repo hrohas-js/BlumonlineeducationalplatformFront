@@ -38,6 +38,8 @@ const saving = ref(false)
 const chaptersSaving = ref(false)
 const chaptersModalOpen = ref(false)
 const primaryLessonId = ref<string | null>(null)
+/** Прогресс загрузки видео по id строки (null = не загружается). */
+const videoUploadProgressById = ref<Record<string, number | null>>({})
 
 const productDetail = computed(() => adminStore.productDetails[productId.value] ?? null)
 
@@ -164,10 +166,27 @@ const ensureLesson = async (): Promise<string | null> => {
   return result.data.id
 }
 
-const onVideoFileSelected = async ({ file }: { videoId: string; file: File }) => {
+const onVideoFileSelected = async ({ videoId, file }: { videoId: string; file: File }) => {
   const lessonId = await ensureLesson()
   if (!lessonId) return
-  const result = await adminService.uploadLessonVideo(lessonId, file)
+
+  videoUploadProgressById.value = {
+    ...videoUploadProgressById.value,
+    [videoId]: 0,
+  }
+
+  const result = await adminService.uploadLessonVideo(lessonId, file, (percent) => {
+    videoUploadProgressById.value = {
+      ...videoUploadProgressById.value,
+      [videoId]: percent,
+    }
+  })
+
+  videoUploadProgressById.value = {
+    ...videoUploadProgressById.value,
+    [videoId]: null,
+  }
+
   if (!result.success || !result.data) {
     notify({ type: 'error', message: result.error || 'Не удалось загрузить видео' })
     return
@@ -259,6 +278,7 @@ const onSave = async () => {
 
         <AdminTopicEditVideosSection
           v-model:videos="videos"
+          :upload-progress-by-id="videoUploadProgressById"
           @video-file-selected="onVideoFileSelected"
           @open-timecode-modal="onOpenTimecodeModal"
         />

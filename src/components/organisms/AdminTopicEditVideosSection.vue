@@ -6,6 +6,15 @@ import type { AdminTopicEditVideoMock } from '@/utils/adminMaterialCatalog'
 
 const videos = defineModel<AdminTopicEditVideoMock[]>('videos', { required: true })
 
+const props = withDefaults(
+  defineProps<{
+    uploadProgressById?: Record<string, number | null>
+  }>(),
+  {
+    uploadProgressById: () => ({}),
+  },
+)
+
 interface Emits {
   (e: 'video-file-selected', payload: { videoId: string; file: File }): void
   (e: 'open-timecode-modal', videoId: string): void
@@ -42,12 +51,17 @@ const hasEmptyVideoSlot = computed(() =>
   videos.value.some((v) => !v.videoSrc?.trim()),
 )
 
+const isAnyUploading = computed(() =>
+  Object.values(props.uploadProgressById).some((p) => p != null),
+)
+
 async function openPickerForVideo(videoId: string) {
   await nextTick()
   rowRefs.value[videoId]?.openFilePicker()
 }
 
 const onAddVideoClick = async () => {
+  if (isAnyUploading.value) return
   const empty = videos.value.find((v) => !v.videoSrc?.trim())
   if (empty) {
     await openPickerForVideo(empty.id)
@@ -65,6 +79,11 @@ const onAddVideoClick = async () => {
   ]
   await openPickerForVideo(id)
 }
+
+function progressFor(videoId: string): number | null {
+  const value = props.uploadProgressById[videoId]
+  return value == null ? null : value
+}
 </script>
 
 <template>
@@ -78,6 +97,7 @@ const onAddVideoClick = async () => {
         v-model:title="v.title"
         v-model:timecode-enabled="v.timecodeEnabled"
         v-model:video-src="v.videoSrc"
+        :upload-progress="progressFor(v.id)"
         @delete-video="onDelete(v.id)"
         @file-selected="(file) => emit('video-file-selected', { videoId: v.id, file })"
         @open-timecode-modal="emit('open-timecode-modal', v.id)"
@@ -93,6 +113,7 @@ const onAddVideoClick = async () => {
         size="medium"
         shape="rounded"
         text="Добавить видеофайл"
+        :disabled="isAnyUploading"
         @click="onAddVideoClick"
       />
     </div>

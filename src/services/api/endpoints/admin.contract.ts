@@ -17,6 +17,9 @@ export const ADMIN_ENDPOINTS = {
   lessonById: (id: string) => `/api/v1/admin/products/lessons/${id}`,
   lessonCopy: (id: string) => `/api/v1/admin/products/lessons/${id}/copy`,
   lessonVideo: (id: string) => `/api/v1/admin/products/lessons/${id}/video`,
+  lessonVideoUploadUrl: (id: string) =>
+    `/api/v1/admin/products/lessons/${id}/video/upload-url`,
+  lessonVideoConfirm: (id: string) => `/api/v1/admin/products/lessons/${id}/video/confirm`,
   lessonFiles: (id: string) => `/api/v1/admin/products/lessons/${id}/files`,
   fileById: (id: string) => `/api/v1/admin/products/files/${id}`,
   userAccess: (userId: string) => `/api/v1/admin/products/users/${userId}/access`,

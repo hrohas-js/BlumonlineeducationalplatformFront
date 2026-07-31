@@ -7,6 +7,16 @@ const title = defineModel<string>('title', { required: true })
 const timecodeEnabled = defineModel<boolean>('timecodeEnabled', { required: true })
 const videoSrc = defineModel<string | undefined>('videoSrc')
 
+const props = withDefaults(
+  defineProps<{
+    /** 0–100 во время загрузки; null — загрузка не идёт */
+    uploadProgress?: number | null
+  }>(),
+  {
+    uploadProgress: null,
+  },
+)
+
 interface Emits {
   (e: 'delete-video'): void
   (e: 'file-selected', file: File): void
@@ -20,6 +30,11 @@ const addFileError = ref('')
 const isValidatingFile = ref(false)
 
 const hasVideo = computed(() => Boolean(videoSrc.value?.trim()))
+const isUploading = computed(() => props.uploadProgress != null)
+const uploadPercent = computed(() =>
+  props.uploadProgress == null ? 0 : Math.min(100, Math.max(0, Math.round(props.uploadProgress))),
+)
+const fileActionsDisabled = computed(() => isValidatingFile.value || isUploading.value)
 
 const ACCEPT_INPUT = 'video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov'
 
@@ -30,6 +45,7 @@ function revokeBlobUrl(url: string | undefined) {
 }
 
 function openFilePicker() {
+  if (isUploading.value) return
   addFileError.value = ''
   fileInputRef.value?.click()
 }
@@ -104,24 +120,55 @@ onBeforeUnmount(() => {
     </p>
 
     <div class="admin-topic-edit-video-row__body">
-      <div
-        v-if="hasVideo && videoSrc"
-        class="admin-topic-edit-video-row__player"
-        role="region"
-        aria-label="Предпросмотр видео"
-      >
-        <LessonVideoPlayer :src="videoSrc" />
+      <div class="admin-topic-edit-video-row__media">
+        <div
+          v-if="hasVideo && videoSrc"
+          class="admin-topic-edit-video-row__player"
+          role="region"
+          aria-label="Предпросмотр видео"
+        >
+          <LessonVideoPlayer :src="videoSrc" />
+        </div>
+
+        <div
+          v-if="isUploading"
+          class="admin-topic-edit-video-row__upload"
+          aria-live="polite"
+        >
+          <p class="admin-topic-edit-video-row__upload-label">
+            Загрузка… {{ uploadPercent }}%
+          </p>
+          <div
+            class="admin-topic-edit-video-row__upload-track"
+            role="progressbar"
+            :aria-valuemin="0"
+            :aria-valuemax="100"
+            :aria-valuenow="uploadPercent"
+            :aria-label="`Загрузка видео ${uploadPercent}%`"
+          >
+            <div
+              class="admin-topic-edit-video-row__upload-fill"
+              :style="{ width: `${uploadPercent}%` }"
+            />
+          </div>
+        </div>
       </div>
 
       <div v-if="!hasVideo" class="admin-topic-edit-video-row__add-only">
         <button
           type="button"
           class="admin-topic-edit-video-row__side-btn"
-          :disabled="isValidatingFile"
+          :disabled="fileActionsDisabled"
           @click="openFilePicker"
         >
           <span class="admin-topic-edit-video-row__side-btn-text">
-            {{ isValidatingFile ? 'Проверка файла…' : 'Добавить видеофайл' }}
+            {{
+              isUploading
+                ? `Загрузка… ${uploadPercent}%`
+                : isValidatingFile
+                  ? 'Проверка файла…'
+                  : 'Добавить видеофайл'
+            }}
           </span>
         </button>
       </div>
@@ -132,6 +179,7 @@ onBeforeUnmount(() => {
           class="admin-topic-edit-video-row__side-btn-timecode"
           :aria-pressed="timecodeEnabled"
           aria-label="Добавить тайм-код"
+          :disabled="isUploading"
           @click="emit('open-timecode-modal')"
         >
           <span class="admin-topic-edit-video-row__timecode-icon" aria-hidden="true">
@@ -150,14 +198,25 @@ onBeforeUnmount(() => {
         <button
           type="button"
           class="admin-topic-edit-video-row__side-btn"
-          :disabled="isValidatingFile"
+          :disabled="fileActionsDisabled"
           @click="openFilePicker"
         >
           <span class="admin-topic-edit-video-row__side-btn-text">
-            {{ isValidatingFile ? 'Проверка файла…' : 'Заменить видеофайл' }}
+            {{
+              isUploading
+                ? `Загрузка… ${uploadPercent}%`
+                : isValidatingFile
+                  ? 'Проверка файла…'
+                  : 'Заменить видеофайл'
+            }}
           </span>
         </button>
-        <button type="button" class="admin-topic-edit-video-row__side-btn" @click="emit('delete-video')">
+        <button
+          type="button"
+          class="admin-topic-edit-video-row__side-btn"
+          :disabled="isUploading"
+          @click="emit('delete-video')"
+        >
           <span class="admin-topic-edit-video-row__side-btn-text">Удалить видео</span>
         </button>
       </div>
@@ -227,10 +286,18 @@ onBeforeUnmount(() => {
   width: 100%;
 }
 
+.admin-topic-edit-video-row__media {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
+  width: 100%;
+  max-width: 489px;
+  flex-shrink: 0;
+}
+
 .admin-topic-edit-video-row__player {
   position: relative;
   width: 100%;
-  max-width: 489px;
   aspect-ratio: 489 / 306;
   border-radius: var(--radius-10);
   overflow: hidden;
@@ -245,6 +312,38 @@ onBeforeUnmount(() => {
     aspect-ratio: unset;
     border-radius: 0;
   }
+}
+
+.admin-topic-edit-video-row__upload {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+}
+
+.admin-topic-edit-video-row__upload-label {
+  margin: 0;
+  font-family: var(--font-family);
+  font-weight: var(--font-medium);
+  font-size: var(--size-15);
+  line-height: normal;
+  color: #010307;
+}
+
+.admin-topic-edit-video-row__upload-track {
+  width: 100%;
+  height: var(--size-20);
+  border-radius: var(--radius-check);
+  background: color-mix(in srgb, var(--knopka) 12%, #f5f5f5);
+  overflow: hidden;
+}
+
+.admin-topic-edit-video-row__upload-fill {
+  height: 100%;
+  min-width: 0;
+  border-radius: var(--radius-check);
+  background: var(--knopka);
+  transition: width 0.15s ease-out;
 }
 
 .admin-topic-edit-video-row__add-only {
@@ -335,6 +434,11 @@ onBeforeUnmount(() => {
   &[aria-pressed='true'] {
     background: color-mix(in srgb, #178ef0 8%, #f5f5f5);
   }
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
 }
 
 .admin-topic-edit-video-row__timecode-icon {
@@ -369,7 +473,7 @@ onBeforeUnmount(() => {
     max-width: 100%;
   }
 
-  .admin-topic-edit-video-row__player {
+  .admin-topic-edit-video-row__media {
     max-width: 100%;
   }
 }

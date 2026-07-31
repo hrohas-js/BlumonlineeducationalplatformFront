@@ -77,6 +77,17 @@ export type AdminTopicVideoValidationResult =
   | { ok: true }
   | { ok: false; error: string }
 
+/** MIME для presigned upload: file.type или fallback по расширению. */
+export function resolveVideoContentType(file: File): string {
+  if (file.type && file.type.startsWith(ALLOWED_MIME_PREFIX)) {
+    return file.type
+  }
+  const lower = file.name.trim().toLowerCase()
+  if (lower.endsWith('.webm')) return 'video/webm'
+  if (lower.endsWith('.mov')) return 'video/quicktime'
+  return 'video/mp4'
+}
+
 /** Проверка формата видео и отсутствия скриптов в имени/начале файла. */
 export async function validateAdminTopicVideoFile(file: File): Promise<AdminTopicVideoValidationResult> {
   if (!hasAllowedExtension(file.name)) {

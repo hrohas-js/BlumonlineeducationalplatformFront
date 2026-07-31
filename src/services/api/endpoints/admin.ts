@@ -21,6 +21,10 @@ import type {
   AdminModuleCopyRequest,
   AdminLessonCopyRequest,
   AdminFileUploadResponse,
+  AdminLessonVideoUploadUrlRequest,
+  AdminLessonVideoUploadUrlResponse,
+  AdminLessonVideoConfirmRequest,
+  AdminLessonVideoConfirmResponse,
   AdminGrantAccessRequest,
   AdminDeadlineUpdateRequest,
   AdminStudentsListResponse,
@@ -37,8 +41,11 @@ import type {
   AdminBroadcastCreateRequest,
   MessageResponse,
   ApiServiceResponse,
+  ApiResult,
 } from '../types'
 import { ADMIN_ENDPOINTS } from './admin.contract'
+import { resolveVideoContentType } from '@/utils/adminTopicVideoFile'
+import axios from 'axios'
 
 export const adminService = {
   // --- Products ---
@@ -152,9 +159,114 @@ export const adminService = {
     return api.post<LessonResponse>(ADMIN_ENDPOINTS.lessonCopy(id), body)
   },
 
-  async uploadLessonVideo(id: string, file: File): ApiServiceResponse<AdminFileUploadResponse> {
+  async getLessonVideoUploadUrl(
+    id: string,
+    body: AdminLessonVideoUploadUrlRequest
+  ): ApiServiceResponse<AdminLessonVideoUploadUrlResponse> {
     const api = useApi()
-    return api.uploadFile<AdminFileUploadResponse>(ADMIN_ENDPOINTS.lessonVideo(id), file)
+    return api.post<AdminLessonVideoUploadUrlResponse>(
+      ADMIN_ENDPOINTS.lessonVideoUploadUrl(id),
+      body
+    )
+  },
+
+  async confirmLessonVideo(
+    id: string,
+    body: AdminLessonVideoConfirmRequest
+  ): ApiServiceResponse<AdminLessonVideoConfirmResponse> {
+    const api = useApi()
+    return api.post<AdminLessonVideoConfirmResponse>(
+      ADMIN_ENDPOINTS.lessonVideoConfirm(id),
+      body
+    )
+  },
+
+  /**
+   * Прямой PUT файла в S3 по presigned URL (без Authorization / без apiClient timeout).
+   */
+  async uploadLessonVideoToS3(
+    uploadUrl: string,
+    file: File,
+    contentType: string,
+    onProgress?: (percent: number) => void
+  ): Promise<ApiResult<null>> {
+    try {
+      await axios.put(uploadUrl, file, {
+        headers: { 'Content-Type': contentType },
+        timeout: 0,
+        onUploadProgress: (event) => {
+          if (!onProgress || !event.total) return
+          const percent = Math.min(100, Math.round((event.loaded / event.total) * 100))
+          onProgress(percent)
+        },
+      })
+      return { data: null, error: null, errorCode: null, success: true }
+    } catch (error: unknown) {
+      console.error('S3 video upload failed', error)
+      const message = error instanceof Error ? error.message : 'S3 upload failed'
+      return { data: null, error: message, errorCode: null, success: false }
+    }
+  },
+
+  /**
+   * Presigned-флоу: upload-url → PUT S3 → confirm.
+   * onProgress — общий прогресс 0–100 (получение URL ~5%, S3 5–95%, confirm 95–100%).
+   */
+  async uploadLessonVideo(
+    id: string,
+    file: File,
+    onProgress?: (percent: number) => void
+  ): ApiServiceResponse<AdminLessonVideoConfirmResponse> {
+    const contentType = resolveVideoContentType(file)
+    onProgress?.(2)
+
+    const urlResult = await this.getLessonVideoUploadUrl(id, {
+      filename: file.name,
+      content_type: contentType,
+    })
+    if (!urlResult.success || !urlResult.data) {
+      return {
+        data: null,
+        error: urlResult.error || 'Не удалось получить ссылку для загрузки',
+        errorCode: urlResult.errorCode,
+        success: false,
+      }
+    }
+
+    onProgress?.(5)
+    const { upload_url, file_key } = urlResult.data
+
+    const s3Result = await this.uploadLessonVideoToS3(
+      upload_url,
+      file,
+      contentType,
+      (s3Percent) => {
+        // Map S3 0–100 → overall 5–95
+        onProgress?.(5 + Math.round(s3Percent * 0.9))
+      }
+    )
+    if (!s3Result.success) {
+      return {
+        data: null,
+        error: s3Result.error || 'Не удалось загрузить видео в хранилище',
+        errorCode: s3Result.errorCode,
+        success: false,
+      }
+    }
+
+    onProgress?.(95)
+    const confirmResult = await this.confirmLessonVideo(id, { file_key })
+    if (!confirmResult.success || !confirmResult.data) {
+      return {
+        data: null,
+        error: confirmResult.error || 'Не удалось подтвердить загрузку видео',
+        errorCode: confirmResult.errorCode,
+        success: false,
+      }
+    }
+
+    onProgress?.(100)
+    return confirmResult
   },
 
   async uploadLessonFile(id: string, file: File): ApiServiceResponse<AdminFileUploadResponse> {
@@ -225,14 +337,21 @@ export const adminService = {
 
   async bulkAddStudentsExcel(
     file: File,
-    productId?: string | null
+    productIds?: string[]
   ): ApiServiceResponse<AdminBulkStudentsResponse> {
     const api = useApi()
     const form = new FormData()
     form.append('file', file)
-    const params =
-      productId != null && productId !== '' ? { product_id: productId } : undefined
-    return api.post<AdminBulkStudentsResponse>(ADMIN_ENDPOINTS.studentsBulkExcel, form, { params })
+    const ids = productIds?.filter((id) => id !== '') ?? []
+    const config =
+      ids.length > 0
+        ? {
+            params: { product_ids: ids },
+            // FastAPI list query: product_ids=a&product_ids=b (not product_ids[]=...)
+            paramsSerializer: { indexes: null },
+          }
+        : undefined
+    return api.post<AdminBulkStudentsResponse>(ADMIN_ENDPOINTS.studentsBulkExcel, form, config)
   },
 
   // --- Payments ---
