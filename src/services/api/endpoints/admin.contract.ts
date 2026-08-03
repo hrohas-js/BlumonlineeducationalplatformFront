@@ -16,10 +16,12 @@ export const ADMIN_ENDPOINTS = {
     `/api/v1/admin/products/modules/${moduleId}/lessons/reorder`,
   lessonById: (id: string) => `/api/v1/admin/products/lessons/${id}`,
   lessonCopy: (id: string) => `/api/v1/admin/products/lessons/${id}/copy`,
-  lessonVideo: (id: string) => `/api/v1/admin/products/lessons/${id}/video`,
-  lessonVideoUploadUrl: (id: string) =>
-    `/api/v1/admin/products/lessons/${id}/video/upload-url`,
-  lessonVideoConfirm: (id: string) => `/api/v1/admin/products/lessons/${id}/video/confirm`,
+  lessonVideosUploadUrl: (id: string) =>
+    `/api/v1/admin/products/lessons/${id}/videos/upload-url`,
+  lessonVideosConfirm: (id: string) => `/api/v1/admin/products/lessons/${id}/videos/confirm`,
+  lessonVideoById: (lessonId: string, videoId: string) =>
+    `/api/v1/admin/products/lessons/${lessonId}/videos/${videoId}`,
+  lessonVideosReorder: (id: string) => `/api/v1/admin/products/lessons/${id}/videos/reorder`,
   lessonFiles: (id: string) => `/api/v1/admin/products/lessons/${id}/files`,
   fileById: (id: string) => `/api/v1/admin/products/files/${id}`,
   userAccess: (userId: string) => `/api/v1/admin/products/users/${userId}/access`,

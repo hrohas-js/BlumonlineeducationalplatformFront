@@ -5,8 +5,18 @@ import { isAllowedTopicMaterialFileName } from '@/utils/adminMaterialCatalog'
 
 const files = defineModel<AdminTopicEditMaterialFileMock[]>('files', { required: true })
 
+const props = withDefaults(
+  defineProps<{
+    deletingFileId?: string | null
+  }>(),
+  {
+    deletingFileId: null,
+  },
+)
+
 interface Emits {
   (e: 'material-upload', file: File): void
+  (e: 'material-delete', fileId: string): void
 }
 
 const emit = defineEmits<Emits>()
@@ -19,7 +29,17 @@ const fileInputRef = ref<HTMLInputElement | null>(null)
 const ACCEPT_INPUT =
   '.pdf,.docx,.png,.jpg,.jpeg,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png,image/jpeg'
 
+/** Серверные id файлов — UUID; временные строки до upload имеют вид `mf-...`. */
+const SERVER_FILE_ID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+function isServerFileId(id: string): boolean {
+  return SERVER_FILE_ID_RE.test(id)
+}
+
 const displayedFiles = computed(() => (isEditing.value ? draftFiles.value : files.value))
+
+const isDeleting = computed(() => props.deletingFileId != null)
 
 watch(files, () => {
   isEditing.value = false
@@ -60,6 +80,11 @@ const onFileInputChange = (event: Event) => {
 }
 
 const removeById = (id: string) => {
+  if (isDeleting.value) return
+  if (isServerFileId(id)) {
+    emit('material-delete', id)
+    return
+  }
   draftFiles.value = draftFiles.value.filter((f) => f.id !== id)
 }
 
@@ -112,6 +137,8 @@ const cancelEditing = () => {
             type="button"
             class="admin-topic-edit-materials-section__remove-btn"
             :aria-label="`Удалить файл ${row.fileName}`"
+            :aria-busy="deletingFileId === row.id"
+            :disabled="isDeleting"
             @click="removeById(row.id)"
           >
             <svg
@@ -252,8 +279,13 @@ const cancelEditing = () => {
     box-shadow: var(--focus-ring-main);
   }
 
-  &:hover {
+  &:hover:not(:disabled) {
     opacity: 0.75;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
   }
 }
 

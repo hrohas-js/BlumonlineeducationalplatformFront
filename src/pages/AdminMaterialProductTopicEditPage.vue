@@ -40,6 +40,8 @@ const chaptersModalOpen = ref(false)
 const primaryLessonId = ref<string | null>(null)
 /** Прогресс загрузки видео по id строки (null = не загружается). */
 const videoUploadProgressById = ref<Record<string, number | null>>({})
+const deletingFileId = ref<string | null>(null)
+const deletingVideoId = ref<string | null>(null)
 
 const productDetail = computed(() => adminStore.productDetails[productId.value] ?? null)
 
@@ -47,11 +49,15 @@ const moduleData = computed(() =>
   productDetail.value?.modules.find((m) => m.id === topicId.value) ?? null,
 )
 
+function emptyVideoSlot(): AdminTopicEditVideoMock {
+  return { id: crypto.randomUUID(), title: 'Видео 1', timecodeEnabled: false, videoSrc: '', persisted: false }
+}
+
 function mapFilesFromLesson() {
   const mod = moduleData.value
   if (!mod) {
     materialFiles.value = []
-    videos.value = [{ id: 'v1', title: 'Видео 1', timecodeEnabled: false, videoSrc: '' }]
+    videos.value = [emptyVideoSlot()]
     primaryLessonId.value = null
     lessonChapters.value = []
     return
@@ -59,7 +65,7 @@ function mapFilesFromLesson() {
   lessonTitle.value = mod.title
   if (mod.lessons.length === 0) {
     materialFiles.value = []
-    videos.value = [{ id: 'v1', title: 'Видео 1', timecodeEnabled: false, videoSrc: '' }]
+    videos.value = [emptyVideoSlot()]
     primaryLessonId.value = null
     lessonChapters.value = []
     return
@@ -71,15 +77,29 @@ function mapFilesFromLesson() {
     id: f.id,
     fileName: f.file_name,
   }))
-  videos.value = [
-    {
-      id: lesson.id,
-      title: lesson.title,
-      timecodeEnabled: lessonChapters.value.length > 0,
-      videoSrc: lesson.video_url ?? '',
-      fileName: lesson.video_url ? 'video' : undefined,
-    },
-  ]
+  const lessonVideos = [...(lesson.videos ?? [])].sort((a, b) => a.order_index - b.order_index)
+  const hasChapters = lessonChapters.value.length > 0
+  if (lessonVideos.length === 0) {
+    videos.value = [
+      {
+        id: crypto.randomUUID(),
+        title: 'Видео 1',
+        timecodeEnabled: hasChapters,
+        videoSrc: '',
+        persisted: false,
+      },
+    ]
+    return
+  }
+  videos.value = lessonVideos.map((v) => ({
+    id: v.id,
+    title: v.title?.trim() || `Видео ${v.order_index}`,
+    orderIndex: v.order_index,
+    timecodeEnabled: hasChapters,
+    videoSrc: v.video_url ?? '',
+    fileName: v.video_url ? 'video' : undefined,
+    persisted: true,
+  }))
 }
 
 async function load() {
@@ -170,16 +190,23 @@ const onVideoFileSelected = async ({ videoId, file }: { videoId: string; file: F
   const lessonId = await ensureLesson()
   if (!lessonId) return
 
+  const row = videos.value.find((v) => v.id === videoId)
+  const replaceVideoId = row?.persisted ? videoId : null
+  const title = row?.title?.trim() || file.name.replace(/\.[^.]+$/, '')
+
   videoUploadProgressById.value = {
     ...videoUploadProgressById.value,
     [videoId]: 0,
   }
 
-  const result = await adminService.uploadLessonVideo(lessonId, file, (percent) => {
-    videoUploadProgressById.value = {
-      ...videoUploadProgressById.value,
-      [videoId]: percent,
-    }
+  const result = await adminService.uploadLessonVideo(lessonId, file, {
+    title,
+    onProgress: (percent) => {
+      videoUploadProgressById.value = {
+        ...videoUploadProgressById.value,
+        [videoId]: percent,
+      }
+    },
   })
 
   videoUploadProgressById.value = {
@@ -191,8 +218,55 @@ const onVideoFileSelected = async ({ videoId, file }: { videoId: string; file: F
     notify({ type: 'error', message: result.error || 'Не удалось загрузить видео' })
     return
   }
-  notify({ type: 'success', message: 'Видео загружено' })
+
+  if (replaceVideoId) {
+    const del = await adminService.deleteLessonVideo(lessonId, replaceVideoId)
+    if (!del.success) {
+      notify({
+        type: 'error',
+        message: del.error || 'Видео загружено, но старое не удалось удалить',
+      })
+      await load()
+      return
+    }
+  }
+
+  notify({ type: 'success', message: replaceVideoId ? 'Видео заменено' : 'Видео загружено' })
   await load()
+}
+
+const onVideoDelete = async (videoId: string) => {
+  if (deletingVideoId.value) return
+  const lessonId = primaryLessonId.value
+  if (!lessonId) {
+    videos.value = videos.value.filter((v) => v.id !== videoId)
+    return
+  }
+  deletingVideoId.value = videoId
+  const result = await adminService.deleteLessonVideo(lessonId, videoId)
+  deletingVideoId.value = null
+  if (!result.success) {
+    notify({ type: 'error', message: result.error || 'Не удалось удалить видео' })
+    return
+  }
+  notify({ type: 'success', message: 'Видео удалено' })
+  await load()
+}
+
+const onVideoTitleCommit = async ({ videoId, title }: { videoId: string; title: string }) => {
+  const row = videos.value.find((v) => v.id === videoId)
+  if (!row?.persisted) return
+  const lessonId = primaryLessonId.value
+  if (!lessonId) return
+  const result = await adminService.updateLessonVideo(lessonId, videoId, { title: title || null })
+  if (!result.success) {
+    notify({ type: 'error', message: result.error || 'Не удалось сохранить название' })
+    return
+  }
+  if (result.data) {
+    row.title = result.data.title?.trim() || title
+    row.orderIndex = result.data.order_index
+  }
 }
 
 const onMaterialUpload = async (file: File) => {
@@ -204,6 +278,19 @@ const onMaterialUpload = async (file: File) => {
     return
   }
   notify({ type: 'success', message: 'Файл загружен' })
+  await load()
+}
+
+const onMaterialDelete = async (fileId: string) => {
+  if (deletingFileId.value) return
+  deletingFileId.value = fileId
+  const result = await adminService.deleteFile(fileId)
+  deletingFileId.value = null
+  if (!result.success) {
+    notify({ type: 'error', message: result.error || 'Не удалось удалить файл' })
+    return
+  }
+  notify({ type: 'success', message: 'Файл удалён' })
   await load()
 }
 
@@ -279,11 +366,19 @@ const onSave = async () => {
         <AdminTopicEditVideosSection
           v-model:videos="videos"
           :upload-progress-by-id="videoUploadProgressById"
+          :deleting-video-id="deletingVideoId"
           @video-file-selected="onVideoFileSelected"
           @open-timecode-modal="onOpenTimecodeModal"
+          @video-delete="onVideoDelete"
+          @video-title-commit="onVideoTitleCommit"
         />
 
-        <AdminTopicEditMaterialsSection v-model:files="materialFiles" @material-upload="onMaterialUpload" />
+        <AdminTopicEditMaterialsSection
+          v-model:files="materialFiles"
+          :deleting-file-id="deletingFileId"
+          @material-upload="onMaterialUpload"
+          @material-delete="onMaterialDelete"
+        />
 
         <div class="admin-material-product-topic-edit-page__actions">
           <BaseButton

@@ -23,8 +23,10 @@ import type {
   AdminFileUploadResponse,
   AdminLessonVideoUploadUrlRequest,
   AdminLessonVideoUploadUrlResponse,
-  AdminLessonVideoConfirmRequest,
-  AdminLessonVideoConfirmResponse,
+  LessonVideoConfirmRequest,
+  LessonVideoResponse,
+  LessonVideoUpdate,
+  LessonVideoReorderRequest,
   AdminGrantAccessRequest,
   AdminDeadlineUpdateRequest,
   AdminStudentsListResponse,
@@ -165,20 +167,17 @@ export const adminService = {
   ): ApiServiceResponse<AdminLessonVideoUploadUrlResponse> {
     const api = useApi()
     return api.post<AdminLessonVideoUploadUrlResponse>(
-      ADMIN_ENDPOINTS.lessonVideoUploadUrl(id),
+      ADMIN_ENDPOINTS.lessonVideosUploadUrl(id),
       body
     )
   },
 
   async confirmLessonVideo(
     id: string,
-    body: AdminLessonVideoConfirmRequest
-  ): ApiServiceResponse<AdminLessonVideoConfirmResponse> {
+    body: LessonVideoConfirmRequest
+  ): ApiServiceResponse<LessonVideoResponse> {
     const api = useApi()
-    return api.post<AdminLessonVideoConfirmResponse>(
-      ADMIN_ENDPOINTS.lessonVideoConfirm(id),
-      body
-    )
+    return api.post<LessonVideoResponse>(ADMIN_ENDPOINTS.lessonVideosConfirm(id), body)
   },
 
   /**
@@ -215,8 +214,9 @@ export const adminService = {
   async uploadLessonVideo(
     id: string,
     file: File,
-    onProgress?: (percent: number) => void
-  ): ApiServiceResponse<AdminLessonVideoConfirmResponse> {
+    options?: { title?: string | null; onProgress?: (percent: number) => void }
+  ): ApiServiceResponse<LessonVideoResponse> {
+    const onProgress = options?.onProgress
     const contentType = resolveVideoContentType(file)
     onProgress?.(2)
 
@@ -255,7 +255,10 @@ export const adminService = {
     }
 
     onProgress?.(95)
-    const confirmResult = await this.confirmLessonVideo(id, { file_key })
+    const confirmResult = await this.confirmLessonVideo(id, {
+      file_key,
+      title: options?.title?.trim() || null,
+    })
     if (!confirmResult.success || !confirmResult.data) {
       return {
         data: null,
@@ -267,6 +270,31 @@ export const adminService = {
 
     onProgress?.(100)
     return confirmResult
+  },
+
+  async deleteLessonVideo(lessonId: string, videoId: string): ApiServiceResponse<null> {
+    const api = useApi()
+    return api.delete<null>(ADMIN_ENDPOINTS.lessonVideoById(lessonId, videoId))
+  },
+
+  async updateLessonVideo(
+    lessonId: string,
+    videoId: string,
+    body: LessonVideoUpdate
+  ): ApiServiceResponse<LessonVideoResponse> {
+    const api = useApi()
+    return api.patch<LessonVideoResponse>(
+      ADMIN_ENDPOINTS.lessonVideoById(lessonId, videoId),
+      body
+    )
+  },
+
+  async reorderLessonVideos(
+    lessonId: string,
+    body: LessonVideoReorderRequest
+  ): ApiServiceResponse<MessageResponse> {
+    const api = useApi()
+    return api.put<MessageResponse>(ADMIN_ENDPOINTS.lessonVideosReorder(lessonId), body)
   },
 
   async uploadLessonFile(id: string, file: File): ApiServiceResponse<AdminFileUploadResponse> {

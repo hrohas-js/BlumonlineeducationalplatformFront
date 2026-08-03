@@ -98,8 +98,8 @@ const emit = defineEmits<Emits>()
     </div>
 
     <div class="admin-product-edit-general-section__actions">
-      <BaseButton variant="primary" size="medium" text="Сохранить" @click="emit('save')" />
-      <BaseButton variant="outline" size="medium" text="Отмена" @click="emit('cancel')" />
+      <BaseButton variant="outline" size="small" text="Сохранить" @click="emit('save')" />
+      <BaseButton variant="outline" size="small" text="Отмена" @click="emit('cancel')" />
     </div>
   </section>
 </template>

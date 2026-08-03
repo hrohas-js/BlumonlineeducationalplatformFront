@@ -21,6 +21,7 @@ interface Emits {
   (e: 'delete-video'): void
   (e: 'file-selected', file: File): void
   (e: 'open-timecode-modal'): void
+  (e: 'title-commit', title: string): void
 }
 
 const emit = defineEmits<Emits>()
@@ -28,6 +29,7 @@ const emit = defineEmits<Emits>()
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const addFileError = ref('')
 const isValidatingFile = ref(false)
+const titleAtFocus = ref(title.value)
 
 const hasVideo = computed(() => Boolean(videoSrc.value?.trim()))
 const isUploading = computed(() => props.uploadProgress != null)
@@ -51,6 +53,16 @@ function openFilePicker() {
 }
 
 defineExpose({ openFilePicker })
+
+function onTitleFocus() {
+  titleAtFocus.value = title.value
+}
+
+function onTitleBlur() {
+  const next = title.value.trim()
+  if (next === titleAtFocus.value.trim()) return
+  emit('title-commit', next)
+}
 
 async function onFileInputChange(event: Event) {
   const input = event.target as HTMLInputElement
@@ -112,6 +124,8 @@ onBeforeUnmount(() => {
         type="text"
         autocomplete="off"
         placeholder="Здесь можно писать название видео"
+        @focus="onTitleFocus"
+        @blur="onTitleBlur"
       />
     </div>
 

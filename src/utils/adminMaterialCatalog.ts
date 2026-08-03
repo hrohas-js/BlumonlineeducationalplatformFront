@@ -241,13 +241,16 @@ export function isAllowedTopicMaterialFileName(fileName: string): boolean {
   return ADMIN_TOPIC_MATERIAL_ALLOWED_EXTENSIONS.some((ext) => lower.endsWith(ext))
 }
 
-/** Видео в теме (мок до API; `videoSrc` — blob/object URL до загрузки на сервер). */
+/** Видео в теме (`videoSrc` — blob/object URL до загрузки или signed URL с бэка). */
 export interface AdminTopicEditVideoMock {
   id: string
   title: string
   timecodeEnabled: boolean
   videoSrc?: string
   fileName?: string
+  orderIndex?: number
+  /** true — видео уже сохранено на сервере (есть LessonVideo.id). */
+  persisted?: boolean
 }
 
 export interface AdminTopicEditContentMock {

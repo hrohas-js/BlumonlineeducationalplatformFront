@@ -9,15 +9,19 @@ const videos = defineModel<AdminTopicEditVideoMock[]>('videos', { required: true
 const props = withDefaults(
   defineProps<{
     uploadProgressById?: Record<string, number | null>
+    deletingVideoId?: string | null
   }>(),
   {
     uploadProgressById: () => ({}),
+    deletingVideoId: null,
   },
 )
 
 interface Emits {
   (e: 'video-file-selected', payload: { videoId: string; file: File }): void
   (e: 'open-timecode-modal', videoId: string): void
+  (e: 'video-delete', videoId: string): void
+  (e: 'video-title-commit', payload: { videoId: string; title: string }): void
 }
 
 const emit = defineEmits<Emits>()
@@ -40,8 +44,15 @@ function revokeBlobUrl(url: string | undefined) {
   }
 }
 
+const isDeletingVideo = computed(() => props.deletingVideoId != null)
+
 const onDelete = (videoId: string) => {
   const item = videos.value.find((v) => v.id === videoId)
+  if (isDeletingVideo.value) return
+  if (item?.persisted) {
+    emit('video-delete', videoId)
+    return
+  }
   revokeBlobUrl(item?.videoSrc)
   videos.value = videos.value.filter((v) => v.id !== videoId)
   delete rowRefs.value[videoId]
@@ -75,6 +86,7 @@ const onAddVideoClick = async () => {
       title: `Видео ${videos.value.length + 1}`,
       timecodeEnabled: false,
       videoSrc: '',
+      persisted: false,
     },
   ]
   await openPickerForVideo(id)
@@ -101,6 +113,7 @@ function progressFor(videoId: string): number | null {
         @delete-video="onDelete(v.id)"
         @file-selected="(file) => emit('video-file-selected', { videoId: v.id, file })"
         @open-timecode-modal="emit('open-timecode-modal', v.id)"
+        @title-commit="(title) => emit('video-title-commit', { videoId: v.id, title })"
       />
     </div>
     <div
@@ -142,25 +155,23 @@ function progressFor(videoId: string): number | null {
 .admin-topic-edit-videos-section__list {
   display: flex;
   flex-direction: column;
-  gap: 48px;
+  gap: var(--sp-24);
   width: 100%;
 }
 
 .admin-topic-edit-videos-section__add-wrap {
+  width: 100%;
   display: flex;
   justify-content: flex-start;
-  width: 100%;
 }
 
 :deep(.admin-topic-edit-videos-section__add-btn.base-button) {
   height: auto;
-  padding: 10px;
-  border-color: #010307;
+  min-height: 44px;
   font-family: var(--font-family);
-  font-weight: var(--font-semi-bold);
-  font-size: var(--size-20);
-  line-height: normal;
-  color: #010307;
+  font-size: var(--size-15);
+  border-color: var(--knopka);
+  color: var(--text-accent);
 }
 
 @media (max-width: 1023px) {

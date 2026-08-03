@@ -6,6 +6,7 @@ import type {
 } from '@/types/learning-course'
 import type {
   LessonResponse,
+  LessonVideoResponse,
   ModuleResponse,
   ProductDetailResponse,
   ProductProgressResponse,
@@ -36,23 +37,50 @@ function formatWatchLabel(seconds: number): string {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
-function lessonToVideo(
+function lessonVideoToLearningVideo(
+  video: LessonVideoResponse,
   lesson: LessonResponse,
   isCompleted: boolean,
-  videoSrcByLessonId: Record<string, string>,
+  attachFiles: boolean,
+  videoSrcByVideoId: Record<string, string>,
 ): LearningTopicVideo {
   const watchTime = 0
-  const src = videoSrcByLessonId[lesson.id] ?? lesson.video_url ?? undefined
+  const src = videoSrcByVideoId[video.id] ?? video.video_url ?? undefined
   return {
-    id: lesson.id,
-    title: lesson.title,
+    id: video.id,
+    title: video.title?.trim() || lesson.title,
     src: src?.trim() || undefined,
     progressPercent: isCompleted ? 100 : watchTime > 0 ? 10 : 0,
     currentTimeLabel: isCompleted ? formatWatchLabel(100) : '00:00',
     durationLabel: '—',
     hasTimecode: (lesson.chapters?.length ?? 0) > 0,
-    files: lesson.files.map(mapFileResponseToLearningTopicFile),
+    files: attachFiles ? lesson.files.map(mapFileResponseToLearningTopicFile) : [],
   }
+}
+
+function lessonToVideos(
+  lesson: LessonResponse,
+  isCompleted: boolean,
+  videoSrcByVideoId: Record<string, string>,
+): LearningTopicVideo[] {
+  const sorted = [...(lesson.videos ?? [])].sort((a, b) => a.order_index - b.order_index)
+  if (sorted.length === 0) {
+    return [
+      {
+        id: lesson.id,
+        title: lesson.title,
+        src: undefined,
+        progressPercent: isCompleted ? 100 : 0,
+        currentTimeLabel: isCompleted ? formatWatchLabel(100) : '00:00',
+        durationLabel: '—',
+        hasTimecode: (lesson.chapters?.length ?? 0) > 0,
+        files: lesson.files.map(mapFileResponseToLearningTopicFile),
+      },
+    ]
+  }
+  return sorted.map((video, index) =>
+    lessonVideoToLearningVideo(video, lesson, isCompleted, index === 0, videoSrcByVideoId),
+  )
 }
 
 function splitModuleDescription(
@@ -77,7 +105,7 @@ function formatTopicTitle(orderIndex: number, title: string): string {
 function moduleToTopic(
   module: ModuleResponse,
   progress: ProductProgressResponse | null,
-  videoSrcByLessonId: Record<string, string>,
+  videoSrcByVideoId: Record<string, string>,
 ): LearningCourseTopic {
   const moduleProgress = progress?.modules.find((m) => m.module_id === module.id)
   const lessons = [...module.lessons].sort((a, b) => a.order_index - b.order_index)
@@ -91,9 +119,9 @@ function moduleToTopic(
     accessUntil: formatAccessUntil(progress?.deadline ?? null),
     isCompleted: lessons.length > 0 && completedCount >= lessons.length,
     ...splitModuleDescription(module.description),
-    videos: lessons.map((lesson) => {
+    videos: lessons.flatMap((lesson) => {
       const lp = moduleProgress?.lessons.find((l) => l.id === lesson.id)
-      return lessonToVideo(lesson, lp?.is_completed ?? false, videoSrcByLessonId)
+      return lessonToVideos(lesson, lp?.is_completed ?? false, videoSrcByVideoId)
     }),
   }
 }
@@ -101,11 +129,11 @@ function moduleToTopic(
 export function mapProductToLearningDetail(
   product: ProductDetailResponse,
   progress: ProductProgressResponse | null,
-  videoSrcByLessonId: Record<string, string> = {},
+  videoSrcByVideoId: Record<string, string> = {},
 ): LearningCourseDetail {
   const topics = [...product.modules]
     .sort((a, b) => a.order_index - b.order_index)
-    .map((m) => moduleToTopic(m, progress, videoSrcByLessonId))
+    .map((m) => moduleToTopic(m, progress, videoSrcByVideoId))
   const description = product.description?.trim()
   const descriptionLines = description
     ? description.split('\n').filter((line) => line.length > 0)
@@ -123,12 +151,28 @@ export function mapProductToLearningDetail(
   }
 }
 
+/**
+ * Route param historically named lessonId; in admin topics it is the module/topic id.
+ * Also accepts a lesson id (finds the module that contains that lesson).
+ */
 export function findTopicByLessonId(
   detail: LearningCourseDetail,
-  lessonId: string,
+  lessonOrTopicId: string,
+  product?: ProductDetailResponse | null,
 ): LearningCourseTopic | null {
+  const byTopicId = detail.topics.find((t) => t.id === lessonOrTopicId)
+  if (byTopicId) return byTopicId
+
+  if (product) {
+    for (const mod of product.modules) {
+      if (mod.lessons.some((l) => l.id === lessonOrTopicId)) {
+        return detail.topics.find((t) => t.id === mod.id) ?? null
+      }
+    }
+  }
+
   for (const topic of detail.topics) {
-    if (topic.videos.some((v) => v.id === lessonId)) {
+    if (topic.videos.some((v) => v.id === lessonOrTopicId)) {
       return topic
     }
   }

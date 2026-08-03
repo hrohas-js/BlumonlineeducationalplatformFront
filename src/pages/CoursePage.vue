@@ -40,7 +40,7 @@ const learningDetail = computed<LearningCourseDetail | null>(() => {
 
 const selectedTopicId = computed<string | null>(() => {
   if (!lessonIdParam.value || !learningDetail.value) return null
-  const topic = findTopicByLessonId(learningDetail.value, lessonIdParam.value)
+  const topic = findTopicByLessonId(learningDetail.value, lessonIdParam.value, product.value)
   return topic?.id ?? null
 })
 

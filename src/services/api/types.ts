@@ -155,12 +155,21 @@ export interface LessonChapter {
   title: string
 }
 
+/** Видео урока (мульти-видео модель). */
+export interface LessonVideoResponse {
+  id: string
+  title?: string | null
+  order_index: number
+  video_url?: string | null
+}
+
 export interface LessonResponse {
   id: string
   module_id: string
   title: string
   description: string | null
-  video_url: string | null
+  /** Пустые/`null` с бэка нормализуются как `[]`. */
+  videos?: LessonVideoResponse[] | null
   order_index: number
   /** Пустые/`null` с бэка нормализуются как `[]`. */
   chapters?: LessonChapter[] | null
@@ -359,14 +368,12 @@ export interface AdminModuleUpdateRequest {
 export interface AdminLessonCreateRequest {
   title: string
   description?: string
-  video_url?: string
   chapters?: LessonChapter[]
 }
 
 export interface AdminLessonUpdateRequest {
   title?: string
   description?: string
-  video_url?: string
   /** Передать `[]` — очистить таймкоды. Не передавать поле — оставить как есть. */
   chapters?: LessonChapter[]
 }
@@ -404,9 +411,10 @@ export interface AdminFileUploadResponse {
   file_type: string
 }
 
+/** Presigned upload request (filename + optional content_type). */
 export interface AdminLessonVideoUploadUrlRequest {
   filename: string
-  content_type: string
+  content_type?: string | null
 }
 
 export interface AdminLessonVideoUploadUrlResponse {
@@ -414,14 +422,30 @@ export interface AdminLessonVideoUploadUrlResponse {
   file_key: string
 }
 
-export interface AdminLessonVideoConfirmRequest {
+export interface LessonVideoConfirmRequest {
   file_key: string
+  title?: string | null
 }
 
-export interface AdminLessonVideoConfirmResponse {
-  video_url: string
-  message: string
+export interface LessonVideoUpdate {
+  title?: string | null
+  order_index?: number | null
 }
+
+export interface LessonVideoReorderItem {
+  video_id: string
+  order_index: number
+}
+
+export interface LessonVideoReorderRequest {
+  videos: LessonVideoReorderItem[]
+}
+
+/** @deprecated Use LessonVideoConfirmRequest */
+export type AdminLessonVideoConfirmRequest = LessonVideoConfirmRequest
+
+/** @deprecated Confirm now returns LessonVideoResponse */
+export type AdminLessonVideoConfirmResponse = LessonVideoResponse
 
 export type AdminAccessType = 'immediate' | 'delayed' | 'manual'
 
