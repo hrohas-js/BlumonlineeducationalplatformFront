@@ -4,7 +4,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { adminService } from '@/services/api/endpoints/admin'
-import { sectionIdToProductType } from '@/utils/adminProductType'
+import { sectionIdToProductType, productTypeToSectionId } from '@/utils/adminProductType'
 import {
   ADMIN_MATERIAL_SECTION_LIST,
   ADMIN_STUDENTS_SCOPE_ALL,
@@ -22,6 +22,10 @@ import type {
   AdminModuleUpdateRequest,
   AdminLessonCreateRequest,
   AdminGrantAccessRequest,
+  AdminStudentAccessStatus,
+  AdminStudentAccessUpdateRequest,
+  AdminStudentProductItem,
+  AdminStudentProductsResponse,
 } from '@/services/api/types'
 import type { AdminStudentProfileProductRow } from '@/utils/adminMockStudents'
 
@@ -179,6 +183,14 @@ export const useAdminStore = defineStore('admin', () => {
     return adminService.revokeAccess(userId, productId)
   }
 
+  async function updateStudentAccess(
+    userId: string,
+    productId: string,
+    body: AdminStudentAccessUpdateRequest
+  ) {
+    return adminService.updateStudentAccess(userId, productId, body)
+  }
+
   async function createModule(courseId: string, body: AdminModuleCreateRequest) {
     const result = await adminService.createModule(courseId, body)
     if (result.success) await fetchProductDetail(courseId)
@@ -222,31 +234,84 @@ export const useAdminStore = defineStore('admin', () => {
     return null
   }
 
-  async function getStudentProfileProducts(
-    userId: string,
-    materialSection: AdminMaterialSectionId
-  ): Promise<AdminStudentProfileProductRow[]> {
-    await fetchProductsForSection(materialSection)
-    const products = productsBySection.value[materialSection] ?? []
-    const rows: AdminStudentProfileProductRow[] = []
-    for (const p of products) {
-      let students = studentsByProduct.value[p.id]
-      if (!students) {
-        const res = await fetchStudentsForProduct(p.id)
-        students = res.success ? res.data : []
-      }
-      const s = students?.find((x) => x.user_id === userId)
-      rows.push({
-        id: p.id,
-        title: p.title,
-        deadlineLabel: s?.deadline
-          ? new Date(s.deadline).toLocaleDateString('ru-RU')
-          : s
-            ? 'без дедлайна'
-            : 'нет доступа',
-      })
+  function normalizeAccessStatus(status: string | undefined | null): AdminStudentAccessStatus {
+    if (status === 'active' || status === 'paused' || status === 'blocked' || status === 'deleted') {
+      return status
     }
-    return rows
+    return 'active'
+  }
+
+  function mapStudentProductToRow(item: AdminStudentProductItem): AdminStudentProfileProductRow {
+    return {
+      id: item.product_id,
+      title: item.title,
+      deadlineLabel: item.deadline
+        ? new Date(item.deadline).toLocaleDateString('ru-RU')
+        : 'без дедлайна',
+      status: normalizeAccessStatus(item.status),
+      productType: item.product_type,
+      progressPercent: item.progress_percent,
+      totalLessons: item.total_lessons,
+      completedLessons: item.completed_lessons,
+    }
+  }
+
+  function sectionForStudentProduct(item: AdminStudentProductItem): AdminMaterialSectionId {
+    if (item.is_archived) return 'archive'
+    return productTypeToSectionId(item.product_type) ?? 'other'
+  }
+
+  async function fetchStudentProfileProducts(userId: string): Promise<
+    | {
+        success: true
+        data: {
+          user: AdminStudentProductsResponse['user']
+          bySection: Record<AdminMaterialSectionId, AdminStudentProfileProductRow[]>
+        }
+      }
+    | { success: false; error: string }
+  > {
+    const pageLimit = 50
+    let skip = 0
+    let total = Infinity
+    const allItems: AdminStudentProductItem[] = []
+    let user: AdminStudentProductsResponse['user'] | null = null
+
+    while (allItems.length < total) {
+      const result = await adminService.listStudentProducts(userId, skip, pageLimit)
+      if (!result.success || !result.data) {
+        return {
+          success: false,
+          error: result.error || 'Не удалось загрузить продукты ученика',
+        }
+      }
+      const page = result.data
+      user = page.user
+      allItems.push(...page.items)
+      total = page.total
+      skip += pageLimit
+      if (page.items.length === 0) break
+    }
+
+    if (!user) {
+      return { success: false, error: 'Не удалось загрузить данные ученика' }
+    }
+
+    const bySection = Object.fromEntries(
+      ADMIN_MATERIAL_SECTION_LIST.map((s) => [s.id, [] as AdminStudentProfileProductRow[]]),
+    ) as Record<AdminMaterialSectionId, AdminStudentProfileProductRow[]>
+
+    for (const item of allItems) {
+      bySection[sectionForStudentProduct(item)].push(mapStudentProductToRow(item))
+    }
+
+    return {
+      success: true,
+      data: {
+        user,
+        bySection,
+      },
+    }
   }
 
   async function aggregateAllSections() {
@@ -317,12 +382,13 @@ export const useAdminStore = defineStore('admin', () => {
     grantManualAccess,
     updateDeadline,
     revokeAccess,
+    updateStudentAccess,
     createModule,
     updateModule,
     createLesson,
     invalidateProduct,
     findAggregatedStudent,
-    getStudentProfileProducts,
+    fetchStudentProfileProducts,
     aggregateAllSections,
     fetchProductsForStudentsScope,
     reset,

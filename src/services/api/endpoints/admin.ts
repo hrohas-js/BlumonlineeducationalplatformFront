@@ -29,6 +29,9 @@ import type {
   LessonVideoReorderRequest,
   AdminGrantAccessRequest,
   AdminDeadlineUpdateRequest,
+  AdminStudentAccessUpdateRequest,
+  AdminStudentAccessUpdateResponse,
+  AdminStudentProductsResponse,
   AdminStudentsListResponse,
   AdminBulkStudentsRequest,
   AdminBulkStudentsResponse,
@@ -338,7 +341,30 @@ export const adminService = {
     return api.delete<MessageResponse>(ADMIN_ENDPOINTS.userProductAccess(userId, productId))
   },
 
+  async updateStudentAccess(
+    userId: string,
+    productId: string,
+    body: AdminStudentAccessUpdateRequest
+  ): ApiServiceResponse<AdminStudentAccessUpdateResponse> {
+    const api = useApi()
+    return api.patch<AdminStudentAccessUpdateResponse>(
+      ADMIN_ENDPOINTS.userProductAccessUpdate(userId, productId),
+      body
+    )
+  },
+
   // --- Students ---
+  async listStudentProducts(
+    userId: string,
+    skip = 0,
+    limit = 50
+  ): ApiServiceResponse<AdminStudentProductsResponse> {
+    const api = useApi()
+    return api.get<AdminStudentProductsResponse>(ADMIN_ENDPOINTS.studentProducts(userId), {
+      params: { skip, limit },
+    })
+  },
+
   async listStudents(
     productId: string,
     skip = 0,

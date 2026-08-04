@@ -5,6 +5,7 @@ import {
   type AdminMaterialSectionId,
   type AdminStudentsSectionScope,
 } from '@/constants/adminMaterials'
+import type { AdminStudentAccessStatus } from '@/services/api/types'
 
 export interface AdminStudentRow {
   id: string
@@ -160,6 +161,11 @@ export interface AdminStudentProfileProductRow {
   id: string
   title: string
   deadlineLabel: string
+  status: AdminStudentAccessStatus
+  productType: string
+  progressPercent: number
+  totalLessons: number
+  completedLessons: number
 }
 
 export function getMockStudentProfileProducts(
@@ -171,12 +177,63 @@ export function getMockStudentProfileProducts(
 
   const bySection: Record<AdminMaterialSectionId, AdminStudentProfileProductRow[]> = {
     courses: [
-      { id: 'c1', title: 'Закрытый клуб', deadlineLabel: '47 дней 9 часов' },
-      { id: 'c2', title: 'Курс из 5 тем', deadlineLabel: '12 дней 2 часа' },
+      {
+        id: 'c1',
+        title: 'Закрытый клуб',
+        deadlineLabel: '47 дней 9 часов',
+        status: 'active',
+        productType: 'course',
+        progressPercent: 0,
+        totalLessons: 0,
+        completedLessons: 0,
+      },
+      {
+        id: 'c2',
+        title: 'Курс из 5 тем',
+        deadlineLabel: '12 дней 2 часа',
+        status: 'active',
+        productType: 'course',
+        progressPercent: 0,
+        totalLessons: 0,
+        completedLessons: 0,
+      },
     ],
-    projects: [{ id: 'p1', title: 'Вертоград', deadlineLabel: 'бессрочно' }],
-    other: [{ id: 'o1', title: 'Конференция 2023', deadlineLabel: '30 дней' }],
-    archive: [{ id: 'a1', title: 'Интегративная карта метаболизма', deadlineLabel: 'закрыт' }],
+    projects: [
+      {
+        id: 'p1',
+        title: 'Вертоград',
+        deadlineLabel: 'бессрочно',
+        status: 'active',
+        productType: 'project',
+        progressPercent: 0,
+        totalLessons: 0,
+        completedLessons: 0,
+      },
+    ],
+    other: [
+      {
+        id: 'o1',
+        title: 'Конференция 2023',
+        deadlineLabel: '30 дней',
+        status: 'active',
+        productType: 'webinar',
+        progressPercent: 0,
+        totalLessons: 0,
+        completedLessons: 0,
+      },
+    ],
+    archive: [
+      {
+        id: 'a1',
+        title: 'Интегративная карта метаболизма',
+        deadlineLabel: 'закрыт',
+        status: 'active',
+        productType: 'course',
+        progressPercent: 0,
+        totalLessons: 0,
+        completedLessons: 0,
+      },
+    ],
   }
 
   const list = bySection[materialSection]

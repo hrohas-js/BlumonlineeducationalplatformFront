@@ -460,6 +460,60 @@ export interface AdminDeadlineUpdateRequest {
   deadline: string
 }
 
+export type AdminStudentAccessStatus = 'active' | 'paused' | 'blocked' | 'deleted'
+
+export interface AdminStudentProductItem {
+  product_id: string
+  title: string
+  product_type: string
+  image_url: string | null
+  is_archived: boolean
+  access_type: string
+  status: AdminStudentAccessStatus | string
+  access_granted_at: string | null
+  deadline: string | null
+  days_left: number | null
+  is_expired: boolean
+  is_completed: boolean
+  total_lessons: number
+  completed_lessons: number
+  progress_percent: number
+}
+
+export interface AdminStudentProductsResponse {
+  user: {
+    id: string
+    email: string
+    first_name: string
+    last_name: string
+  }
+  items: AdminStudentProductItem[]
+  total: number
+  skip: number
+  limit: number
+}
+
+export interface AdminStudentAccessUpdateRequest {
+  status?: AdminStudentAccessStatus
+  deadline?: string | null
+  notify_email?: boolean
+}
+
+export interface AdminStudentAccessUpdateResponse {
+  id: string
+  user_id: string
+  product_id: string
+  access_type: string
+  status: AdminStudentAccessStatus
+  delay_days: number | null
+  access_granted_at: string | null
+  deadline: string | null
+  is_completed: boolean
+  completed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface AdminStudentItem {
   user_id: string
   email: string

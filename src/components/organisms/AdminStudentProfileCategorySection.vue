@@ -36,17 +36,17 @@ const emit = defineEmits<Emits>()
 
 const productAccessKey = (productId: string) => `${props.sectionKey}:${productId}`
 
-const accessStatusForProduct = (productId: string): StudentAccessStatusValue =>
-  props.productAccessStatuses[productAccessKey(productId)] ?? 'active'
+const accessStatusForProduct = (product: AdminStudentProfileProductRow): StudentAccessStatusValue =>
+  props.productAccessStatuses[productAccessKey(product.id)] ?? product.status ?? 'active'
 
-const generalAccessAriaLabel = (productId: string) => {
+const generalAccessAriaLabel = (product: AdminStudentProfileProductRow) => {
   const labels: Record<StudentAccessStatusValue, string> = {
     active: 'Общий доступ, статус: активно',
     paused: 'Общий доступ, статус: на паузе',
     blocked: 'Общий доступ, статус: заблокировано',
     deleted: 'Общий доступ, статус: удалён',
   }
-  return labels[accessStatusForProduct(productId)]
+  return labels[accessStatusForProduct(product)]
 }
 
 const expanded = ref(props.initiallyExpanded)
@@ -208,12 +208,12 @@ const onGeneralAccess = (productId: string) => {
               <button
                 type="button"
                 class="admin-student-profile-category-section__access-btn"
-                :aria-label="generalAccessAriaLabel(product.id)"
+                :aria-label="generalAccessAriaLabel(product)"
                 @click="onGeneralAccess(product.id)"
               >
                 <span class="admin-student-profile-category-section__access-icon" aria-hidden="true">
                   <svg
-                    v-if="accessStatusForProduct(product.id) === 'active'"
+                    v-if="accessStatusForProduct(product) === 'active'"
                     width="30"
                     height="30"
                     viewBox="0 0 30 30"
@@ -224,7 +224,7 @@ const onGeneralAccess = (productId: string) => {
                     <path d="M12 9v12l10-6-10-6Z" fill="#00a600" />
                   </svg>
                   <svg
-                    v-else-if="accessStatusForProduct(product.id) === 'paused'"
+                    v-else-if="accessStatusForProduct(product) === 'paused'"
                     width="30"
                     height="30"
                     viewBox="0 0 30 30"
@@ -235,7 +235,7 @@ const onGeneralAccess = (productId: string) => {
                     <path d="M11 9v12M19 9v12" stroke="white" stroke-width="2" stroke-linecap="round" />
                   </svg>
                   <svg
-                    v-else-if="accessStatusForProduct(product.id) === 'blocked'"
+                    v-else-if="accessStatusForProduct(product) === 'blocked'"
                     width="30"
                     height="30"
                     viewBox="0 0 48 48"

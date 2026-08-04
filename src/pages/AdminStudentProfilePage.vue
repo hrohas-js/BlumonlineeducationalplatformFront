@@ -11,7 +11,6 @@ import {
   isAdminStudentsSectionParam,
   type AdminMaterialSectionId,
 } from '@/constants/adminMaterials'
-import { resolveAdminStudentRow } from '@/utils/adminMockStudents'
 import type { AdminStudentProfileProductRow } from '@/utils/adminMockStudents'
 import { useAdminStore } from '@/stores/admin'
 import { deadlineRuLabelToIso } from '@/utils/adminDateInput'
@@ -23,6 +22,13 @@ const router = useRouter()
 const adminStore = useAdminStore()
 const { notify } = useNotification()
 const profileProductsBySection = ref<Record<string, AdminStudentProfileProductRow[]>>({})
+const profileUser = ref<{
+  id: string
+  email: string
+  first_name: string
+  last_name: string
+} | null>(null)
+const profileLoaded = ref(false)
 
 const sectionId = computed(() => route.params.sectionId as string)
 const studentId = computed(() => route.params.studentId as string)
@@ -40,27 +46,44 @@ const student = computed(() => {
       name: agg.name,
       email: agg.email,
       productsCount: agg.productIds.length,
-      avatarUrl: null,
+      avatarUrl: null as string | null,
     }
   }
-  return resolveAdminStudentRow(validatedScope.value, studentId.value)
+  if (profileUser.value && profileUser.value.id === studentId.value) {
+    const u = profileUser.value
+    const name = [u.first_name, u.last_name].filter(Boolean).join(' ').trim() || u.email
+    return {
+      id: u.id,
+      name,
+      email: u.email,
+      productsCount: Object.values(profileProductsBySection.value).reduce(
+        (sum, rows) => sum + rows.length,
+        0,
+      ),
+      avatarUrl: null as string | null,
+    }
+  }
+  return null
 })
 
 watch(
   () => [sectionId.value, studentId.value] as const,
-  ([sid, stid]) => {
+  ([sid]) => {
     if (!isAdminStudentsSectionParam(sid)) {
       void router.replace({ name: 'admin-materials' })
-      return
-    }
-    const row =
-      adminStore.findAggregatedStudent(sid, stid) ??
-      resolveAdminStudentRow(sid, stid)
-    if (!row) {
-      void router.replace({ name: 'admin-materials-students', params: { sectionId: sid } })
     }
   },
   { immediate: true },
+)
+
+watch(
+  () => [validatedScope.value, student.value, profileLoaded.value] as const,
+  ([scope, st, loaded]) => {
+    if (!scope || !loaded) return
+    if (!st) {
+      void router.replace({ name: 'admin-materials-students', params: { sectionId: scope } })
+    }
+  },
 )
 
 function productAccessCompositeKey(sectionKey: AdminMaterialSectionId, productId: string) {
@@ -68,17 +91,48 @@ function productAccessCompositeKey(sectionKey: AdminMaterialSectionId, productId
 }
 
 const productDeadlineLabels = ref<Record<string, string>>({})
+const productAccessStatuses = ref<Record<string, StudentAccessStatusValue>>({})
+
+function syncAccessStatusesFromProducts(
+  bySection: Record<string, AdminStudentProfileProductRow[]>,
+) {
+  const next: Record<string, StudentAccessStatusValue> = {}
+  for (const s of ADMIN_MATERIAL_SECTION_LIST) {
+    for (const p of bySection[s.id] ?? []) {
+      next[productAccessCompositeKey(s.id, p.id)] = p.status
+    }
+  }
+  productAccessStatuses.value = next
+}
 
 async function loadProfileProducts() {
   if (!studentId.value) return
-  const map: Record<string, AdminStudentProfileProductRow[]> = {}
-  for (const s of ADMIN_MATERIAL_SECTION_LIST) {
-    map[s.id] = await adminStore.getStudentProfileProducts(studentId.value, s.id)
+  const isInitial = !profileLoaded.value
+  if (isInitial) profileLoaded.value = false
+  const result = await adminStore.fetchStudentProfileProducts(studentId.value)
+  if (!result.success) {
+    notify({ type: 'error', message: result.error || 'Не удалось загрузить продукты ученика' })
+    if (isInitial) {
+      profileProductsBySection.value = {}
+      profileUser.value = null
+      productAccessStatuses.value = {}
+    }
+    profileLoaded.value = true
+    return
   }
-  profileProductsBySection.value = map
+  profileUser.value = result.data.user
+  profileProductsBySection.value = result.data.bySection
+  syncAccessStatusesFromProducts(result.data.bySection)
+  productDeadlineLabels.value = {}
+  profileLoaded.value = true
 }
 
 watch(studentId, () => {
+  profileLoaded.value = false
+  profileUser.value = null
+  profileProductsBySection.value = {}
+  productAccessStatuses.value = {}
+  productDeadlineLabels.value = {}
   void loadProfileProducts()
 }, { immediate: true })
 
@@ -99,7 +153,6 @@ const profileSections = computed(() =>
 const accessModalOpen = ref(false)
 const accessModalProductId = ref<string | null>(null)
 const accessModalSectionKey = ref<AdminMaterialSectionId | null>(null)
-const productAccessStatuses = ref<Record<string, StudentAccessStatusValue>>({})
 
 const modalInitialAccessStatus = computed<StudentAccessStatusValue>(() => {
   const sk = accessModalSectionKey.value
@@ -128,50 +181,18 @@ const onAccessModalSave = async (payload: {
   const pid = accessModalProductId.value
   if (!sk || !pid) return
   const key = productAccessCompositeKey(sk, pid)
-  void payload.notifyByEmail
 
-  if (payload.status === 'deleted') {
-    const result = await adminStore.revokeAccess(studentId.value, pid)
-    if (!result.success) {
-      notify({ type: 'error', message: result.error || 'Не удалось отозвать доступ' })
-      return
-    }
-    productAccessStatuses.value = { ...productAccessStatuses.value, [key]: 'deleted' }
-    notify({ type: 'success', message: 'Доступ отозван' })
-    await loadProfileProducts()
-    onAccessModalClose()
+  const result = await adminStore.updateStudentAccess(studentId.value, pid, {
+    status: payload.status,
+    notify_email: payload.notifyByEmail,
+  })
+  if (!result.success) {
+    notify({ type: 'error', message: result.error || 'Не удалось обновить статус доступа' })
     return
   }
-
-  if (payload.status === 'active') {
-    const result = await adminStore.grantAccess(studentId.value, {
-      product_id: pid,
-      access_type: 'immediate',
-    })
-    if (!result.success) {
-      notify({ type: 'error', message: result.error || 'Не удалось выдать доступ' })
-      return
-    }
-    productAccessStatuses.value = { ...productAccessStatuses.value, [key]: 'active' }
-    notify({ type: 'success', message: 'Доступ выдан' })
-    await loadProfileProducts()
-    onAccessModalClose()
-    return
-  }
-
-  if (payload.status === 'paused') {
-    const result = await adminStore.grantManualAccess(studentId.value, pid)
-    if (!result.success) {
-      notify({ type: 'error', message: result.error || 'Не удалось изменить доступ' })
-      return
-    }
-    productAccessStatuses.value = { ...productAccessStatuses.value, [key]: 'paused' }
-    notify({ type: 'success', message: 'Доступ обновлён' })
-    onAccessModalClose()
-    return
-  }
-
   productAccessStatuses.value = { ...productAccessStatuses.value, [key]: payload.status }
+  notify({ type: 'success', message: 'Статус доступа обновлён' })
+  await loadProfileProducts()
   onAccessModalClose()
 }
 
@@ -207,7 +228,9 @@ const onDeadlineModalSave = async (payload: { newDeadlineDisplay: string }) => {
     notify({ type: 'warning', message: 'Укажите дату в формате ДД.ММ.ГГГГ' })
     return
   }
-  const result = await adminStore.updateDeadline(studentId.value, pid, `${iso}T00:00:00Z`)
+  const result = await adminStore.updateStudentAccess(studentId.value, pid, {
+    deadline: `${iso}T00:00:00Z`,
+  })
   if (!result.success) {
     notify({ type: 'error', message: result.error || 'Не удалось обновить дедлайн' })
     return

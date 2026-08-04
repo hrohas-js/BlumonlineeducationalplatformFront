@@ -2,8 +2,9 @@
 import { ref, watch } from 'vue'
 import BaseButton from '@/components/atoms/BaseButton.vue'
 import ModalCloseButton from '@/components/atoms/ModalCloseButton.vue'
+import type { AdminStudentAccessStatus } from '@/services/api/types'
 
-export type StudentAccessStatusValue = 'active' | 'paused' | 'blocked' | 'deleted'
+export type StudentAccessStatusValue = AdminStudentAccessStatus
 
 interface Props {
   isOpen: boolean
