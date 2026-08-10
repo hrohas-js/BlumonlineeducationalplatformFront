@@ -56,7 +56,7 @@ withDefaults(
   &__grid {
     margin-top: var(--sp-40);
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 2fr 1fr;
     column-gap: var(--sp-20);
     row-gap: var(--sp-20);
     align-items: center;
@@ -105,7 +105,7 @@ withDefaults(
   }
 
   &__link {
-    width: var(--size-180);
+    width: 100%;
     height: var(--size-38);
     box-sizing: border-box;
     justify-self: end;
@@ -121,7 +121,6 @@ withDefaults(
     text-decoration: none;
 
     @media (max-width: 1023px) {
-      width: var(--size-132);
       height: var(--size-30);
       padding: var(--size-7) var(--size-40);
       font-size: clamp(
@@ -132,10 +131,6 @@ withDefaults(
         ),
         var(--size-15)
       );
-    }
-
-    @media (max-width: 768px) {
-      width: 100%;
     }
 
     &_primary {

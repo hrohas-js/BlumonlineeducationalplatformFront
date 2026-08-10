@@ -176,19 +176,7 @@ onMounted(() => {
   :deep(.admin-payments-page__btn.base-button_primary) {
     height: auto;
     padding: var(--sp-8) var(--sp-16);
-    background-color: var(--knopka);
-    border-color: var(--knopka);
     font-family: var(--font-family);
-
-    &:hover:not(.base-button_disabled) {
-      background-color: color-mix(in srgb, var(--knopka) 92%, black);
-      border-color: color-mix(in srgb, var(--knopka) 92%, black);
-    }
-
-    &:active:not(.base-button_disabled) {
-      background-color: color-mix(in srgb, var(--knopka) 86%, black);
-      border-color: color-mix(in srgb, var(--knopka) 86%, black);
-    }
   }
 
   &__empty {

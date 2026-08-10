@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import BaseButton from '@/components/atoms/BaseButton.vue'
 import AdminDateField from '@/components/molecules/AdminDateField.vue'
 import {
   deadlineRuLabelToIso,
   isoDateToRuLabel,
-  isRuDeadlineFormat,
   parseIsoDateToTime,
 } from '@/utils/adminDateInput'
 
@@ -27,13 +26,6 @@ const emit = defineEmits<Emits>()
 
 const newDeadlineIso = ref('')
 const showInputError = ref(false)
-
-const minIsoForNewDeadline = computed(() => {
-  const cur = props.currentDeadlineDisplay.trim()
-  if (!isRuDeadlineFormat(cur)) return undefined
-  const iso = deadlineRuLabelToIso(cur)
-  return iso || undefined
-})
 
 watch(
   () => props.isOpen,
@@ -74,15 +66,6 @@ const onApply = () => {
   if (!ru) {
     showInputError.value = true
     return
-  }
-  const cur = props.currentDeadlineDisplay.trim()
-  if (isRuDeadlineFormat(cur)) {
-    const curIso = deadlineRuLabelToIso(cur)
-    const tCur = curIso ? parseIsoDateToTime(curIso) : Number.NaN
-    if (!Number.isNaN(tCur) && tNew < tCur) {
-      showInputError.value = true
-      return
-    }
   }
   emit('save', { newDeadlineDisplay: ru })
   closeModal()
@@ -149,7 +132,6 @@ const onApply = () => {
             <AdminDateField
               v-model="newDeadlineIso"
               fluid
-              :min="minIsoForNewDeadline"
               :invalid="showInputError"
               input-id="admin-student-deadline-modal-input"
             />
@@ -308,16 +290,6 @@ const onApply = () => {
   justify-content: center;
   gap: 40px;
   margin-top: var(--sp-4);
-}
-
-:deep(.admin-student-deadline-modal__btn.base-button_primary) {
-  background-color: var(--knopka);
-  border-color: var(--knopka);
-
-  &:hover:not(.base-button_disabled) {
-    background-color: color-mix(in srgb, var(--knopka) 92%, black);
-    border-color: color-mix(in srgb, var(--knopka) 92%, black);
-  }
 }
 
 @media (max-width: 1023px) {

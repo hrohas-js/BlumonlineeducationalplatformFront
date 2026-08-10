@@ -133,19 +133,19 @@ const handleClick = (event: MouseEvent) => {
   }
 
   &_primary {
-    background-color: var(--main);
-    border-color: var(--main);
+    background-color: var(--knopka);
+    border-color: var(--knopka);
     color: var(--white);
 
     &:hover:not(.base-button_disabled) {
-      background-color: var(--main-hover);
-      border-color: var(--main-hover);
+      background-color: var(--knopka);
+      border-color: var(--knopka);
       transform: var(--motion-shift-up-sm);
     }
 
     &:active:not(.base-button_disabled) {
-      background-color: var(--main-active);
-      border-color: var(--main-active);
+      background-color: var(--knopka);
+      border-color: var(--knopka);
       transform: var(--motion-shift-none);
     }
   }
@@ -253,12 +253,6 @@ const handleClick = (event: MouseEvent) => {
 
     &:active:not(.base-button_disabled) {
       color: var(--main-active);
-    }
-
-    &:focus {
-      box-shadow: none;
-      outline: 2px solid var(--main);
-      outline-offset: 2px;
     }
   }
 

@@ -44,6 +44,8 @@ import type {
   AdminBroadcastsListQuery,
   AdminBroadcastsListResponse,
   AdminBroadcastCreateRequest,
+  AdminGlossaryUpdateRequest,
+  GlossaryResponse,
   MessageResponse,
   ApiServiceResponse,
   ApiResult,
@@ -490,6 +492,12 @@ export const adminService = {
   async stopBroadcast(id: string): ApiServiceResponse<AdminBroadcastItem> {
     const api = useApi()
     return api.post<AdminBroadcastItem>(ADMIN_ENDPOINTS.broadcastStop(id))
+  },
+
+  /** PUT /api/v1/admin/glossary */
+  async updateGlossary(body: AdminGlossaryUpdateRequest): ApiServiceResponse<GlossaryResponse> {
+    const api = useApi()
+    return api.put<GlossaryResponse>(ADMIN_ENDPOINTS.glossary, body)
   },
 }
 

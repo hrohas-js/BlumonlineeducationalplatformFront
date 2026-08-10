@@ -171,8 +171,6 @@ const emit = defineEmits<Emits>()
 
 :deep(.admin-product-edit-general-section__actions .base-button_primary) {
   border-radius: var(--radius-10);
-  border: 1px solid var(--text-accent);
-  background-color: var(--text-accent);
   color: var(--white);
   padding: 10px;
   height: auto;
@@ -181,22 +179,6 @@ const emit = defineEmits<Emits>()
   font-weight: var(--font-semi-bold);
   font-size: var(--size-20);
   line-height: normal;
-}
-
-:deep(
-  .admin-product-edit-general-section__actions
-    .base-button_primary:hover:not(.base-button_disabled)
-) {
-  background-color: color-mix(in srgb, var(--text-accent) 88%, #000);
-  border-color: color-mix(in srgb, var(--text-accent) 88%, #000);
-}
-
-:deep(
-  .admin-product-edit-general-section__actions
-    .base-button_primary:active:not(.base-button_disabled)
-) {
-  background-color: color-mix(in srgb, var(--text-accent) 78%, #000);
-  border-color: color-mix(in srgb, var(--text-accent) 78%, #000);
 }
 
 :deep(.admin-product-edit-general-section__actions .base-button_outline) {

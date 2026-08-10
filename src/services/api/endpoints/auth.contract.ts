@@ -29,3 +29,7 @@ export const PAYMENT_ENDPOINTS = {
   fail: '/api/v1/payments/fail',
 } as const
 
+export const GLOSSARY_ENDPOINTS = {
+  glossary: '/api/v1/glossary',
+} as const
+

@@ -46,4 +46,5 @@ export const ADMIN_ENDPOINTS = {
   broadcastById: (id: string) => `/api/v1/admin/broadcasts/${id}`,
   broadcastStart: (id: string) => `/api/v1/admin/broadcasts/${id}/start`,
   broadcastStop: (id: string) => `/api/v1/admin/broadcasts/${id}/stop`,
+  glossary: '/api/v1/admin/glossary',
 } as const

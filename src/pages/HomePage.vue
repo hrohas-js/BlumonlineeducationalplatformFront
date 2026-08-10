@@ -606,8 +606,6 @@ watch(
 
   :deep(.home-profile__learning-cta.base-button_primary) {
     height: auto;
-    background-color: var(--knopka);
-    border-color: var(--knopka);
     padding: var(--sp-12) var(--sp-20);
     font-family: var(--font-family);
     font-weight: var(--font-semi-bold);
@@ -620,16 +618,6 @@ watch(
       var(--fs-18)
     );
     color: var(--fon-bloka);
-
-    &:hover:not(.base-button_disabled) {
-      background-color: color-mix(in srgb, var(--knopka) 92%, black);
-      border-color: color-mix(in srgb, var(--knopka) 92%, black);
-    }
-
-    &:active:not(.base-button_disabled) {
-      background-color: color-mix(in srgb, var(--knopka) 86%, black);
-      border-color: color-mix(in srgb, var(--knopka) 86%, black);
-    }
   }
 }
 

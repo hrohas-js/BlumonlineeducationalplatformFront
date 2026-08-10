@@ -1,5 +1,31 @@
 <script setup lang="ts">
-import { glossaryAbbreviations } from '@/data/glossaryAbbreviations'
+import { computed, onMounted, ref } from 'vue'
+import { glossaryService } from '@/services/api/endpoints/glossary'
+
+const content = ref('')
+const loading = ref(true)
+const loadError = ref<string | null>(null)
+
+const isEmpty = computed(() => !loading.value && !loadError.value && content.value.trim().length === 0)
+
+const loadGlossary = async () => {
+  loading.value = true
+  loadError.value = null
+  const result = await glossaryService.getGlossary()
+  loading.value = false
+
+  if (!result.success || !result.data) {
+    loadError.value = result.error || 'Не удалось загрузить глоссарий'
+    content.value = ''
+    return
+  }
+
+  content.value = result.data.content ?? ''
+}
+
+onMounted(() => {
+  void loadGlossary()
+})
 </script>
 
 <template>
@@ -7,17 +33,13 @@ import { glossaryAbbreviations } from '@/data/glossaryAbbreviations'
     <h2 class="home-glossary__title">
       Глоссарий (список сокращений, который используется в обучении):
     </h2>
-    <ul class="home-glossary__list">
-      <li
-        v-for="(row, index) in glossaryAbbreviations"
-        :key="`${row.abbreviation}-${index}`"
-        class="home-glossary__item"
-      >
-        <span class="home-glossary__abbr">{{ row.abbreviation }}</span>
-        <span aria-hidden="true"> — </span>
-        <span class="home-glossary__def">{{ row.definition }}</span>
-      </li>
-    </ul>
+
+    <p v-if="loading" class="home-glossary__status">Загружаем…</p>
+    <p v-else-if="loadError" class="home-glossary__status home-glossary__status_error">
+      {{ loadError }}
+    </p>
+    <p v-else-if="isEmpty" class="home-glossary__status">Глоссарий пока пуст</p>
+    <div v-else class="home-glossary__content">{{ content }}</div>
   </div>
 </template>
 
@@ -39,20 +61,30 @@ import { glossaryAbbreviations } from '@/data/glossaryAbbreviations'
     }
   }
 
-  &__list {
+  &__status {
     margin: 0;
-    padding: 0;
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-10);
+    font-family: var(--font-family);
+    font-weight: var(--font-medium);
+    font-size: var(--size-15);
+    color: var(--black-300);
+
+    &_error {
+      color: var(--error);
+    }
+
+    @media (max-width: 1023px) {
+      font-size: var(--size-13);
+    }
   }
 
-  &__item {
+  &__content {
+    margin: 0;
     font-family: var(--font-family);
     font-weight: var(--font-medium);
     font-size: var(--size-15);
     color: var(--osnovnoy-tekst);
+    white-space: pre-wrap;
+    word-break: break-word;
 
     @media (max-width: 1023px) {
       font-size: var(--size-13);

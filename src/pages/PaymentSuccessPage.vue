@@ -201,8 +201,6 @@ onMounted(load)
   }
 
   :deep(.payment-result__primary.base-button_primary) {
-    background-color: var(--knopka);
-    border-color: var(--knopka);
     color: var(--cvet-v-knopke);
     height: auto;
     padding: var(--sp-10) var(--sp-32);
@@ -210,8 +208,6 @@ onMounted(load)
     font-size: var(--size-20);
 
     &:hover:not(.base-button_disabled) {
-      background-color: color-mix(in srgb, var(--knopka) 92%, black);
-      border-color: color-mix(in srgb, var(--knopka) 92%, black);
       transform: none;
     }
   }

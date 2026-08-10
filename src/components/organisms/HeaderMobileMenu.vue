@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useLogout } from '@/composables/useLogout'
 import HeaderNavSubmenuPanel from '@/components/molecules/HeaderNavSubmenuPanel.vue'
 import { USEFUL_ARTICLES_URL } from '@/constants/headerExternalLinks'
@@ -28,7 +28,7 @@ type MenuItem = {
   action?: 'logout' | 'support'
 }
 
-const items: MenuItem[] = [
+const studentItems: MenuItem[] = [
   { label: 'Профиль', icon: 'profile', to: '/profile' },
   { label: 'Моё обучение', icon: 'learning', to: '/learning' },
   { label: 'Продление приобретённых курсов', icon: 'renewal', to: '/renewal' },
@@ -40,15 +40,27 @@ const items: MenuItem[] = [
   { label: 'Выйти', icon: 'logout', action: 'logout' },
 ]
 
+const adminItems: MenuItem[] = [
+  { label: 'Профиль', icon: 'profile', to: '/profile' },
+  { label: 'Полезные статьи', icon: 'articles', href: USEFUL_ARTICLES_URL },
+  { label: 'О докторе', icon: 'about', to: '/about-doctor' },
+  { label: 'Тех. поддержка', icon: 'support', action: 'support' },
+  { label: 'Выйти', icon: 'logout', action: 'logout' },
+]
+
 const emit = defineEmits<{
   (event: 'close'): void
   (event: 'open-support'): void
 }>()
 
+const route = useRoute()
 const router = useRouter()
 const { openLogoutModal } = useLogout()
 const isProgramsOpen = ref(false)
 const isArchiveOpen = ref(false)
+
+const isAdminMode = computed(() => route.path.startsWith('/admin'))
+const items = computed(() => (isAdminMode.value ? adminItems : studentItems))
 
 const togglePrograms = () => {
   isProgramsOpen.value = !isProgramsOpen.value
@@ -146,7 +158,7 @@ const onItemClick = async (item: MenuItem) => {
         </button>
         </li>
 
-        <li v-if="index === 2" class="header-mobile-menu__programs">
+        <li v-if="!isAdminMode && index === 2" class="header-mobile-menu__programs">
           <button
             type="button"
             class="header-mobile-menu__item header-mobile-menu__programs-trigger"
@@ -170,7 +182,7 @@ const onItemClick = async (item: MenuItem) => {
           />
         </li>
 
-        <li v-if="index === 2" class="header-mobile-menu__archive">
+        <li v-if="!isAdminMode && index === 2" class="header-mobile-menu__archive">
           <button
             type="button"
             class="header-mobile-menu__item header-mobile-menu__archive-trigger"

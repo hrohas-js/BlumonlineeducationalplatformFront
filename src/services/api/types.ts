@@ -30,6 +30,17 @@ export interface MessageResponse {
   message: string
 }
 
+// ===== GLOSSARY =====
+
+export interface GlossaryResponse {
+  content: string
+  updated_at: string
+}
+
+export interface AdminGlossaryUpdateRequest {
+  content: string
+}
+
 // ===== AUTH =====
 
 export interface LoginCredentials {

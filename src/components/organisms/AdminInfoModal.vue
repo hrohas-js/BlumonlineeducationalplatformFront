@@ -105,16 +105,6 @@ const onConfirm = () => {
   color: #010307;
 }
 
-:deep(.admin-info-modal__confirm.base-button_primary) {
-  background-color: var(--knopka);
-  border-color: var(--knopka);
-
-  &:hover:not(.base-button_disabled) {
-    background-color: color-mix(in srgb, var(--knopka) 92%, black);
-    border-color: color-mix(in srgb, var(--knopka) 92%, black);
-  }
-}
-
 @media (max-width: 1023px) {
   .admin-info-modal__title,
   .admin-info-modal__message {

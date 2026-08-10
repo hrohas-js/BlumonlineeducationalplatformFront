@@ -161,16 +161,6 @@ onUnmounted(() => {
   color: var(--text-accent);
 }
 
-:deep(.course-deadline-alert-modal__renew.base-button_primary) {
-  background-color: var(--knopka);
-  border-color: var(--knopka);
-
-  &:hover:not(.base-button_disabled) {
-    background-color: color-mix(in srgb, var(--knopka) 92%, black);
-    border-color: color-mix(in srgb, var(--knopka) 92%, black);
-  }
-}
-
 @media (max-width: 479px) {
   .course-deadline-alert-modal__content {
     padding: var(--sp-24);

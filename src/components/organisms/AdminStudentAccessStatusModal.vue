@@ -505,16 +505,6 @@ const onSave = () => {
   color: #178ef0;
 }
 
-:deep(.admin-student-access-status-modal__save.base-button_primary) {
-  background-color: var(--knopka);
-  border-color: var(--knopka);
-
-  &:hover:not(.base-button_disabled) {
-    background-color: color-mix(in srgb, var(--knopka) 92%, black);
-    border-color: color-mix(in srgb, var(--knopka) 92%, black);
-  }
-}
-
 @media (max-width: 1023px) {
   .admin-student-access-status-modal__title {
     font-size: var(--size-15);

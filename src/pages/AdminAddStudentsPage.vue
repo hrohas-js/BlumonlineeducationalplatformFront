@@ -5,11 +5,15 @@ import AppLayout from '@/components/layouts/AppLayout.vue'
 import HomeProfileInfoTableItem from '@/components/atoms/HomeProfileInfoTableItem.vue'
 import AdminProductEditBreadcrumbs from '@/components/molecules/AdminProductEditBreadcrumbs.vue'
 import AdminAddStudentsForm from '@/components/organisms/AdminAddStudentsForm.vue'
+import AdminAddStudentsProductsStep from '@/components/organisms/AdminAddStudentsProductsStep.vue'
 import AdminInfoModal from '@/components/organisms/AdminInfoModal.vue'
 import type { AddStudentRow } from '@/components/molecules/AdminStudentAutocompleteField.vue'
 import {
+  ADMIN_MATERIAL_SECTION_LIST,
+  ADMIN_MATERIAL_SECTION_TITLES,
   ADMIN_STUDENTS_SCOPE_ALL,
   getAdminStudentsScopeTitle,
+  isAdminMaterialSectionId,
   isAdminStudentsSectionParam,
   type AdminStudentsSectionScope,
 } from '@/constants/adminMaterials'
@@ -21,6 +25,9 @@ import type { AdminBulkStudentItem } from '@/services/api/types'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+type AddStudentsStep = 'form' | 'products'
+type PendingMode = 'manual' | 'excel' | null
+
 const route = useRoute()
 const router = useRouter()
 const adminStore = useAdminStore()
@@ -30,7 +37,12 @@ const { notify } = useNotification()
 const loading = ref(true)
 const submitting = ref(false)
 const successModalOpen = ref(false)
-const productIds = ref<string[]>([])
+
+const step = ref<AddStudentsStep>('form')
+const pendingMode = ref<PendingMode>(null)
+const pendingRows = ref<AddStudentRow[] | null>(null)
+const pendingExcelFile = ref<File | null>(null)
+const selectedById = ref<Record<string, boolean>>({})
 
 const sectionId = computed(() => route.params.sectionId as string)
 
@@ -49,6 +61,46 @@ const breadcrumbItems = computed(() => {
 
 const studentCandidates = computed(() => adminStore.aggregatedStudents[ADMIN_STUDENTS_SCOPE_ALL] ?? [])
 
+const productSections = computed(() => {
+  const scope = validatedScope.value
+  if (!scope) return []
+  const sectionIds =
+    scope === ADMIN_STUDENTS_SCOPE_ALL
+      ? ADMIN_MATERIAL_SECTION_LIST.map((s) => s.id)
+      : isAdminMaterialSectionId(scope)
+        ? [scope]
+        : []
+  return sectionIds
+    .map((id) => ({
+      id,
+      title: ADMIN_MATERIAL_SECTION_TITLES[id],
+      products: (adminStore.productsBySection[id] ?? []).map((p) => ({
+        id: p.id,
+        title: p.title,
+      })),
+    }))
+    .filter((s) => s.products.length > 0)
+})
+
+const pageTitle = computed(() =>
+  step.value === 'products' ? 'Выбор материалов' : 'Добавление ученика',
+)
+
+function getSelectedProductIds(): string[] | undefined {
+  const selectedIds = Object.entries(selectedById.value)
+    .filter(([, v]) => v)
+    .map(([id]) => id)
+  return selectedIds.length ? selectedIds : undefined
+}
+
+function resetPendingState() {
+  step.value = 'form'
+  pendingMode.value = null
+  pendingRows.value = null
+  pendingExcelFile.value = null
+  selectedById.value = {}
+}
+
 async function loadPageData() {
   loading.value = true
   const scope = validatedScope.value
@@ -61,11 +113,10 @@ async function loadPageData() {
     return
   }
 
-  const [, products] = await Promise.all([
+  await Promise.all([
     adminStore.aggregateAllSections(),
     adminStore.fetchProductsForStudentsScope(scope),
   ])
-  productIds.value = products.map((p) => p.id)
   loading.value = false
 }
 
@@ -112,37 +163,72 @@ function buildBulkPayload(rows: AddStudentRow[]): AdminBulkStudentItem[] | null 
   return students
 }
 
-const onSubmit = async (rows: AddStudentRow[]) => {
+const onSubmit = (rows: AddStudentRow[]) => {
   const students = buildBulkPayload(rows)
   if (!students) return
 
-  submitting.value = true
-  const result = await adminService.bulkAddStudents({
-    students,
-    product_ids: productIds.value.length ? productIds.value : undefined,
-  })
-  submitting.value = false
+  pendingRows.value = rows
+  pendingExcelFile.value = null
+  pendingMode.value = 'manual'
+  step.value = 'products'
+}
 
-  if (!result.success || !result.data) {
-    notify({ type: 'error', message: result.error || 'Не удалось добавить учеников' })
+const onExcelChosen = (file: File) => {
+  pendingExcelFile.value = file
+  pendingRows.value = null
+  pendingMode.value = 'excel'
+  step.value = 'products'
+}
+
+const onBackToForm = () => {
+  step.value = 'form'
+}
+
+const onConfirmProducts = async () => {
+  const mode = pendingMode.value
+  if (!mode) return
+
+  const product_ids = getSelectedProductIds()
+  submitting.value = true
+
+  if (mode === 'manual') {
+    const students = pendingRows.value ? buildBulkPayload(pendingRows.value) : null
+    if (!students) {
+      submitting.value = false
+      step.value = 'form'
+      return
+    }
+
+    const result = await adminService.bulkAddStudents({
+      students,
+      product_ids,
+    })
+    submitting.value = false
+
+    if (!result.success || !result.data) {
+      notify({ type: 'error', message: result.error || 'Не удалось добавить учеников' })
+      return
+    }
+
+    const { created_count, existing_count } = result.data
+    notify({
+      type: 'success',
+      message: `Создано ${created_count}, уже было ${existing_count}`,
+    })
+    void adminStore.aggregateAllSections()
+    resetPendingState()
+    successModalOpen.value = true
     return
   }
 
-  const { created_count, existing_count } = result.data
-  notify({
-    type: 'success',
-    message: `Создано ${created_count}, уже было ${existing_count}`,
-  })
-  void adminStore.aggregateAllSections()
-  successModalOpen.value = true
-}
+  const file = pendingExcelFile.value
+  if (!file) {
+    submitting.value = false
+    step.value = 'form'
+    return
+  }
 
-const onExcelUpload = async (file: File) => {
-  submitting.value = true
-  const result = await adminService.bulkAddStudentsExcel(
-    file,
-    productIds.value.length ? productIds.value : undefined,
-  )
+  const result = await adminService.bulkAddStudentsExcel(file, product_ids)
   submitting.value = false
 
   if (!result.success || !result.data) {
@@ -156,6 +242,7 @@ const onExcelUpload = async (file: File) => {
     message: `Создано ${created_count}, уже было ${existing_count}`,
   })
   void adminStore.aggregateAllSections()
+  resetPendingState()
   successModalOpen.value = true
 }
 
@@ -212,13 +299,23 @@ const onSuccessModalConfirm = () => {
 
           <hr class="admin-add-students-page__rule" />
 
-          <h1 class="admin-add-students-page__title">Добавление ученика</h1>
+          <h1 class="admin-add-students-page__title">{{ pageTitle }}</h1>
 
           <AdminAddStudentsForm
+            v-show="step === 'form'"
             :candidates="studentCandidates"
             :submitting="submitting"
             @submit="onSubmit"
-            @excel="onExcelUpload"
+            @excel="onExcelChosen"
+          />
+
+          <AdminAddStudentsProductsStep
+            v-if="step === 'products'"
+            :sections="productSections"
+            v-model:selected-by-id="selectedById"
+            :submitting="submitting"
+            @back="onBackToForm"
+            @confirm="onConfirmProducts"
           />
         </div>
       </div>

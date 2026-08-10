@@ -434,8 +434,6 @@ const handleSubmit = async () => {
   // ── Кнопка ────────────────────────────────────────────────────────────────
   // Figma: radius 5px (--radius-input), Montserrat SemiBold 25, fill #178EF0.
   :deep(.base-button_primary) {
-    background-color: var(--knopka);
-    border-color: var(--knopka);
     font-family: var(--font-family);
     font-weight: var(--font-semi-bold);
     font-size: var(--size-25);
@@ -446,14 +444,10 @@ const handleSubmit = async () => {
     margin-top: var(--sp-60);
 
     &:hover:not(.base-button_disabled) {
-      background-color: color-mix(in srgb, var(--knopka) 92%, black);
-      border-color: color-mix(in srgb, var(--knopka) 92%, black);
       transform: none;
     }
 
     &:active:not(.base-button_disabled) {
-      background-color: color-mix(in srgb, var(--knopka) 86%, black);
-      border-color: color-mix(in srgb, var(--knopka) 86%, black);
       transform: none;
     }
 

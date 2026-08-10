@@ -207,8 +207,6 @@ const handleResend = async () => {
   }
 
   :deep(.reset-pwd__submit.base-button_primary) {
-    background-color: var(--knopka);
-    border-color: var(--knopka);
     color: var(--cvet-v-knopke);
     height: auto;
     padding: var(--sp-10) var(--sp-40);
@@ -216,8 +214,6 @@ const handleResend = async () => {
     font-size: var(--size-25);
 
     &:hover:not(.base-button_disabled) {
-      background-color: color-mix(in srgb, var(--knopka) 92%, black);
-      border-color: color-mix(in srgb, var(--knopka) 92%, black);
       transform: none;
     }
 
