@@ -27,10 +27,12 @@ library.add(faEye, faEyeSlash)
 // @fontsource bundlе woff2-файлы, Vite автоматически копирует их в dist/
 import '@fontsource/montserrat/300.css'        // Montserrat Light
 import '@fontsource/montserrat/400.css'        // Montserrat Regular
+import '@fontsource/montserrat/400-italic.css'        // Montserrat Regular Italic
 import '@fontsource/montserrat/500.css'        // Montserrat Medium
 import '@fontsource/montserrat/600.css'        // Montserrat SemiBold
 import '@fontsource/montserrat/600-italic.css' // Montserrat SemiBold Italic
 import '@fontsource/montserrat/700.css'        // Montserrat Bold
+import '@fontsource/montserrat/700-italic.css' // Montserrat Bold Italic
 import '@fontsource/montserrat/800.css'        // Montserrat ExtraBold
 
 // Глобальные стили (reset + typography + spacing utilities)

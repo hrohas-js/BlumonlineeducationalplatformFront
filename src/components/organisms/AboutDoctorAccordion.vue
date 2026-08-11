@@ -1,10 +1,17 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
+type AboutDoctorTextPart = {
+  text: string
+  strong?: boolean
+  accent?: boolean
+}
+
 type AboutDoctorTextNode =
   | {
       type: 'paragraph'
-      text: string
+      text?: string
+      parts?: AboutDoctorTextPart[]
       strong?: boolean
     }
   | {
@@ -116,7 +123,20 @@ watch(
                 class="about-doctor-accordion__paragraph"
                 :class="{ 'about-doctor-accordion__paragraph_strong': node.strong }"
               >
-                {{ node.text }}
+                <template v-if="node.parts?.length">
+                  <template v-for="(part, partIndex) in node.parts" :key="partIndex">
+                    <strong
+                      v-if="part.strong"
+                      :class="{ 'about-doctor-accordion__accent': part.accent }"
+                    >{{ part.text }}</strong>
+                    <span
+                      v-else-if="part.accent"
+                      class="about-doctor-accordion__accent"
+                    >{{ part.text }}</span>
+                    <template v-else>{{ part.text }}</template>
+                  </template>
+                </template>
+                <template v-else>{{ node.text }}</template>
               </p>
 
               <ul v-else class="about-doctor-accordion__list">
@@ -263,13 +283,22 @@ watch(
     margin: 0;
     font-family: var(--font-family);
     font-style: italic;
-    font-weight: var(--font-medium);
+    font-weight: var(--font-regular);
     font-size: var(--fs-15);
     color: var(--osnovnoy-tekst);
 
     &_strong {
-      font-weight: var(--font-semi-bold);
+      font-weight: var(--font-bold);
     }
+
+    strong {
+      font-weight: var(--font-bold);
+      font-style: inherit;
+    }
+  }
+
+  &__accent {
+    color: var(--knopka);
   }
 
   &__paragraph + &__paragraph,
@@ -287,7 +316,7 @@ watch(
     margin-left: var(--size-5);
     font-family: var(--font-family);
     font-style: italic;
-    font-weight: var(--font-medium);
+    font-weight: var(--font-regular);
     font-size: var(--fs-15);
     color: var(--osnovnoy-tekst);
   }
