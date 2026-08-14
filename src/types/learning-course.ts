@@ -19,6 +19,7 @@ export interface LearningTopicVideo {
   currentTimeLabel?: string
   durationLabel?: string
   hasTimecode?: boolean
+  chapters?: { time_seconds: number; title: string }[]
   files: LearningTopicFile[]
 }
 

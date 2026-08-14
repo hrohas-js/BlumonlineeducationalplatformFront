@@ -53,7 +53,8 @@ function lessonVideoToLearningVideo(
     progressPercent: isCompleted ? 100 : watchTime > 0 ? 10 : 0,
     currentTimeLabel: isCompleted ? formatWatchLabel(100) : '00:00',
     durationLabel: '—',
-    hasTimecode: (lesson.chapters?.length ?? 0) > 0,
+    chapters: video.chapters ?? [],
+    hasTimecode: (video.chapters?.length ?? 0) > 0,
     files: attachFiles ? lesson.files.map(mapFileResponseToLearningTopicFile) : [],
   }
 }
@@ -73,7 +74,8 @@ function lessonToVideos(
         progressPercent: isCompleted ? 100 : 0,
         currentTimeLabel: isCompleted ? formatWatchLabel(100) : '00:00',
         durationLabel: '—',
-        hasTimecode: (lesson.chapters?.length ?? 0) > 0,
+        chapters: [],
+        hasTimecode: false,
         files: lesson.files.map(mapFileResponseToLearningTopicFile),
       },
     ]

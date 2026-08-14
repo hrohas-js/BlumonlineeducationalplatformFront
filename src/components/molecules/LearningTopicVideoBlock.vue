@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import LessonVideoPlayer from '@/components/organisms/LessonVideoPlayer.vue'
 import LearningCollapsibleChip from '@/components/molecules/LearningCollapsibleChip.vue'
 import LearningTopicFilesList from '@/components/molecules/LearningTopicFilesList.vue'
 import { useAuthStore } from '@/stores/auth'
 import type { LearningTopicVideo } from '@/types/learning-course'
+import { formatTimeSeconds } from '@/utils/adminTopicChapters'
 
 const authStore = useAuthStore()
 
@@ -13,7 +14,7 @@ const watermarkText = computed(() => {
   return id ? `ID: ${id}` : undefined
 })
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     video: LearningTopicVideo
     loading?: boolean
@@ -24,6 +25,16 @@ withDefaults(
     lessonLayout: false,
   },
 )
+
+type PlayerExpose = { seekTo: (seconds: number) => void }
+
+const playerRef = ref<PlayerExpose | null>(null)
+
+const chapters = computed(() => props.video.chapters ?? [])
+
+function onChapterClick(timeSeconds: number) {
+  playerRef.value?.seekTo(timeSeconds)
+}
 </script>
 
 <template>
@@ -36,6 +47,7 @@ withDefaults(
     >
       <LessonVideoPlayer
         v-if="video.src && !loading && !error"
+        ref="playerRef"
         :src="video.src"
         :poster="video.poster"
         :watermark-text="watermarkText"
@@ -59,11 +71,24 @@ withDefaults(
     </LearningCollapsibleChip>
 
     <LearningCollapsibleChip
-      v-if="video.hasTimecode"
+      v-if="chapters.length > 0"
       label="Тайм-код"
       variant="outline"
     >
-      <p class="learning-topic-video-block__timecode-hint">Тайм-коды будут доступны при воспроизведении.</p>
+      <ul class="learning-topic-video-block__chapters">
+        <li v-for="(chapter, index) in chapters" :key="`${chapter.time_seconds}-${index}`">
+          <button
+            type="button"
+            class="learning-topic-video-block__chapter-btn"
+            @click="onChapterClick(chapter.time_seconds)"
+          >
+            <span class="learning-topic-video-block__chapter-time">
+              {{ formatTimeSeconds(chapter.time_seconds) }}
+            </span>
+            <span class="learning-topic-video-block__chapter-title">{{ chapter.title }}</span>
+          </button>
+        </li>
+      </ul>
     </LearningCollapsibleChip>
   </article>
 </template>
@@ -113,9 +138,47 @@ withDefaults(
     }
   }
 
-  &__timecode-hint {
+  &__chapters {
+    list-style: none;
     margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-8);
+  }
+
+  &__chapter-btn {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-12);
+    width: 100%;
+    padding: 0;
+    border: none;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    font-family: var(--font-family);
     font-size: var(--size-13);
+    color: var(--osnovnoy-tekst);
+
+    &:hover .learning-topic-video-block__chapter-title {
+      color: var(--text-accent);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--text-accent);
+      outline-offset: 2px;
+    }
+  }
+
+  &__chapter-time {
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-accent);
+  }
+
+  &__chapter-title {
+    min-width: 0;
   }
 }
 

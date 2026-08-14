@@ -41,6 +41,10 @@ const displayedFiles = computed(() => (isEditing.value ? draftFiles.value : file
 
 const isDeleting = computed(() => props.deletingFileId != null)
 
+const hasMaterials = computed(() => files.value.length > 0)
+
+const materialsActionLabel = computed(() => (hasMaterials.value ? 'Редактировать' : 'Добавить'))
+
 watch(files, () => {
   isEditing.value = false
   addFileError.value = ''
@@ -166,7 +170,7 @@ const cancelEditing = () => {
       </p>
       <div v-if="!isEditing" class="admin-topic-edit-materials-section__actions">
         <button type="button" class="admin-topic-edit-materials-section__edit-btn" @click="startEditing">
-          Редактирование
+          {{ materialsActionLabel }}
         </button>
       </div>
       <div v-else class="admin-topic-edit-materials-section__toolbar">

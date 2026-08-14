@@ -5,6 +5,7 @@ import {
   type AdminMaterialSectionId,
   isAdminMaterialSectionId,
 } from '@/constants/adminMaterials'
+import type { LessonChapter } from '@/services/api/types'
 
 /** Карточка продукта в списке секции (админка). */
 export interface AdminMaterialCardItem {
@@ -246,6 +247,7 @@ export interface AdminTopicEditVideoMock {
   id: string
   title: string
   timecodeEnabled: boolean
+  chapters?: LessonChapter[]
   videoSrc?: string
   fileName?: string
   orderIndex?: number
@@ -280,8 +282,8 @@ export function getMockTopicEditContent(topicTitle: string): AdminTopicEditConte
   return {
     materialFiles,
     videos: [
-      { id: 'v1', title: '', timecodeEnabled: false },
-      { id: 'v2', title: '', timecodeEnabled: false },
+      { id: 'v1', title: '', timecodeEnabled: false, chapters: [] },
+      { id: 'v2', title: '', timecodeEnabled: false, chapters: [] },
     ],
   }
 }

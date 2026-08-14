@@ -117,7 +117,7 @@ onBeforeUnmount(() => {
       @change="onFileInputChange"
     />
 
-    <div class="admin-topic-edit-video-row__title-field">
+    <div v-if="hasVideo" class="admin-topic-edit-video-row__title-field">
       <input
         v-model="title"
         class="admin-topic-edit-video-row__title-input"
@@ -134,7 +134,7 @@ onBeforeUnmount(() => {
     </p>
 
     <div class="admin-topic-edit-video-row__body">
-      <div class="admin-topic-edit-video-row__media">
+      <div v-if="hasVideo || isUploading" class="admin-topic-edit-video-row__media">
         <div
           v-if="hasVideo && videoSrc"
           class="admin-topic-edit-video-row__player"
@@ -364,10 +364,12 @@ onBeforeUnmount(() => {
   width: 100%;
   max-width: 233px;
   flex-shrink: 0;
+  display: flex;
+  justify-content: flex-start;
 
   .admin-topic-edit-video-row__side-btn {
-    justify-content: center;
-    text-align: center;
+    justify-content: flex-start;
+    text-align: left;
   }
 }
 

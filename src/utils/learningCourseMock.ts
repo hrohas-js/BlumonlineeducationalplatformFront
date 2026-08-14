@@ -32,6 +32,11 @@ const closedClubDetail: LearningCourseDetail = {
           currentTimeLabel: '20:23',
           durationLabel: '56:23',
           hasTimecode: true,
+          chapters: [
+            { time_seconds: 8, title: 'Введение' },
+            { time_seconds: 185, title: 'Основная часть' },
+            { time_seconds: 1200, title: 'Практика' },
+          ],
           files: [],
         },
         {
@@ -41,6 +46,10 @@ const closedClubDetail: LearningCourseDetail = {
           currentTimeLabel: '15:00',
           durationLabel: '01:52:23',
           hasTimecode: true,
+          chapters: [
+            { time_seconds: 0, title: 'Старт' },
+            { time_seconds: 600, title: 'Разбор кейсов' },
+          ],
           files: [],
         },
         {
@@ -50,6 +59,7 @@ const closedClubDetail: LearningCourseDetail = {
           currentTimeLabel: '01:25:45',
           durationLabel: '01:30:30',
           hasTimecode: true,
+          chapters: [{ time_seconds: 60, title: 'Ключевые тезисы' }],
           files: [],
         },
         {
@@ -59,6 +69,7 @@ const closedClubDetail: LearningCourseDetail = {
           currentTimeLabel: '00:00',
           durationLabel: '56:23',
           hasTimecode: true,
+          chapters: [{ time_seconds: 0, title: 'Начало' }],
           files: [],
         },
         {
@@ -68,6 +79,7 @@ const closedClubDetail: LearningCourseDetail = {
           currentTimeLabel: '10:00',
           durationLabel: '45:00',
           hasTimecode: true,
+          chapters: [{ time_seconds: 300, title: 'Выводы' }],
           files: [],
         },
       ],
@@ -146,6 +158,10 @@ const conferenceDetail: LearningCourseDetail = {
           currentTimeLabel: '50:01',
           durationLabel: '03:25:00',
           hasTimecode: true,
+          chapters: [
+            { time_seconds: 0, title: 'Открытие' },
+            { time_seconds: 1800, title: 'Доклады' },
+          ],
           files: [],
         },
       ],

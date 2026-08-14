@@ -32,11 +32,11 @@ const topicId = computed(() => route.params.topicId as string)
 const lessonTitle = ref('')
 const materialFiles = ref<AdminTopicEditMaterialFileMock[]>([])
 const videos = ref<AdminTopicEditVideoMock[]>([])
-const lessonChapters = ref<LessonChapter[]>([])
 const loading = ref(true)
 const saving = ref(false)
 const chaptersSaving = ref(false)
 const chaptersModalOpen = ref(false)
+const editingVideoId = ref<string | null>(null)
 const primaryLessonId = ref<string | null>(null)
 /** Прогресс загрузки видео по id строки (null = не загружается). */
 const videoUploadProgressById = ref<Record<string, number | null>>({})
@@ -50,7 +50,14 @@ const moduleData = computed(() =>
 )
 
 function emptyVideoSlot(): AdminTopicEditVideoMock {
-  return { id: crypto.randomUUID(), title: 'Видео 1', timecodeEnabled: false, videoSrc: '', persisted: false }
+  return {
+    id: crypto.randomUUID(),
+    title: 'Видео 1',
+    timecodeEnabled: false,
+    chapters: [],
+    videoSrc: '',
+    persisted: false,
+  }
 }
 
 function mapFilesFromLesson() {
@@ -59,7 +66,6 @@ function mapFilesFromLesson() {
     materialFiles.value = []
     videos.value = [emptyVideoSlot()]
     primaryLessonId.value = null
-    lessonChapters.value = []
     return
   }
   lessonTitle.value = mod.title
@@ -67,39 +73,32 @@ function mapFilesFromLesson() {
     materialFiles.value = []
     videos.value = [emptyVideoSlot()]
     primaryLessonId.value = null
-    lessonChapters.value = []
     return
   }
   const lesson = [...mod.lessons].sort((a, b) => a.order_index - b.order_index)[0]
   primaryLessonId.value = lesson.id
-  lessonChapters.value = lesson.chapters ?? []
   materialFiles.value = lesson.files.map((f) => ({
     id: f.id,
     fileName: f.file_name,
   }))
   const lessonVideos = [...(lesson.videos ?? [])].sort((a, b) => a.order_index - b.order_index)
-  const hasChapters = lessonChapters.value.length > 0
   if (lessonVideos.length === 0) {
-    videos.value = [
-      {
-        id: crypto.randomUUID(),
-        title: 'Видео 1',
-        timecodeEnabled: hasChapters,
-        videoSrc: '',
-        persisted: false,
-      },
-    ]
+    videos.value = [emptyVideoSlot()]
     return
   }
-  videos.value = lessonVideos.map((v) => ({
-    id: v.id,
-    title: v.title?.trim() || `Видео ${v.order_index}`,
-    orderIndex: v.order_index,
-    timecodeEnabled: hasChapters,
-    videoSrc: v.video_url ?? '',
-    fileName: v.video_url ? 'video' : undefined,
-    persisted: true,
-  }))
+  videos.value = lessonVideos.map((v) => {
+    const chapters = v.chapters ?? []
+    return {
+      id: v.id,
+      title: v.title?.trim() || `Видео ${v.order_index}`,
+      orderIndex: v.order_index,
+      chapters,
+      timecodeEnabled: chapters.length > 0,
+      videoSrc: v.video_url ?? '',
+      fileName: v.video_url ? 'video' : undefined,
+      persisted: true,
+    }
+  })
 }
 
 async function load() {
@@ -294,26 +293,45 @@ const onMaterialDelete = async (fileId: string) => {
   await load()
 }
 
-const onOpenTimecodeModal = () => {
+const editingVideoChapters = computed((): LessonChapter[] => {
+  if (!editingVideoId.value) return []
+  const row = videos.value.find((v) => v.id === editingVideoId.value)
+  return row?.chapters ?? []
+})
+
+const onOpenTimecodeModal = (videoId: string) => {
+  const row = videos.value.find((v) => v.id === videoId)
+  if (!row?.persisted) {
+    notify({ type: 'error', message: 'Сначала загрузите видео' })
+    return
+  }
+  editingVideoId.value = videoId
   chaptersModalOpen.value = true
 }
 
 const onCloseChaptersModal = () => {
   chaptersModalOpen.value = false
+  editingVideoId.value = null
 }
 
 const onSaveChapters = async (chapters: LessonChapter[]) => {
-  const lessonId = await ensureLesson()
-  if (!lessonId) return
+  const lessonId = primaryLessonId.value
+  const videoId = editingVideoId.value
+  if (!lessonId || !videoId) return
   chaptersSaving.value = true
-  const result = await adminService.updateLesson(lessonId, { chapters })
+  const result = await adminService.updateLessonVideo(lessonId, videoId, { chapters })
   chaptersSaving.value = false
   if (!result.success) {
     notify({ type: 'error', message: result.error || 'Не удалось сохранить тайм-коды' })
     return
   }
-  lessonChapters.value = chapters
+  const row = videos.value.find((v) => v.id === videoId)
+  if (row) {
+    row.chapters = chapters
+    row.timecodeEnabled = chapters.length > 0
+  }
   chaptersModalOpen.value = false
+  editingVideoId.value = null
   notify({ type: 'success', message: 'Тайм-коды сохранены' })
   await load()
 }
@@ -404,7 +422,7 @@ const onSave = async () => {
 
     <AdminTopicChaptersModal
       :is-open="chaptersModalOpen"
-      :chapters="lessonChapters"
+      :chapters="editingVideoChapters"
       :saving="chaptersSaving"
       @close="onCloseChaptersModal"
       @save="onSaveChapters"

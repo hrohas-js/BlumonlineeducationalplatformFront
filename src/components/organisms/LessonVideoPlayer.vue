@@ -187,6 +187,13 @@ function seekBy(delta: number) {
   v.currentTime = Math.min(duration.value, Math.max(0, v.currentTime + delta))
 }
 
+function seekTo(seconds: number) {
+  const v = videoRef.value
+  if (!v) return
+  const max = Number.isFinite(duration.value) && duration.value > 0 ? duration.value : Number.POSITIVE_INFINITY
+  v.currentTime = Math.min(max, Math.max(0, seconds))
+}
+
 function seekFromRatio(ratio: number) {
   const v = videoRef.value
   if (!v || !duration.value) return
@@ -487,6 +494,10 @@ onUnmounted(() => {
   document.removeEventListener('click', onDocumentClick, true)
   if (hintTimer) clearTimeout(hintTimer)
   clearOverlayTimers()
+})
+
+defineExpose({
+  seekTo,
 })
 </script>
 

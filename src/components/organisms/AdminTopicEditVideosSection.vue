@@ -85,6 +85,7 @@ const onAddVideoClick = async () => {
       id,
       title: `Видео ${videos.value.length + 1}`,
       timecodeEnabled: false,
+      chapters: [],
       videoSrc: '',
       persisted: false,
     },
@@ -163,9 +164,12 @@ function progressFor(videoId: string): number | null {
   width: 100%;
   display: flex;
   justify-content: flex-start;
+  align-items: flex-start;
 }
 
 :deep(.admin-topic-edit-videos-section__add-btn.base-button) {
+  width: auto;
+  margin: 0;
   height: auto;
   min-height: 44px;
   font-family: var(--font-family);

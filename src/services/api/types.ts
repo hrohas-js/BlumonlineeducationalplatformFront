@@ -172,6 +172,8 @@ export interface LessonVideoResponse {
   title?: string | null
   order_index: number
   video_url?: string | null
+  /** Пустые/`null` с бэка нормализуются как `[]`. */
+  chapters?: LessonChapter[] | null
 }
 
 export interface LessonResponse {
@@ -182,8 +184,6 @@ export interface LessonResponse {
   /** Пустые/`null` с бэка нормализуются как `[]`. */
   videos?: LessonVideoResponse[] | null
   order_index: number
-  /** Пустые/`null` с бэка нормализуются как `[]`. */
-  chapters?: LessonChapter[] | null
   files: FileResponse[]
   created_at: string
   updated_at: string
@@ -379,14 +379,11 @@ export interface AdminModuleUpdateRequest {
 export interface AdminLessonCreateRequest {
   title: string
   description?: string
-  chapters?: LessonChapter[]
 }
 
 export interface AdminLessonUpdateRequest {
   title?: string
   description?: string
-  /** Передать `[]` — очистить таймкоды. Не передавать поле — оставить как есть. */
-  chapters?: LessonChapter[]
 }
 
 export interface AdminModuleReorderItem {
@@ -441,6 +438,8 @@ export interface LessonVideoConfirmRequest {
 export interface LessonVideoUpdate {
   title?: string | null
   order_index?: number | null
+  /** Передать `[]` — очистить таймкоды. Не передавать поле — оставить как есть. */
+  chapters?: LessonChapter[]
 }
 
 export interface LessonVideoReorderItem {
