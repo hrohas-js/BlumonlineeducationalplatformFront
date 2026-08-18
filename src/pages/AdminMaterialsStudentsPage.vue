@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/components/layouts/AppLayout.vue'
+import AdminCopyableText from '@/components/molecules/AdminCopyableText.vue'
 import AdminMaterialsStudentsToolbar from '@/components/organisms/AdminMaterialsStudentsToolbar.vue'
 import {
   ADMIN_STUDENTS_SCOPE_ALL,
@@ -230,8 +231,18 @@ const onExportXlsx = async () => {
                     </svg>
                   </div>
                   <div class="admin-materials-students-page__user-text">
-                    <span class="admin-materials-students-page__user-name">{{ row.name }}</span>
-                    <span class="admin-materials-students-page__user-email">{{ row.email }}</span>
+                    <AdminCopyableText
+                      class="admin-materials-students-page__user-name"
+                      :text="row.name"
+                      ariaLabel="Скопировать имя"
+                      success-message="Имя скопировано"
+                    />
+                    <AdminCopyableText
+                      class="admin-materials-students-page__user-email"
+                      :text="row.email"
+                      ariaLabel="Скопировать почту"
+                      success-message="Почта скопирована"
+                    />
                   </div>
                 </div>
                 <span class="admin-materials-students-page__products-count">{{ row.productsCount }}</span>
@@ -396,9 +407,6 @@ const onExportXlsx = async () => {
   font-weight: var(--font-semi-bold);
   font-size: var(--size-20);
   color: var(--black);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .admin-materials-students-page__products-count {
