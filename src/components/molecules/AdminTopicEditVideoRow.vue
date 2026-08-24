@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import LessonVideoPlayer from '@/components/organisms/LessonVideoPlayer.vue'
-import { validateAdminTopicVideoFile } from '@/utils/adminTopicVideoFile'
+import { ADMIN_TOPIC_VIDEO_ACCEPT, validateAdminTopicVideoFile } from '@/utils/adminTopicVideoFile'
 
 const title = defineModel<string>('title', { required: true })
 const timecodeEnabled = defineModel<boolean>('timecodeEnabled', { required: true })
@@ -11,15 +11,19 @@ const props = withDefaults(
   defineProps<{
     /** 0–100 во время загрузки; null — загрузка не идёт */
     uploadProgress?: number | null
+    /** Блокирует кнопку добавления (идёт загрузка/проверка других файлов). */
+    addLocked?: boolean
   }>(),
   {
     uploadProgress: null,
+    addLocked: false,
   },
 )
 
 interface Emits {
   (e: 'delete-video'): void
   (e: 'file-selected', file: File): void
+  (e: 'request-add-files'): void
   (e: 'open-timecode-modal'): void
   (e: 'title-commit', title: string): void
 }
@@ -38,21 +42,17 @@ const uploadPercent = computed(() =>
 )
 const fileActionsDisabled = computed(() => isValidatingFile.value || isUploading.value)
 
-const ACCEPT_INPUT = 'video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov'
-
 function revokeBlobUrl(url: string | undefined) {
   if (url?.startsWith('blob:')) {
     URL.revokeObjectURL(url)
   }
 }
 
-function openFilePicker() {
-  if (isUploading.value) return
+function openReplaceFilePicker() {
+  if (isUploading.value || !hasVideo.value) return
   addFileError.value = ''
   fileInputRef.value?.click()
 }
-
-defineExpose({ openFilePicker })
 
 function onTitleFocus() {
   titleAtFocus.value = title.value
@@ -108,10 +108,11 @@ onBeforeUnmount(() => {
 <template>
   <div class="admin-topic-edit-video-row">
     <input
+      v-if="hasVideo"
       ref="fileInputRef"
       class="admin-topic-edit-video-row__file-input"
       type="file"
-      :accept="ACCEPT_INPUT"
+      :accept="ADMIN_TOPIC_VIDEO_ACCEPT"
       tabindex="-1"
       aria-hidden="true"
       @change="onFileInputChange"
@@ -172,16 +173,14 @@ onBeforeUnmount(() => {
         <button
           type="button"
           class="admin-topic-edit-video-row__side-btn"
-          :disabled="fileActionsDisabled"
-          @click="openFilePicker"
+          :disabled="fileActionsDisabled || addLocked"
+          @click="emit('request-add-files')"
         >
           <span class="admin-topic-edit-video-row__side-btn-text">
             {{
               isUploading
                 ? `Загрузка… ${uploadPercent}%`
-                : isValidatingFile
-                  ? 'Проверка файла…'
-                  : 'Добавить видеофайл'
+                : 'Добавить видеофайл'
             }}
           </span>
         </button>
@@ -213,7 +212,7 @@ onBeforeUnmount(() => {
           type="button"
           class="admin-topic-edit-video-row__side-btn"
           :disabled="fileActionsDisabled"
-          @click="openFilePicker"
+          @click="openReplaceFilePicker"
         >
           <span class="admin-topic-edit-video-row__side-btn-text">
             {{

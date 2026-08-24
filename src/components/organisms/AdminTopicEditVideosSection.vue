@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, ref } from 'vue'
 import BaseButton from '@/components/atoms/BaseButton.vue'
 import AdminTopicEditVideoRow from '@/components/molecules/AdminTopicEditVideoRow.vue'
 import type { AdminTopicEditVideoMock } from '@/utils/adminMaterialCatalog'
+import {
+  ADMIN_TOPIC_VIDEO_ACCEPT,
+  validateAdminTopicVideoFiles,
+} from '@/utils/adminTopicVideoFile'
 
 const videos = defineModel<AdminTopicEditVideoMock[]>('videos', { required: true })
 
@@ -19,6 +23,7 @@ const props = withDefaults(
 
 interface Emits {
   (e: 'video-file-selected', payload: { videoId: string; file: File }): void
+  (e: 'video-files-selected', payload: { items: { videoId: string; file: File }[] }): void
   (e: 'open-timecode-modal', videoId: string): void
   (e: 'video-delete', videoId: string): void
   (e: 'video-title-commit', payload: { videoId: string; title: string }): void
@@ -26,21 +31,24 @@ interface Emits {
 
 const emit = defineEmits<Emits>()
 
-type VideoRowExpose = { openFilePicker: () => void }
-
-const rowRefs = ref<Record<string, VideoRowExpose | null>>({})
-
-function setRowRef(id: string, el: unknown) {
-  if (el && typeof el === 'object' && 'openFilePicker' in el) {
-    rowRefs.value[id] = el as VideoRowExpose
-  } else {
-    delete rowRefs.value[id]
-  }
-}
+const addFilesInputRef = ref<HTMLInputElement | null>(null)
+const addFilesError = ref('')
+const isValidatingFiles = ref(false)
 
 function revokeBlobUrl(url: string | undefined) {
   if (url?.startsWith('blob:')) {
     URL.revokeObjectURL(url)
+  }
+}
+
+function createVideoSlot(index: number, videoSrc = ''): AdminTopicEditVideoMock {
+  return {
+    id: crypto.randomUUID(),
+    title: `Видео ${index}`,
+    timecodeEnabled: false,
+    chapters: [],
+    videoSrc,
+    persisted: false,
   }
 }
 
@@ -55,7 +63,6 @@ const onDelete = (videoId: string) => {
   }
   revokeBlobUrl(item?.videoSrc)
   videos.value = videos.value.filter((v) => v.id !== videoId)
-  delete rowRefs.value[videoId]
 }
 
 const hasEmptyVideoSlot = computed(() =>
@@ -66,31 +73,57 @@ const isAnyUploading = computed(() =>
   Object.values(props.uploadProgressById).some((p) => p != null),
 )
 
-async function openPickerForVideo(videoId: string) {
-  await nextTick()
-  rowRefs.value[videoId]?.openFilePicker()
+const addFilesDisabled = computed(() => isAnyUploading.value || isValidatingFiles.value)
+
+function openAddFilesPicker() {
+  if (addFilesDisabled.value) return
+  addFilesError.value = ''
+  const input = addFilesInputRef.value
+  if (!input) return
+  input.value = ''
+  input.click()
 }
 
-const onAddVideoClick = async () => {
-  if (isAnyUploading.value) return
-  const empty = videos.value.find((v) => !v.videoSrc?.trim())
-  if (empty) {
-    await openPickerForVideo(empty.id)
+async function onAddFilesChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const list = input.files
+  if (!list?.length) {
+    input.value = ''
     return
   }
-  const id = crypto.randomUUID()
-  videos.value = [
-    ...videos.value,
-    {
-      id,
-      title: `Видео ${videos.value.length + 1}`,
-      timecodeEnabled: false,
-      chapters: [],
-      videoSrc: '',
-      persisted: false,
-    },
-  ]
-  await openPickerForVideo(id)
+
+  isValidatingFiles.value = true
+  addFilesError.value = ''
+  try {
+    const { valid, errors } = await validateAdminTopicVideoFiles(Array.from(list))
+    if (errors.length) {
+      addFilesError.value = errors.join('\n')
+    }
+    if (!valid.length) return
+
+    const nextVideos = videos.value.map((v) => ({ ...v }))
+    const emptySlots = nextVideos.filter((v) => !v.videoSrc?.trim())
+    const items: { videoId: string; file: File }[] = []
+
+    valid.forEach((file, index) => {
+      const blobSrc = URL.createObjectURL(file)
+      const empty = emptySlots[index]
+      if (empty) {
+        empty.videoSrc = blobSrc
+        items.push({ videoId: empty.id, file })
+        return
+      }
+      const row = createVideoSlot(nextVideos.length + 1, blobSrc)
+      nextVideos.push(row)
+      items.push({ videoId: row.id, file })
+    })
+
+    videos.value = nextVideos
+    emit('video-files-selected', { items })
+  } finally {
+    isValidatingFiles.value = false
+    input.value = ''
+  }
 }
 
 function progressFor(videoId: string): number | null {
@@ -102,17 +135,35 @@ function progressFor(videoId: string): number | null {
 <template>
   <section class="admin-topic-edit-videos-section">
     <h2 class="admin-topic-edit-videos-section__heading">Видеофайлы</h2>
+    <input
+      ref="addFilesInputRef"
+      class="admin-topic-edit-videos-section__file-input"
+      type="file"
+      multiple
+      :accept="ADMIN_TOPIC_VIDEO_ACCEPT"
+      tabindex="-1"
+      aria-hidden="true"
+      @change="onAddFilesChange"
+    />
+    <p
+      v-if="addFilesError"
+      class="admin-topic-edit-videos-section__error"
+      role="alert"
+    >
+      {{ addFilesError }}
+    </p>
     <div class="admin-topic-edit-videos-section__list">
       <AdminTopicEditVideoRow
         v-for="v in videos"
         :key="v.id"
-        :ref="(el) => setRowRef(v.id, el)"
         v-model:title="v.title"
         v-model:timecode-enabled="v.timecodeEnabled"
         v-model:video-src="v.videoSrc"
         :upload-progress="progressFor(v.id)"
+        :add-locked="addFilesDisabled"
         @delete-video="onDelete(v.id)"
         @file-selected="(file) => emit('video-file-selected', { videoId: v.id, file })"
+        @request-add-files="openAddFilesPicker"
         @open-timecode-modal="emit('open-timecode-modal', v.id)"
         @title-commit="(title) => emit('video-title-commit', { videoId: v.id, title })"
       />
@@ -127,8 +178,8 @@ function progressFor(videoId: string): number | null {
         size="medium"
         shape="rounded"
         text="Добавить видеофайл"
-        :disabled="isAnyUploading"
-        @click="onAddVideoClick"
+        :disabled="addFilesDisabled"
+        @click="openAddFilesPicker"
       />
     </div>
   </section>
@@ -136,6 +187,7 @@ function progressFor(videoId: string): number | null {
 
 <style lang="scss" scoped>
 .admin-topic-edit-videos-section {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--sp-20);
@@ -151,6 +203,28 @@ function progressFor(videoId: string): number | null {
   font-size: var(--size-20);
   line-height: normal;
   color: var(--black);
+}
+
+.admin-topic-edit-videos-section__file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.admin-topic-edit-videos-section__error {
+  margin: 0;
+  white-space: pre-line;
+  font-family: var(--font-family);
+  font-weight: var(--font-medium);
+  font-size: var(--size-16);
+  line-height: normal;
+  color: var(--danger);
 }
 
 .admin-topic-edit-videos-section__list {
@@ -180,6 +254,10 @@ function progressFor(videoId: string): number | null {
 
 @media (max-width: 1023px) {
   .admin-topic-edit-videos-section__heading {
+    font-size: var(--size-15);
+  }
+
+  .admin-topic-edit-videos-section__error {
     font-size: var(--size-15);
   }
 

@@ -1,6 +1,10 @@
 /** Разрешённые расширения видео для темы (админка). */
 export const ADMIN_TOPIC_VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov'] as const
 
+/** Значение accept для input[type=file] при выборе видео темы. */
+export const ADMIN_TOPIC_VIDEO_ACCEPT =
+  'video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov'
+
 const ALLOWED_MIME_PREFIX = 'video/'
 
 const DANGEROUS_NAME_PATTERNS = [
@@ -125,4 +129,28 @@ export async function validateAdminTopicVideoFile(file: File): Promise<AdminTopi
   }
 
   return { ok: true }
+}
+
+export type AdminTopicVideoFilesValidationResult = {
+  valid: File[]
+  errors: string[]
+}
+
+/** Проверка набора файлов: невалидные пропускаются, ошибки собираются сводкой. */
+export async function validateAdminTopicVideoFiles(
+  files: File[],
+): Promise<AdminTopicVideoFilesValidationResult> {
+  const valid: File[] = []
+  const errors: string[] = []
+
+  for (const file of files) {
+    const result = await validateAdminTopicVideoFile(file)
+    if (result.ok) {
+      valid.push(file)
+    } else {
+      errors.push(`«${file.name}»: ${result.error}`)
+    }
+  }
+
+  return { valid, errors }
 }

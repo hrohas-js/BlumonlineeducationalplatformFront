@@ -234,6 +234,132 @@ const onVideoFileSelected = async ({ videoId, file }: { videoId: string; file: F
   await load()
 }
 
+function snapshotFailedVideoRows(
+  items: { videoId: string; file: File }[],
+  failedIds: Set<string>,
+): Map<string, AdminTopicEditVideoMock> {
+  const snapshots = new Map<string, AdminTopicEditVideoMock>()
+  for (const { videoId } of items) {
+    if (!failedIds.has(videoId)) continue
+    const row = videos.value.find((v) => v.id === videoId)
+    if (!row) continue
+    snapshots.set(videoId, {
+      ...row,
+      chapters: row.chapters ? [...row.chapters] : [],
+    })
+  }
+  return snapshots
+}
+
+function restoreFailedVideoRows(
+  items: { videoId: string; file: File }[],
+  failedIds: Set<string>,
+  snapshots: Map<string, AdminTopicEditVideoMock>,
+) {
+  if (!failedIds.size) return
+
+  const extras: AdminTopicEditVideoMock[] = []
+  for (const { videoId, file } of items) {
+    if (!failedIds.has(videoId)) continue
+    const row = snapshots.get(videoId)
+    extras.push({
+      id: videoId,
+      title: row?.title?.trim() || file.name.replace(/\.[^.]+$/, '') || `Видео ${extras.length + 1}`,
+      timecodeEnabled: row?.timecodeEnabled ?? false,
+      chapters: row?.chapters ? [...row.chapters] : [],
+      videoSrc: URL.createObjectURL(file),
+      fileName: file.name,
+      persisted: false,
+    })
+  }
+
+  if (!extras.length) return
+
+  const hasPreview = (row: AdminTopicEditVideoMock) => Boolean(row.videoSrc?.trim())
+  videos.value = [
+    ...videos.value.filter((row) => row.persisted || hasPreview(row)),
+    ...extras,
+  ]
+}
+
+const onVideoFilesSelected = async ({
+  items,
+}: {
+  items: { videoId: string; file: File }[]
+}) => {
+  if (!items.length) return
+
+  const lessonId = await ensureLesson()
+  if (!lessonId) return
+
+  const queuedProgress: Record<string, number | null> = { ...videoUploadProgressById.value }
+  for (const { videoId } of items) {
+    queuedProgress[videoId] = 0
+  }
+  videoUploadProgressById.value = queuedProgress
+
+  let successCount = 0
+  const errorMessages: string[] = []
+  const failedIds = new Set<string>()
+
+  for (const { videoId, file } of items) {
+    const row = videos.value.find((v) => v.id === videoId)
+    const title = row?.title?.trim() || file.name.replace(/\.[^.]+$/, '')
+
+    const result = await adminService.uploadLessonVideo(lessonId, file, {
+      title,
+      onProgress: (percent) => {
+        videoUploadProgressById.value = {
+          ...videoUploadProgressById.value,
+          [videoId]: percent,
+        }
+      },
+    })
+
+    videoUploadProgressById.value = {
+      ...videoUploadProgressById.value,
+      [videoId]: null,
+    }
+
+    if (!result.success || !result.data) {
+      failedIds.add(videoId)
+      errorMessages.push(
+        `«${file.name}»: ${result.error || 'Не удалось загрузить видео'}`,
+      )
+      continue
+    }
+
+    successCount += 1
+  }
+
+  if (successCount === items.length) {
+    notify({
+      type: 'success',
+      message: successCount === 1 ? 'Видео загружено' : `Загружено видео: ${successCount}`,
+    })
+  } else if (successCount > 0) {
+    notify({
+      type: 'success',
+      message: `Загружено ${successCount} из ${items.length}`,
+    })
+    notify({
+      type: 'error',
+      message: errorMessages.join(' · '),
+    })
+  } else {
+    notify({
+      type: 'error',
+      message: errorMessages.join(' · ') || 'Не удалось загрузить видео',
+    })
+  }
+
+  if (successCount > 0) {
+    const failedSnapshots = snapshotFailedVideoRows(items, failedIds)
+    await load()
+    restoreFailedVideoRows(items, failedIds, failedSnapshots)
+  }
+}
+
 const onVideoDelete = async (videoId: string) => {
   if (deletingVideoId.value) return
   const lessonId = primaryLessonId.value
@@ -386,6 +512,7 @@ const onSave = async () => {
           :upload-progress-by-id="videoUploadProgressById"
           :deleting-video-id="deletingVideoId"
           @video-file-selected="onVideoFileSelected"
+          @video-files-selected="onVideoFilesSelected"
           @open-timecode-modal="onOpenTimecodeModal"
           @video-delete="onVideoDelete"
           @video-title-commit="onVideoTitleCommit"
