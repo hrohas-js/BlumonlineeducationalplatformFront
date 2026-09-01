@@ -69,49 +69,44 @@ defineExpose({ closeDeleteModalAfterSuccess })
 
     <template v-else>
       <div class="admin-notifications-mailings-section__scroll">
-        <div class="admin-notifications-mailings-section__table">
-          <div class="admin-notifications-mailings-section__head" role="row">
-            <span class="admin-notifications-mailings-section__col admin-notifications-mailings-section__col_subject">
-              Заголовок письма
-            </span>
-            <span class="admin-notifications-mailings-section__col">Продукт</span>
-            <span class="admin-notifications-mailings-section__col">Тема</span>
-            <span class="admin-notifications-mailings-section__col">Отослано</span>
-            <span class="admin-notifications-mailings-section__col">Дата</span>
-            <span class="admin-notifications-mailings-section__col">Статус</span>
-            <span class="admin-notifications-mailings-section__col admin-notifications-mailings-section__col_actions">
-              Действия
-            </span>
-          </div>
-
-          <ul class="admin-notifications-mailings-section__list" aria-label="Список рассылок">
-            <li
-              v-for="row in mailings"
-              :key="row.id"
-              class="admin-notifications-mailings-section__row"
-              role="row"
-            >
-              <span
-                class="admin-notifications-mailings-section__cell admin-notifications-mailings-section__cell_subject"
-              >
-                {{ row.subject }}
-              </span>
-              <span class="admin-notifications-mailings-section__cell">{{ row.productTitle }}</span>
-              <span class="admin-notifications-mailings-section__cell">{{ row.topicTitle }}</span>
-              <span class="admin-notifications-mailings-section__cell">{{ row.sentCount }}</span>
-              <span class="admin-notifications-mailings-section__cell">{{ row.sentDate }}</span>
-              <span class="admin-notifications-mailings-section__cell">
-                {{ getMailingStatusLabel(row.status) }}
-              </span>
-              <span class="admin-notifications-mailings-section__cell admin-notifications-mailings-section__cell_actions">
+        <table class="admin-notifications-mailings-section__table">
+          <colgroup>
+            <col class="admin-notifications-mailings-section__col_subject" />
+            <col class="admin-notifications-mailings-section__col_product" />
+            <col class="admin-notifications-mailings-section__col_topic" />
+            <col class="admin-notifications-mailings-section__col_sent" />
+            <col class="admin-notifications-mailings-section__col_date" />
+            <col class="admin-notifications-mailings-section__col_status" />
+            <col class="admin-notifications-mailings-section__col_actions" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Заголовок письма</th>
+              <th>Продукт</th>
+              <th>Тема</th>
+              <th>Отослано</th>
+              <th>Дата</th>
+              <th>Статус</th>
+              <th>Действия</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in mailings" :key="row.id">
+              <td>{{ row.subject }}</td>
+              <td>{{ row.productTitle }}</td>
+              <td>{{ row.topicTitle }}</td>
+              <td>{{ row.sentCount }}</td>
+              <td>{{ row.sentDate }}</td>
+              <td>{{ getMailingStatusLabel(row.status) }}</td>
+              <td>
                 <AdminNotificationMailingActions
                   @copy="onCopy(row)"
                   @delete="onDeleteRequest(row)"
                 />
-              </span>
-            </li>
-          </ul>
-        </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </template>
 
@@ -148,79 +143,76 @@ defineExpose({ closeDeleteModalAfterSuccess })
   -webkit-overflow-scrolling: touch;
 }
 
+.admin-notifications-mailings-section__col_subject {
+  width: 20%;
+}
+
+.admin-notifications-mailings-section__col_product {
+  width: 16%;
+}
+
+.admin-notifications-mailings-section__col_topic,
+.admin-notifications-mailings-section__col_status {
+  width: 12%;
+}
+
+.admin-notifications-mailings-section__col_sent {
+  width: 11%;
+}
+
+.admin-notifications-mailings-section__col_date {
+  width: 14%;
+}
+
+.admin-notifications-mailings-section__col_actions {
+  width: 120px;
+}
+
 .admin-notifications-mailings-section__table {
   width: 100%;
   min-width: 900px;
-}
+  border-collapse: collapse;
+  table-layout: fixed;
 
-.admin-notifications-mailings-section__head {
-  display: grid;
-  grid-template-columns: 112px 1fr 1fr 0.6fr 0.8fr 1fr auto;
-  align-items: center;
-  gap: var(--sp-20);
-  width: 100%;
-  padding-bottom: var(--sp-10);
-  border-bottom: 1px solid var(--osnovnoy-tekst);
-  box-sizing: border-box;
-}
+  th,
+  td {
+    border: 1px solid var(--osnovnoy-tekst);
+    padding: var(--sp-10) var(--sp-12);
+    vertical-align: middle;
+    font-family: var(--font-family);
+    font-weight: var(--font-semi-bold);
+    font-size: var(--size-12);
+    line-height: normal;
+    color: var(--osnovnoy-tekst);
+    text-align: center;
+    overflow-wrap: break-word;
+  }
 
-.admin-notifications-mailings-section__col {
-  font-family: var(--font-family);
-  font-weight: var(--font-semi-bold);
-  font-size: var(--size-20);
-  line-height: normal;
-  color: var(--osnovnoy-tekst);
-  text-align: left;
+  th:first-child,
+  td:first-child {
+    text-align: left;
+  }
 
-  &_actions {
+  th:nth-child(4),
+  td:nth-child(4),
+  th:nth-child(5),
+  td:nth-child(5),
+  th:nth-child(6),
+  td:nth-child(6) {
+    white-space: nowrap;
+  }
+
+  td:last-child {
     text-align: center;
   }
 }
 
-.admin-notifications-mailings-section__list {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.admin-notifications-mailings-section__row {
-  display: grid;
-  grid-template-columns: 112px 1fr 1fr 0.6fr 0.8fr 1fr auto;
-  align-items: center;
-  gap: var(--sp-20);
-  width: 100%;
-  padding: var(--sp-20) 0;
-  border-bottom: 1px solid var(--osnovnoy-tekst);
-  box-sizing: border-box;
-}
-
-.admin-notifications-mailings-section__cell {
-  font-family: var(--font-family);
-  font-weight: var(--font-semi-bold);
-  font-size: var(--size-20);
-  line-height: normal;
-  color: var(--osnovnoy-tekst);
-  min-width: 0;
-  word-break: break-word;
-
-  &_subject {
-    font-weight: var(--font-semi-bold);
-  }
-
-  &_actions {
-    display: flex;
-    justify-content: center;
-  }
-}
-
 @media (max-width: 1023px) {
-  .admin-notifications-mailings-section__col,
-  .admin-notifications-mailings-section__cell {
-    font-size: var(--size-15);
+  .admin-notifications-mailings-section__table {
+    th,
+    td {
+      font-size: var(--size-15);
+    }
   }
 }
 </style>

@@ -16,7 +16,7 @@ const emit = defineEmits<Emits>()
       @click="emit('copy')"
     >
       <img
-        src="@/assets/icons/admin-notification-copy.svg"
+        src="@/assets/icons/admin-notification-plus.svg"
         alt=""
         width="24"
         height="24"
@@ -31,7 +31,7 @@ const emit = defineEmits<Emits>()
       @click="emit('delete')"
     >
       <img
-        src="@/assets/icons/admin-notification-delete.svg"
+        src="@/assets/icons/admin-notification-close.svg"
         alt=""
         width="24"
         height="24"
@@ -46,6 +46,7 @@ const emit = defineEmits<Emits>()
 .admin-notification-mailing-actions {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--sp-10);
 }
 
@@ -54,9 +55,9 @@ const emit = defineEmits<Emits>()
   align-items: center;
   justify-content: center;
   margin: 0;
-  padding: var(--sp-6);
-  border: 1px solid var(--osnovnoy-tekst);
-  border-radius: var(--radius-10);
+  padding: 0;
+  border: none;
+  border-radius: 50%;
   background-color: transparent;
   cursor: pointer;
 

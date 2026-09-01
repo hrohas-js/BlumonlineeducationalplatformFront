@@ -192,7 +192,6 @@ const onAccessModalSave = async (payload: {
   }
   productAccessStatuses.value = { ...productAccessStatuses.value, [key]: payload.status }
   notify({ type: 'success', message: 'Статус доступа обновлён' })
-  await loadProfileProducts()
   onAccessModalClose()
 }
 
@@ -241,7 +240,6 @@ const onDeadlineModalSave = async (payload: { newDeadlineDisplay: string }) => {
     [key]: payload.newDeadlineDisplay,
   }
   notify({ type: 'success', message: 'Дедлайн обновлён' })
-  await loadProfileProducts()
   onDeadlineModalClose()
 }
 </script>

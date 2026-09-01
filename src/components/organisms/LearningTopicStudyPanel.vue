@@ -46,6 +46,19 @@ const accessLabel = computed(() => topic.value?.accessUntil ?? 'бессрочн
 
 const topicFiles = computed(() => topic.value?.videos.flatMap((video) => video.files) ?? [])
 
+const hasMedia = computed(
+  () =>
+    Boolean(topic.value?.videos.some((video) => video.src)) || topicFiles.value.length > 0,
+)
+
+const visibleVideos = computed(() => {
+  const videos = topic.value?.videos ?? []
+  if (props.lessonLayout) {
+    return videos.filter((video) => Boolean(video.src))
+  }
+  return videos
+})
+
 const onCompleteChange = (value: boolean) => {
   topicCompleted.value = value
   emit('complete-topic', props.selectedTopicId, value)
@@ -131,14 +144,17 @@ const goNextTopic = () => {
       </LearningCollapsibleChip>
     </template>
 
-    <LearningTopicVideoBlock
-      v-for="video in topic.videos"
-      :key="video.id"
-      :video="video"
-      :lesson-layout="lessonLayout"
-      :loading="videoLoadingById?.[video.id]"
-      :error="videoErrorById?.[video.id]"
-    />
+    <template v-if="hasMedia">
+      <LearningTopicVideoBlock
+        v-for="video in visibleVideos"
+        :key="video.id"
+        :video="video"
+        :lesson-layout="lessonLayout"
+        :loading="videoLoadingById?.[video.id]"
+        :error="videoErrorById?.[video.id]"
+      />
+    </template>
+    <p v-else class="learning-topic-study-panel__empty">Здесь пока пусто</p>
 
     <footer class="learning-topic-study-panel__footer">
       <LearningTopicCompleteToggle
@@ -220,6 +236,15 @@ const goNextTopic = () => {
     margin: 0;
   }
 
+  &__empty {
+    margin: 0;
+    font-family: var(--font-family);
+    font-weight: var(--font-medium);
+    font-size: var(--size-15);
+    color: var(--osnovnoy-tekst);
+    text-align: center;
+  }
+
   &__footer {
     display: flex;
     justify-content: flex-end;
@@ -230,7 +255,8 @@ const goNextTopic = () => {
 @media (max-width: 1023px) {
   .learning-topic-study-panel {
 
-    &__title {
+    &__title,
+    &__empty {
       font-size: var(--size-13);
     }
 

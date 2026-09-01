@@ -42,7 +42,7 @@ function onChapterClick(timeSeconds: number) {
     <h4 class="learning-topic-video-block__title">{{ video.title }}</h4>
 
     <section
-      v-if="video.src || loading || error || video.files.length === 0"
+      v-if="video.src || loading || error"
       class="learning-topic-video-block__player"
     >
       <LessonVideoPlayer

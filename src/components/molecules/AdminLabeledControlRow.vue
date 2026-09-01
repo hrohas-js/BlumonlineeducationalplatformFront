@@ -82,6 +82,7 @@ withDefaults(defineProps<Props>(), {
     font-size: 20px;
     line-height: normal;
     color: #010307;
+    margin-top: var(--size-15);
   }
 
   :deep(.admin-labeled-control-row__input) {

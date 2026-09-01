@@ -168,12 +168,20 @@ const cancelEditing = () => {
       <p v-if="addFileError" class="admin-topic-edit-materials-section__error" role="alert">
         {{ addFileError }}
       </p>
-      <div v-if="!isEditing" class="admin-topic-edit-materials-section__actions">
+      <div
+        v-if="!isEditing"
+        class="admin-topic-edit-materials-section__actions"
+        :class="{ 'admin-topic-edit-materials-section__actions_with-list': hasMaterials }"
+      >
         <button type="button" class="admin-topic-edit-materials-section__edit-btn" @click="startEditing">
           {{ materialsActionLabel }}
         </button>
       </div>
-      <div v-else class="admin-topic-edit-materials-section__toolbar">
+      <div
+        v-else
+        class="admin-topic-edit-materials-section__toolbar"
+        :class="{ 'admin-topic-edit-materials-section__toolbar_with-list': displayedFiles.length > 0 }"
+      >
         <button type="button" class="admin-topic-edit-materials-section__toolbar-btn" @click="openFilePicker">
           Добавить файл
         </button>
@@ -308,9 +316,12 @@ const cancelEditing = () => {
 }
 
 .admin-topic-edit-materials-section__actions {
-  margin-top: var(--sp-20);
   display: flex;
   justify-content: flex-start;
+
+  &_with-list {
+    margin-top: var(--sp-20);
+  }
 }
 
 .admin-topic-edit-materials-section__edit-btn {
@@ -338,13 +349,16 @@ const cancelEditing = () => {
 }
 
 .admin-topic-edit-materials-section__toolbar {
-  margin-top: var(--sp-20);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: var(--sp-20);
   width: 100%;
+
+  &_with-list {
+    margin-top: var(--sp-20);
+  }
 }
 
 .admin-topic-edit-materials-section__toolbar-btn {

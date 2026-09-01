@@ -101,14 +101,18 @@ function mapFilesFromLesson() {
   })
 }
 
-async function load() {
+async function load(options?: { silent?: boolean }) {
   if (!isAdminMaterialSectionId(sectionId.value)) {
     void router.replace({ name: 'admin-materials' })
     return
   }
-  loading.value = true
+  if (!options?.silent) {
+    loading.value = true
+  }
   const result = await adminStore.fetchProductDetail(productId.value)
-  loading.value = false
+  if (!options?.silent) {
+    loading.value = false
+  }
   if (!result.success) {
     notify({ type: 'error', message: result.error || 'Не удалось загрузить курс' })
     void router.replace({ name: 'admin-materials' })
@@ -225,13 +229,13 @@ const onVideoFileSelected = async ({ videoId, file }: { videoId: string; file: F
         type: 'error',
         message: del.error || 'Видео загружено, но старое не удалось удалить',
       })
-      await load()
+      await load({ silent: true })
       return
     }
   }
 
   notify({ type: 'success', message: replaceVideoId ? 'Видео заменено' : 'Видео загружено' })
-  await load()
+  await load({ silent: true })
 }
 
 function snapshotFailedVideoRows(
@@ -355,7 +359,7 @@ const onVideoFilesSelected = async ({
 
   if (successCount > 0) {
     const failedSnapshots = snapshotFailedVideoRows(items, failedIds)
-    await load()
+    await load({ silent: true })
     restoreFailedVideoRows(items, failedIds, failedSnapshots)
   }
 }
@@ -375,7 +379,7 @@ const onVideoDelete = async (videoId: string) => {
     return
   }
   notify({ type: 'success', message: 'Видео удалено' })
-  await load()
+  await load({ silent: true })
 }
 
 const onVideoTitleCommit = async ({ videoId, title }: { videoId: string; title: string }) => {
@@ -403,7 +407,7 @@ const onMaterialUpload = async (file: File) => {
     return
   }
   notify({ type: 'success', message: 'Файл загружен' })
-  await load()
+  await load({ silent: true })
 }
 
 const onMaterialDelete = async (fileId: string) => {
@@ -416,7 +420,7 @@ const onMaterialDelete = async (fileId: string) => {
     return
   }
   notify({ type: 'success', message: 'Файл удалён' })
-  await load()
+  await load({ silent: true })
 }
 
 const editingVideoChapters = computed((): LessonChapter[] => {
@@ -459,7 +463,7 @@ const onSaveChapters = async (chapters: LessonChapter[]) => {
   chaptersModalOpen.value = false
   editingVideoId.value = null
   notify({ type: 'success', message: 'Тайм-коды сохранены' })
-  await load()
+  await load({ silent: true })
 }
 
 const onSave = async () => {
@@ -479,7 +483,7 @@ const onSave = async () => {
     return
   }
   notify({ type: 'success', message: 'Сохранено' })
-  await load()
+  await load({ silent: true })
 }
 </script>
 

@@ -369,6 +369,7 @@ onBeforeUnmount(() => {
   .admin-topic-edit-video-row__side-btn {
     justify-content: flex-start;
     text-align: left;
+    width: fit-content;
   }
 }
 

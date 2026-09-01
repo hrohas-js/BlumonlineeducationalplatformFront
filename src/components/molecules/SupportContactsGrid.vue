@@ -28,7 +28,7 @@ withDefaults(
 
       <p class="support-contacts-grid__label">Телеграм</p>
       <a
-        class="support-contacts-grid__link support-contacts-grid__link_primary"
+        class="support-contacts-grid__link"
         :href="SUPPORT_TELEGRAM_URL"
         target="_blank"
         rel="noopener noreferrer"
@@ -38,7 +38,7 @@ withDefaults(
 
       <p class="support-contacts-grid__label">Нельзаграм*</p>
       <a
-        class="support-contacts-grid__link support-contacts-grid__link_secondary"
+        class="support-contacts-grid__link"
         :href="SUPPORT_INSTAGRAM_URL"
         target="_blank"
         rel="noopener noreferrer"
@@ -119,6 +119,15 @@ withDefaults(
     font-size: var(--size-15);
     text-align: center;
     text-decoration: none;
+    border: var(--border-2) solid var(--dopolnitelnyy-tekst);
+    background: var(--fon-bloka);
+    color: var(--osnovnoy-tekst);
+
+    &:hover,
+    &:focus-visible {
+      background: var(--dopolnitelnyy-tekst);
+      color: var(--fon-bloka);
+    }
 
     @media (max-width: 1023px) {
       height: var(--size-30);
@@ -131,18 +140,6 @@ withDefaults(
         ),
         var(--size-15)
       );
-    }
-
-    &_primary {
-      background: var(--dopolnitelnyy-tekst);
-      border: none;
-      color: var(--fon-bloka);
-    }
-
-    &_secondary {
-      border: var(--border-2) solid var(--dopolnitelnyy-tekst);
-      background: var(--fon-bloka);
-      color: var(--osnovnoy-tekst);
     }
   }
 

@@ -79,13 +79,9 @@ function openTopicLesson(topicId: string) {
   activeTopicId.value = topicId
   const topic = learningDetail.value?.topics.find((t) => t.id === topicId)
   const firstVideo = topic?.videos[0]
-  if (!firstVideo) {
-    notify({ type: 'warning', message: 'В этой теме пока нет материалов' })
-    return
-  }
   void router.push({
     name: 'course-lesson',
-    params: { productId: productId.value, lessonId: firstVideo.id },
+    params: { productId: productId.value, lessonId: firstVideo?.id ?? topicId },
   })
 }
 

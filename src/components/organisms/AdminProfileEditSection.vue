@@ -15,7 +15,6 @@ const { notify } = useNotification()
 
 const displayName = ref('')
 const email = ref('')
-const backupEmail = ref('')
 
 const saveLoading = ref(false)
 const oldPassword = ref('')
@@ -27,7 +26,6 @@ function syncFromUser() {
   if (!u) return
   displayName.value = authStore.studentNameBadgeLabel
   email.value = u.email
-  backupEmail.value = ''
 }
 
 watch(() => authStore.user, syncFromUser, { immediate: true })
@@ -129,7 +127,6 @@ const onChangePassword = async () => {
         </div>
       </div>
       <AdminProfileFieldRow label="E-mail:" :model-value="email" highlighted />
-      <AdminProfileFieldRow label="Резервная почта" :model-value="backupEmail" />
 
       <BaseButton
         class="admin-profile-edit-section__save"

@@ -43,7 +43,15 @@ watch(newDeadlineIso, () => {
   }
 })
 
-const closeModal = () => emit('close')
+function blurActiveElement() {
+  const el = document.activeElement
+  if (el instanceof HTMLElement) el.blur()
+}
+
+const closeModal = () => {
+  blurActiveElement()
+  emit('close')
+}
 
 const onOverlayClick = (event: MouseEvent) => {
   if (event.target === event.currentTarget) {

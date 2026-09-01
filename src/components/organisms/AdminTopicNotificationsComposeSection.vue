@@ -94,7 +94,6 @@ defineExpose({ applyPrefill, resetForm })
         <AdminDateField
           v-model="sendDateIso"
           placeholder="мм.дд.гггг"
-          center
           fluid
           input-id="admin-topic-notifications-send-date"
         />
@@ -212,6 +211,8 @@ defineExpose({ applyPrefill, resetForm })
 
   :deep(.admin-date-field) {
     width: 100%;
+    --admin-date-pad-y: 0px;
+    --admin-date-pad-x: 0px;
   }
 
   :deep(.admin-date-field__field) {
@@ -224,6 +225,7 @@ defineExpose({ applyPrefill, resetForm })
     font-size: var(--size-20);
     min-height: auto;
     padding: 0;
+    text-align: left;
   }
 }
 

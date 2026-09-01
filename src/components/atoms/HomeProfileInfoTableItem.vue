@@ -82,6 +82,7 @@ const toneStyle = computed<Record<string, string>>(() => ({
     display: flex;
     margin-left: auto;
     margin-right: auto;
+    font-size: var(--size-15);
   }
 }
 </style>

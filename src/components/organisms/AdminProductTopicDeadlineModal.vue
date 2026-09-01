@@ -183,6 +183,8 @@ onUnmounted(() => {
     width: 100%;
     max-width: none;
     align-items: stretch;
+    --admin-date-pad-y: 0px;
+    --admin-date-pad-x: 0px;
   }
 
   :deep(.admin-date-field__field) {

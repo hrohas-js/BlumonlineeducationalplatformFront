@@ -282,8 +282,6 @@ onMounted(() => {
           />
         </div>
 
-        <hr class="admin-notifications-page__rule" />
-
         <div class="admin-notifications-page__section admin-notifications-page__section_create">
           <h2 class="admin-notifications-page__section-title">Создать рассылку</h2>
 
@@ -381,13 +379,6 @@ onMounted(() => {
     line-height: normal;
     color: var(--text-accent);
     text-align: left;
-  }
-
-  &__rule {
-    width: 100%;
-    margin: 0;
-    border: none;
-    border-top: 1px solid rgba(1, 3, 7, 0.12);
   }
 
   @media (max-width: 1023px) {

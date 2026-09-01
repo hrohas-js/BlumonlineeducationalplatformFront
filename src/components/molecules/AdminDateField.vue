@@ -10,7 +10,7 @@ interface Props {
   inputId?: string
   /** На всю ширину контейнера (модалка и др.). */
   fluid?: boolean
-  /** Подсказка формата, когда дата не выбрана (оверлей по центру поля). */
+  /** Подсказка формата, когда дата не выбрана (оверлей по позиции маски). */
   placeholder?: string
   /** Выравнивание текста даты по центру. */
   center?: boolean
@@ -77,6 +77,8 @@ const onInput = (event: Event) => {
 
 <style lang="scss" scoped>
 .admin-date-field {
+  --admin-date-pad-y: 4px;
+  --admin-date-pad-x: 6px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -109,7 +111,7 @@ const onInput = (event: Event) => {
   overflow: hidden;
 }
 
-.admin-date-field__field_with-placeholder {
+.admin-date-field__field_with-placeholder:not(:focus-within) {
   .admin-date-field__input_empty {
     color: transparent;
 
@@ -124,12 +126,18 @@ const onInput = (event: Event) => {
   }
 }
 
+.admin-date-field__field:focus-within .admin-date-field__format-hint {
+  opacity: 0;
+}
+
 .admin-date-field__format-hint {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  box-sizing: border-box;
+  padding: var(--admin-date-pad-y) var(--admin-date-pad-x);
   pointer-events: none;
   font-family: var(--font-family);
   font-weight: var(--font-semi-bold);
@@ -159,7 +167,7 @@ const onInput = (event: Event) => {
   width: 100%;
   min-height: 30px;
   margin: 0;
-  padding: 4px 6px;
+  padding: var(--admin-date-pad-y) var(--admin-date-pad-x);
   border: none;
   border-radius: 5px;
   background: transparent;
@@ -167,11 +175,22 @@ const onInput = (event: Event) => {
   font-weight: var(--font-medium);
   font-size: 15px;
   line-height: normal;
-  text-align: center;
+  text-align: left;
   color: #010307;
 
   &_center {
-    text-align: center;
+    text-align: left;
+  }
+
+  &::-webkit-datetime-edit,
+  &::-webkit-datetime-edit-fields-wrapper {
+    padding: 0;
+    margin: 0;
+  }
+
+  &::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    margin: 0;
   }
 
   &:focus {
