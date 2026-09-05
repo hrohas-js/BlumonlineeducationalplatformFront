@@ -12,6 +12,10 @@ import { productsService } from '@/services/api/endpoints/products'
 import { useAuthStore } from '@/stores/auth'
 import { useNotification } from '@/composables/useNotification'
 import { findTopicByLessonId, mapProductToLearningDetail } from '@/utils/mapProductToLearningDetail'
+import {
+  isStudentProductBlocked,
+  STUDENT_PRODUCT_BLOCKED_MESSAGE,
+} from '@/constants/studentProductAccess'
 import type { LearningCourseDetail } from '@/types/learning-course'
 import type { ProductDetailResponse, ProductProgressResponse } from '@/services/api/types'
 
@@ -31,6 +35,7 @@ const product = ref<ProductDetailResponse | null>(null)
 const progress = ref<ProductProgressResponse | null>(null)
 const loading = ref(false)
 const completing = ref(false)
+const accessDenied = ref(false)
 const activeTopicId = ref<string | null>(null)
 
 const learningDetail = computed<LearningCourseDetail | null>(() => {
@@ -46,12 +51,33 @@ const selectedTopicId = computed<string | null>(() => {
 
 const isOverview = computed(() => !lessonIdParam.value)
 
+const isAccessDenied = computed(
+  () =>
+    accessDenied.value ||
+    isStudentProductBlocked(product.value?.status) ||
+    isStudentProductBlocked(progress.value?.status),
+)
+
 async function loadProduct() {
   loading.value = true
+  accessDenied.value = false
+  product.value = null
+  progress.value = null
+
   const [detailResult, progressResult] = await Promise.all([
     productsService.getById(productId.value),
     productsService.getProgress(productId.value),
   ])
+
+  const deniedByApi =
+    detailResult.errorCode === 'permission_denied' ||
+    progressResult.errorCode === 'permission_denied'
+
+  if (deniedByApi) {
+    accessDenied.value = true
+    loading.value = false
+    return
+  }
 
   if (detailResult.success && detailResult.data) {
     product.value = detailResult.data
@@ -63,19 +89,35 @@ async function loadProduct() {
     progress.value = progressResult.data
   }
 
+  if (
+    isStudentProductBlocked(product.value?.status) ||
+    isStudentProductBlocked(progress.value?.status)
+  ) {
+    accessDenied.value = true
+  }
+
   loading.value = false
 }
 
-function goBack() {
-  if (lessonIdParam.value) {
-    void router.push({ name: 'course', params: { productId: productId.value } })
-    return
-  }
+function goToLearningCourses() {
   activeTopicId.value = null
   void router.push({ name: 'home-section', params: { section: 'learning' } })
 }
 
+function goBack() {
+  if (isAccessDenied.value) {
+    goToLearningCourses()
+    return
+  }
+  if (lessonIdParam.value) {
+    void router.push({ name: 'course', params: { productId: productId.value } })
+    return
+  }
+  goToLearningCourses()
+}
+
 function openTopicLesson(topicId: string) {
+  if (isAccessDenied.value) return
   activeTopicId.value = topicId
   const topic = learningDetail.value?.topics.find((t) => t.id === topicId)
   const firstVideo = topic?.videos[0]
@@ -94,7 +136,7 @@ function onNextTopic(topicId: string) {
 }
 
 async function onCompleteTopic(topicId: string, completed: boolean) {
-  if (!product.value || !completed) return
+  if (isAccessDenied.value || !product.value || !completed) return
   const module = product.value.modules.find((m) => m.id === topicId)
   if (!module) return
 
@@ -143,6 +185,17 @@ watch(
   <AppLayout>
     <StudentProfileLayout active-section="learning">
       <div v-if="loading" class="home-profile__loading">Загружаем курс…</div>
+
+      <article
+        v-else-if="isAccessDenied"
+        class="home-profile__panel home-profile__panel_learning"
+      >
+        <button type="button" class="home-learning__back" @click="goToLearningCourses">
+          <span aria-hidden="true">←</span>
+          К моим курсам
+        </button>
+        <p class="home-profile__empty">{{ STUDENT_PRODUCT_BLOCKED_MESSAGE }}</p>
+      </article>
 
       <article
         v-else-if="learningDetail"

@@ -25,6 +25,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 interface Emits {
+  (e: 'add-to-product', payload: { sectionKey: AdminMaterialSectionId }): void
   (e: 'general-access', payload: { productId: string; sectionKey: AdminMaterialSectionId }): void
   (
     e: 'deadline-click',
@@ -63,8 +64,11 @@ const toggleExpanded = () => {
   expanded.value = !expanded.value
 }
 
+const canAddToProduct = computed(() => props.sectionKey !== 'archive')
+
 const onAddToProduct = () => {
-  /* до API */
+  if (!canAddToProduct.value) return
+  emit('add-to-product', { sectionKey: props.sectionKey })
 }
 
 const onDeadlineClick = (productId: string, deadlineLabel: string) => {
@@ -130,7 +134,10 @@ const onGeneralAccess = (productId: string) => {
           class="admin-student-profile-category-section__panel"
           :style="{ '--student-profile-panel-border': borderColor }"
         >
-          <div class="admin-student-profile-category-section__panel-head">
+          <div
+            v-if="canAddToProduct"
+            class="admin-student-profile-category-section__panel-head"
+          >
             <button
               type="button"
               class="admin-student-profile-category-section__add-btn"

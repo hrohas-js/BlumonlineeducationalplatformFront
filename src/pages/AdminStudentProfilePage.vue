@@ -161,6 +161,19 @@ const modalInitialAccessStatus = computed<StudentAccessStatusValue>(() => {
   return productAccessStatuses.value[productAccessCompositeKey(sk, pid)] ?? 'active'
 })
 
+const onAddToProduct = (payload: { sectionKey: AdminMaterialSectionId }) => {
+  if (!student.value || !validatedScope.value) return
+  if (payload.sectionKey === 'archive') return
+  void router.push({
+    name: 'admin-materials-students-add',
+    params: { sectionId: payload.sectionKey },
+    query: {
+      studentId: student.value.id,
+      returnSectionId: validatedScope.value,
+    },
+  })
+}
+
 const onGeneralAccess = (payload: { productId: string; sectionKey: AdminMaterialSectionId }) => {
   accessModalSectionKey.value = payload.sectionKey
   accessModalProductId.value = payload.productId
@@ -317,6 +330,7 @@ const onDeadlineModalSave = async (payload: { newDeadlineDisplay: string }) => {
             :student-row-id="studentId"
             :initially-expanded="sec.initiallyExpanded"
             :product-access-statuses="productAccessStatuses"
+            @add-to-product="onAddToProduct"
             @general-access="onGeneralAccess"
             @deadline-click="onDeadlineClick"
           />

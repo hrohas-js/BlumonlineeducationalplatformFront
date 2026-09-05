@@ -1,25 +1,39 @@
 <script setup lang="ts">
-withDefaults(
+import { STUDENT_PRODUCT_BLOCKED_MESSAGE } from '@/constants/studentProductAccess'
+
+const props = withDefaults(
   defineProps<{
     accessLabel?: string
     buttonLabel?: string
     showAccess?: boolean
+    accessDenied?: boolean
   }>(),
   {
     accessLabel: '',
     buttonLabel: 'К изучению',
     showAccess: true,
+    accessDenied: false,
   },
 )
 
 const emit = defineEmits<{
   buttonClick: []
 }>()
+
+const onButtonClick = () => {
+  if (props.accessDenied) return
+  emit('buttonClick')
+}
 </script>
 
 <template>
   <footer class="learning-course-card-footer">
-    <button type="button" class="learning-course-card-footer__button" @click="emit('buttonClick')">
+    <button
+      type="button"
+      class="learning-course-card-footer__button"
+      :disabled="accessDenied"
+      @click="onButtonClick"
+    >
       <span>{{ buttonLabel }}</span>
       <svg width="11" height="8" viewBox="0 0 11 8" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <path
@@ -29,7 +43,10 @@ const emit = defineEmits<{
       </svg>
     </button>
 
-    <span v-if="showAccess" class="learning-course-card-footer__access">Срок доступа: {{ accessLabel }}</span>
+    <span v-if="accessDenied" class="learning-course-card-footer__access">
+      {{ STUDENT_PRODUCT_BLOCKED_MESSAGE }}
+    </span>
+    <span v-else-if="showAccess" class="learning-course-card-footer__access">Срок доступа: {{ accessLabel }}</span>
   </footer>
 </template>
 
@@ -54,6 +71,11 @@ const emit = defineEmits<{
     justify-content: center;
     gap: var(--size-5);
     cursor: pointer;
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
 
     span {
       font-family: var(--font-family);

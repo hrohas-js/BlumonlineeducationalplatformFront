@@ -137,6 +137,8 @@ export interface ProductResponse {
   is_published: boolean
   is_archived?: boolean
   access_duration?: string | null
+  /** Статус доступа текущего пользователя, если бэкенд отдаёт поле. */
+  status?: AdminStudentAccessStatus | string
   created_at: string
   updated_at: string
 }
@@ -225,6 +227,8 @@ export interface ProductProgressResponse {
   progress_percent: number
   deadline: string | null
   days_left: number | null
+  /** Статус доступа текущего пользователя, если бэкенд отдаёт поле. */
+  status?: AdminStudentAccessStatus | string
   modules: ModuleProgressResponse[]
 }
 

@@ -8,14 +8,16 @@ const files = defineModel<AdminTopicEditMaterialFileMock[]>('files', { required:
 const props = withDefaults(
   defineProps<{
     deletingFileId?: string | null
+    isUploading?: boolean
   }>(),
   {
     deletingFileId: null,
+    isUploading: false,
   },
 )
 
 interface Emits {
-  (e: 'material-upload', file: File): void
+  (e: 'material-upload', files: File[]): void
   (e: 'material-delete', fileId: string): void
 }
 
@@ -46,8 +48,14 @@ const hasMaterials = computed(() => files.value.length > 0)
 const materialsActionLabel = computed(() => (hasMaterials.value ? 'Редактировать' : 'Добавить'))
 
 watch(files, () => {
-  isEditing.value = false
   addFileError.value = ''
+  if (!isEditing.value) return
+  const pending = draftFiles.value.filter((f) => !isServerFileId(f.id))
+  const serverNames = new Set(files.value.map((f) => f.fileName))
+  draftFiles.value = [
+    ...files.value.map((f) => ({ ...f })),
+    ...pending.filter((p) => !serverNames.has(p.fileName)),
+  ]
 })
 
 const startEditing = () => {
@@ -57,6 +65,7 @@ const startEditing = () => {
 }
 
 const openFilePicker = () => {
+  if (props.isUploading) return
   addFileError.value = ''
   fileInputRef.value?.click()
 }
@@ -68,18 +77,36 @@ const onFileInputChange = (event: Event) => {
     input.value = ''
     return
   }
-  const file = list[0]
-  if (!isAllowedTopicMaterialFileName(file.name)) {
-    addFileError.value = 'Допустимые форматы: PDF, DOCX, PNG, JPEG.'
+
+  const selected = Array.from(list)
+  const valid: File[] = []
+  const rejected: string[] = []
+  selected.forEach((file) => {
+    if (isAllowedTopicMaterialFileName(file.name)) {
+      valid.push(file)
+    } else {
+      rejected.push(file.name)
+    }
+  })
+
+  addFileError.value = rejected.length
+    ? `Не добавлены: ${rejected.join(', ')}. Допустимые форматы: PDF, DOCX, PNG, JPEG.`
+    : ''
+
+  if (!valid.length) {
     input.value = ''
     return
   }
+
+  const stamp = Date.now()
   draftFiles.value = [
     ...draftFiles.value,
-    { id: `mf-${Date.now()}`, fileName: file.name },
+    ...valid.map((file, index) => ({
+      id: `mf-${stamp}-${index}`,
+      fileName: file.name,
+    })),
   ]
-  emit('material-upload', file)
-  addFileError.value = ''
+  emit('material-upload', valid)
   input.value = ''
 }
 
@@ -93,9 +120,9 @@ const removeById = (id: string) => {
 }
 
 const saveDraft = () => {
-  files.value = draftFiles.value.map((f) => ({ ...f }))
   addFileError.value = ''
   isEditing.value = false
+  files.value = draftFiles.value.map((f) => ({ ...f }))
 }
 
 const cancelEditing = () => {
@@ -112,6 +139,7 @@ const cancelEditing = () => {
         ref="fileInputRef"
         class="admin-topic-edit-materials-section__file-input"
         type="file"
+        multiple
         :accept="ACCEPT_INPUT"
         tabindex="-1"
         aria-hidden="true"
@@ -182,7 +210,12 @@ const cancelEditing = () => {
         class="admin-topic-edit-materials-section__toolbar"
         :class="{ 'admin-topic-edit-materials-section__toolbar_with-list': displayedFiles.length > 0 }"
       >
-        <button type="button" class="admin-topic-edit-materials-section__toolbar-btn" @click="openFilePicker">
+        <button
+          type="button"
+          class="admin-topic-edit-materials-section__toolbar-btn"
+          :disabled="isUploading"
+          @click="openFilePicker"
+        >
           Добавить файл
         </button>
         <button type="button" class="admin-topic-edit-materials-section__toolbar-btn" @click="saveDraft">
@@ -380,8 +413,13 @@ const cancelEditing = () => {
     box-shadow: var(--focus-ring-main);
   }
 
-  &:hover {
+  &:hover:not(:disabled) {
     filter: brightness(0.98);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
   }
 }
 

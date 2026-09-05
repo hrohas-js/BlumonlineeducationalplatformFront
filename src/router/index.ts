@@ -154,15 +154,15 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
-    path: '/admin/materials/:sectionId/students/:studentId',
-    name: 'admin-materials-student-profile',
-    component: AdminStudentProfilePage,
-    meta: { requiresAuth: true, requiresAdmin: true },
-  },
-  {
     path: '/admin/materials/:sectionId/students/add',
     name: 'admin-materials-students-add',
     component: AdminAddStudentsPage,
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: '/admin/materials/:sectionId/students/:studentId',
+    name: 'admin-materials-student-profile',
+    component: AdminStudentProfilePage,
     meta: { requiresAuth: true, requiresAdmin: true },
   },
   {

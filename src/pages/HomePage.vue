@@ -28,6 +28,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useProductsStore } from '@/stores/products'
 import { usePaymentsStore } from '@/stores/payments'
 import { useNotification } from '@/composables/useNotification'
+import { isStudentProductBlocked } from '@/constants/studentProductAccess'
 import type { ProductResponse } from '@/services/api/types'
 
 const route = useRoute()
@@ -43,6 +44,7 @@ type LearningPanelCourse = {
   completedTopics: number
   totalTopics: number
   accessUntil?: string | null
+  status?: string | null
 }
 
 const learningFilterTabs: { key: LearningMaterialsFilter; label: string; tone: '#178ef0' | '#0098a3' | '#b842ef' }[] = [
@@ -85,6 +87,7 @@ function toLearningPanelCourse(p: ProductResponse): LearningPanelCourse {
     completedTopics: progress?.completed_lessons ?? 0,
     totalTopics: progress?.total_lessons ?? 0,
     accessUntil: formatDeadline(progress?.deadline ?? null),
+    status: p.status ?? progress?.status ?? null,
   }
 }
 
@@ -184,6 +187,9 @@ function resetLearningDrillDown() {
 }
 
 const onStudyClick = (courseId: string) => {
+  const course = learningCourses.value.find((item) => item.id === courseId)
+  if (isStudentProductBlocked(course?.status)) return
+
   if (isMockData.value) {
     const detail = getMockLearningCourseDetail(courseId)
     if (!detail) {
@@ -372,6 +378,7 @@ watch(
                   <template #footer="{ accessLabel }">
                     <LearningCourseCardFooter
                       :access-label="accessLabel"
+                      :access-denied="isStudentProductBlocked(course.status)"
                       @button-click="onStudyClick(course.id)"
                     />
                   </template>
@@ -538,6 +545,7 @@ watch(
 
     @media (max-width: 1023px) {
       justify-content: center;
+      margin-bottom: var(--sp-20);
       :deep(.home-profile-info-table-item) {
         display: flex;
         margin-left: unset;

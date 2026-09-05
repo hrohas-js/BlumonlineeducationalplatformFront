@@ -43,14 +43,51 @@ const pendingMode = ref<PendingMode>(null)
 const pendingRows = ref<AddStudentRow[] | null>(null)
 const pendingExcelFile = ref<File | null>(null)
 const selectedById = ref<Record<string, boolean>>({})
+const enrolledProductIds = ref<Set<string>>(new Set())
 
 const sectionId = computed(() => route.params.sectionId as string)
+
+function queryString(value: unknown): string {
+  if (typeof value === 'string') return value
+  if (Array.isArray(value) && typeof value[0] === 'string') return value[0]
+  return ''
+}
+
+const existingStudentId = computed(() => queryString(route.query.studentId).trim())
+const isExistingStudentMode = computed(() => existingStudentId.value.length > 0)
 
 const validatedScope = computed<AdminStudentsSectionScope | null>(() =>
   isAdminStudentsSectionParam(sectionId.value) && sectionId.value !== 'archive'
     ? sectionId.value
     : null,
 )
+
+const returnSectionId = computed<AdminStudentsSectionScope>(() => {
+  const raw = queryString(route.query.returnSectionId)
+  if (isAdminStudentsSectionParam(raw)) return raw
+  return validatedScope.value ?? ADMIN_STUDENTS_SCOPE_ALL
+})
+
+const existingStudentProfileTo = computed(() => {
+  if (!existingStudentId.value) return null
+  return {
+    name: 'admin-materials-student-profile' as const,
+    params: {
+      sectionId: returnSectionId.value,
+      studentId: existingStudentId.value,
+    },
+  }
+})
+
+const backLink = computed(() => {
+  if (isExistingStudentMode.value && existingStudentProfileTo.value) {
+    return existingStudentProfileTo.value
+  }
+  return {
+    name: 'admin-materials-students' as const,
+    params: { sectionId: validatedScope.value ?? ADMIN_STUDENTS_SCOPE_ALL },
+  }
+})
 
 const breadcrumbItems = computed(() => {
   const scope = validatedScope.value
@@ -74,10 +111,12 @@ const productSections = computed(() => {
     .map((id) => ({
       id,
       title: ADMIN_MATERIAL_SECTION_TITLES[id],
-      products: (adminStore.productsBySection[id] ?? []).map((p) => ({
-        id: p.id,
-        title: p.title,
-      })),
+      products: (adminStore.productsBySection[id] ?? [])
+        .filter((p) => !isExistingStudentMode.value || !enrolledProductIds.value.has(p.id))
+        .map((p) => ({
+          id: p.id,
+          title: p.title,
+        })),
     }))
     .filter((s) => s.products.length > 0)
 })
@@ -101,6 +140,51 @@ function resetPendingState() {
   selectedById.value = {}
 }
 
+function goToExistingStudentProfile(replace = false) {
+  const to = existingStudentProfileTo.value
+  if (!to) return
+  if (replace) {
+    void router.replace(to)
+    return
+  }
+  void router.push(to)
+}
+
+async function initExistingStudentMode(): Promise<boolean> {
+  const studentId = existingStudentId.value
+  if (!studentId) return false
+
+  const result = await adminStore.fetchStudentProfileProducts(studentId)
+  if (!result.success) {
+    notify({ type: 'error', message: result.error || 'Не удалось загрузить данные ученика' })
+    goToExistingStudentProfile(true)
+    return false
+  }
+
+  const user = result.data.user
+  const enrolled = new Set<string>()
+  for (const rows of Object.values(result.data.bySection)) {
+    for (const product of rows) {
+      enrolled.add(product.id)
+    }
+  }
+  enrolledProductIds.value = enrolled
+
+  pendingRows.value = [
+    {
+      id: user.id,
+      email: user.email,
+      firstName: user.first_name.trim() || user.email,
+      lastName: user.last_name.trim() || user.email,
+      selectedUserId: user.id,
+    },
+  ]
+  pendingExcelFile.value = null
+  pendingMode.value = 'manual'
+  step.value = 'products'
+  return true
+}
+
 async function loadPageData() {
   loading.value = true
   const scope = validatedScope.value
@@ -117,6 +201,15 @@ async function loadPageData() {
     adminStore.aggregateAllSections(),
     adminStore.fetchProductsForStudentsScope(scope),
   ])
+
+  if (isExistingStudentMode.value) {
+    const ok = await initExistingStudentMode()
+    if (!ok) {
+      loading.value = false
+      return
+    }
+  }
+
   loading.value = false
 }
 
@@ -181,6 +274,10 @@ const onExcelChosen = (file: File) => {
 }
 
 const onBackToForm = () => {
+  if (isExistingStudentMode.value) {
+    goToExistingStudentProfile()
+    return
+  }
   step.value = 'form'
 }
 
@@ -189,13 +286,20 @@ const onConfirmProducts = async () => {
   if (!mode) return
 
   const product_ids = getSelectedProductIds()
+  if (isExistingStudentMode.value && !product_ids) {
+    notify({ type: 'warning', message: 'Выберите хотя бы один продукт' })
+    return
+  }
+
   submitting.value = true
 
   if (mode === 'manual') {
     const students = pendingRows.value ? buildBulkPayload(pendingRows.value) : null
     if (!students) {
       submitting.value = false
-      step.value = 'form'
+      if (!isExistingStudentMode.value) {
+        step.value = 'form'
+      }
       return
     }
 
@@ -210,13 +314,18 @@ const onConfirmProducts = async () => {
       return
     }
 
-    const { created_count, existing_count } = result.data
-    notify({
-      type: 'success',
-      message: `Создано ${created_count}, уже было ${existing_count}`,
-    })
+    if (isExistingStudentMode.value) {
+      notify({ type: 'success', message: 'Ученик добавлен на выбранные продукты' })
+      selectedById.value = {}
+    } else {
+      const { created_count, existing_count } = result.data
+      notify({
+        type: 'success',
+        message: `Создано ${created_count}, уже было ${existing_count}`,
+      })
+      resetPendingState()
+    }
     void adminStore.aggregateAllSections()
-    resetPendingState()
     successModalOpen.value = true
     return
   }
@@ -247,6 +356,11 @@ const onConfirmProducts = async () => {
 }
 
 const onSuccessModalConfirm = () => {
+  successModalOpen.value = false
+  if (isExistingStudentMode.value) {
+    goToExistingStudentProfile()
+    return
+  }
   const scope = validatedScope.value
   if (!scope) {
     void router.push({ name: 'admin-materials' })
@@ -257,6 +371,13 @@ const onSuccessModalConfirm = () => {
     params: { sectionId: scope },
   })
 }
+
+const onSuccessModalClose = () => {
+  successModalOpen.value = false
+  if (isExistingStudentMode.value) {
+    goToExistingStudentProfile()
+  }
+}
 </script>
 
 <template>
@@ -265,7 +386,7 @@ const onSuccessModalConfirm = () => {
       <div class="admin-add-students-page__panel">
         <RouterLink
           class="admin-add-students-page__back"
-          :to="{ name: 'admin-materials-students', params: { sectionId: validatedScope } }"
+          :to="backLink"
         >
           <svg
             class="admin-add-students-page__back-icon"
@@ -302,7 +423,7 @@ const onSuccessModalConfirm = () => {
           <h1 class="admin-add-students-page__title">{{ pageTitle }}</h1>
 
           <AdminAddStudentsForm
-            v-show="step === 'form'"
+            v-if="!isExistingStudentMode && step === 'form'"
             :candidates="studentCandidates"
             :submitting="submitting"
             @submit="onSubmit"
@@ -329,7 +450,7 @@ const onSuccessModalConfirm = () => {
       :is-open="successModalOpen"
       title="Добавление ученика"
       message="Через несколько минут ученик сможет начать обучение по ссылке из письма"
-      @close="successModalOpen = false"
+      @close="onSuccessModalClose"
       @confirm="onSuccessModalConfirm"
     />
   </AppLayout>

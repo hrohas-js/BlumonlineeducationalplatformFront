@@ -4,6 +4,7 @@ import BaseButton from '@/components/atoms/BaseButton.vue'
 import ModalAvatarUpload from '@/components/molecules/ModalAvatarUpload.vue'
 import ModalProfileFieldRow from '@/components/molecules/ModalProfileFieldRow.vue'
 import ModalCloseButton from '@/components/atoms/ModalCloseButton.vue'
+import PasswordResetSentModal from '@/components/organisms/PasswordResetSentModal.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useNotification } from '@/composables/useNotification'
 import type { UpdateUserRequest } from '@/services/api/types'
@@ -27,6 +28,7 @@ const about = ref('')
 
 const forgotPasswordLoading = ref(false)
 const saveLoading = ref(false)
+const passwordSentModalOpen = ref(false)
 
 const selectedAvatarFile = ref<File | null>(null)
 const avatarPreviewUrl = ref<string | null>(null)
@@ -67,7 +69,12 @@ const onOverlayClick = (event: MouseEvent) => {
   }
 }
 
+const closePasswordSentModal = () => {
+  passwordSentModalOpen.value = false
+}
+
 const onCancel = () => {
+  closePasswordSentModal()
   resetAvatarDraft()
   syncFromUser()
   closeModal()
@@ -136,16 +143,15 @@ const onForgotPassword = async () => {
     return
   }
 
-  notify({
-    type: 'success',
-    message: result.message || 'Письмо отправлено. Проверьте почту.',
-  })
+  passwordSentModalOpen.value = true
 }
 
 function onEscapeKey(event: KeyboardEvent) {
-  if (event.key === 'Escape' && props.isOpen && !forgotPasswordLoading.value && !saveLoading.value) {
-    onCancel()
+  if (event.key !== 'Escape' || !props.isOpen || forgotPasswordLoading.value || saveLoading.value) {
+    return
   }
+  if (passwordSentModalOpen.value) return
+  onCancel()
 }
 
 watch(
@@ -156,6 +162,7 @@ watch(
       syncFromUser()
       document.addEventListener('keydown', onEscapeKey)
     } else {
+      closePasswordSentModal()
       document.removeEventListener('keydown', onEscapeKey)
     }
   },
@@ -215,7 +222,7 @@ onUnmounted(() => {
           <div class="profile-edit-modal__form-actions">
             <BaseButton
               class="profile-edit-modal__action-button"
-              variant="primary"
+              variant="outline"
               shape="rounded"
               text="Сохранить"
               :disabled="forgotPasswordLoading"
@@ -235,8 +242,9 @@ onUnmounted(() => {
 
         <div class="profile-edit-modal__bottom">
           <BaseButton
-            class="profile-edit-modal__forgot"
-            variant="ghost"
+            class="profile-edit-modal__action-button profile-edit-modal__forgot"
+            variant="outline"
+            shape="rounded"
             text="Сменить пароль"
             :disabled="forgotPasswordLoading || saveLoading"
             :loading="forgotPasswordLoading"
@@ -246,6 +254,12 @@ onUnmounted(() => {
       </div>
     </div>
   </Teleport>
+
+  <PasswordResetSentModal
+    :is-open="passwordSentModalOpen"
+    @close="closePasswordSentModal"
+    @confirm="closePasswordSentModal"
+  />
 </template>
 
 <style lang="scss" scoped>
@@ -379,6 +393,14 @@ onUnmounted(() => {
 
     @media (max-width: 768px) {
       margin-top: var(--sp-20);
+    }
+  }
+
+  &__action-button,
+  &__forgot {
+    @media (max-width: 768px) {
+      font-size: var(--size-10);
+      padding: var(--sp-6) var(--sp-8);
     }
   }
 }

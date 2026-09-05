@@ -181,7 +181,7 @@ const onSave = () => {
               <span class="admin-student-access-status-modal__option-text">
                 <span class="admin-student-access-status-modal__option-title">Заблокировано:</span>
                 <span class="admin-student-access-status-modal__option-desc">
-                  видит продукт, но зайти в него не может, наступил дедлайн
+                  видит продукт, но зайти в него не может. Ученику показывается: «Нет доступа, обратитесь к администратору»
                 </span>
               </span>
             </label>

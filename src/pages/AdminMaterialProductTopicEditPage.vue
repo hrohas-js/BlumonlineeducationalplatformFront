@@ -42,6 +42,7 @@ const primaryLessonId = ref<string | null>(null)
 const videoUploadProgressById = ref<Record<string, number | null>>({})
 const deletingFileId = ref<string | null>(null)
 const deletingVideoId = ref<string | null>(null)
+const uploadingMaterials = ref(false)
 
 const productDetail = computed(() => adminStore.productDetails[productId.value] ?? null)
 
@@ -398,16 +399,44 @@ const onVideoTitleCommit = async ({ videoId, title }: { videoId: string; title: 
   }
 }
 
-const onMaterialUpload = async (file: File) => {
-  const lessonId = await ensureLesson()
-  if (!lessonId) return
-  const result = await adminService.uploadLessonFile(lessonId, file)
-  if (!result.success) {
-    notify({ type: 'error', message: result.error || 'Не удалось загрузить файл' })
-    return
+const onMaterialUpload = async (uploadFiles: File[]) => {
+  if (!uploadFiles.length || uploadingMaterials.value) return
+  uploadingMaterials.value = true
+  try {
+    const lessonId = await ensureLesson()
+    if (!lessonId) return
+
+    const failed: string[] = []
+    let uploadedCount = 0
+    for (const file of uploadFiles) {
+      const result = await adminService.uploadLessonFile(lessonId, file)
+      if (!result.success) {
+        failed.push(file.name)
+        continue
+      }
+      uploadedCount += 1
+    }
+
+    if (uploadedCount > 0) {
+      notify({
+        type: 'success',
+        message: uploadedCount === 1 ? 'Файл загружен' : `Загружено файлов: ${uploadedCount}`,
+      })
+    }
+    if (failed.length) {
+      notify({
+        type: 'error',
+        message:
+          failed.length === 1
+            ? `Не удалось загрузить файл: ${failed[0]}`
+            : `Не удалось загрузить: ${failed.join(', ')}`,
+      })
+    }
+
+    await load({ silent: true })
+  } finally {
+    uploadingMaterials.value = false
   }
-  notify({ type: 'success', message: 'Файл загружен' })
-  await load({ silent: true })
 }
 
 const onMaterialDelete = async (fileId: string) => {
@@ -525,6 +554,7 @@ const onSave = async () => {
         <AdminTopicEditMaterialsSection
           v-model:files="materialFiles"
           :deleting-file-id="deletingFileId"
+          :is-uploading="uploadingMaterials"
           @material-upload="onMaterialUpload"
           @material-delete="onMaterialDelete"
         />

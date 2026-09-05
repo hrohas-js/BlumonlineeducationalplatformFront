@@ -83,6 +83,11 @@ const toggle = () => {
     align-items: center;
     justify-content: center;
 
+    @media (max-width: 768px) {
+      width: var(--size-14);
+      height: var(--size-14);
+    }
+
     &_checked {
       background: var(--dopolnitelnyy-tekst);
       border-color: var(--dopolnitelnyy-tekst);

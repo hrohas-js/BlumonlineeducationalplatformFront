@@ -27,8 +27,9 @@ function extractApiError(error: unknown, fallback: string): { message: string; c
   if (error && typeof error === 'object' && 'response' in error) {
     const ax = error as AxiosError<ApiErrorBody>
     const data = ax.response?.data
+    const deniedByStatus = ax.response?.status === 403 ? 'permission_denied' : null
     if (data?.error && typeof data.error === 'object') {
-      const code = typeof data.error.code === 'string' ? data.error.code : null
+      const code = typeof data.error.code === 'string' ? data.error.code : deniedByStatus
       const message =
         typeof data.error.message === 'string' && data.error.message.length
           ? data.error.message
@@ -36,10 +37,10 @@ function extractApiError(error: unknown, fallback: string): { message: string; c
       return { message, code }
     }
     if (data && typeof data.message === 'string' && data.message.length) {
-      return { message: data.message, code: null }
+      return { message: data.message, code: deniedByStatus }
     }
     const d = data?.detail
-    if (typeof d === 'string' && d.length) return { message: d, code: null }
+    if (typeof d === 'string' && d.length) return { message: d, code: deniedByStatus }
     if (Array.isArray(d)) {
       const parts = d
         .map((item) => {
@@ -50,8 +51,9 @@ function extractApiError(error: unknown, fallback: string): { message: string; c
           return ''
         })
         .filter(Boolean)
-      if (parts.length) return { message: parts.join('; '), code: null }
+      if (parts.length) return { message: parts.join('; '), code: deniedByStatus }
     }
+    if (deniedByStatus) return { message: fallback, code: deniedByStatus }
   }
   if (error instanceof Error) return { message: error.message, code: null }
   return { message: fallback, code: null }
