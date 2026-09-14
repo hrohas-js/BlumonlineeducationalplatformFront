@@ -17,6 +17,7 @@ export const PRODUCT_ENDPOINTS = {
   list: '/api/v1/products',
   byId: (id: string) => `/api/v1/products/${id}`,
   progress: (id: string) => `/api/v1/products/${id}/progress`,
+  pricing: (id: string) => `/api/v1/products/${id}/pricing`,
   myCourses: '/api/v1/products/my-courses',
   completeLesson: (lessonId: string) => `/api/v1/products/lessons/${lessonId}/complete`,
 } as const

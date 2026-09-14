@@ -66,7 +66,7 @@ const onDeleteConfirm = () => {
       <BaseButton
         class="admin-product-other-settings-section__btn"
         variant="outline"
-        size="medium"
+        size="small"
         block
         @click="openArchiveConfirm"
       >
@@ -79,7 +79,7 @@ const onDeleteConfirm = () => {
       <BaseButton
         class="admin-product-other-settings-section__btn"
         variant="outline"
-        size="medium"
+        size="small"
         block
         @click="openDeleteConfirm"
       >
@@ -132,17 +132,12 @@ const onDeleteConfirm = () => {
   display: flex;
   flex-direction: column;
   gap: var(--sp-16);
-  width: 100%;
-  max-width: 424px;
 }
 
 :deep(.admin-product-other-settings-section__btn.base-button) {
   border-radius: var(--radius-10);
   border-color: #010307;
   white-space: normal;
-  height: auto;
-  min-height: var(--size-60);
-  padding: var(--sp-12) var(--sp-20);
 }
 
 :deep(.admin-product-other-settings-section__btn.base-button_outline:hover:not(.base-button_disabled)) {

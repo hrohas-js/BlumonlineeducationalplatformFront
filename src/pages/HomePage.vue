@@ -26,9 +26,9 @@ import {
 } from '@/utils/learningCourseMock'
 import { useAuthStore } from '@/stores/auth'
 import { useProductsStore } from '@/stores/products'
-import { usePaymentsStore } from '@/stores/payments'
 import { useNotification } from '@/composables/useNotification'
 import { isStudentProductBlocked } from '@/constants/studentProductAccess'
+import { formatRenewalPeriodLabel } from '@/utils/pluralizeRu'
 import type { ProductResponse } from '@/services/api/types'
 
 const route = useRoute()
@@ -47,6 +47,15 @@ type LearningPanelCourse = {
   status?: string | null
 }
 
+type RenewalPanelCard = {
+  id: string
+  productId: string
+  title: string
+  description: string
+  category: 'courses' | 'projects' | 'other'
+  paymentLink: string
+}
+
 const learningFilterTabs: { key: LearningMaterialsFilter; label: string; tone: '#178ef0' | '#0098a3' | '#b842ef' }[] = [
   { key: 'all', label: 'Все материалы', tone: '#178ef0' },
   { key: 'courses', label: 'Курсы', tone: '#178ef0' },
@@ -56,7 +65,6 @@ const learningFilterTabs: { key: LearningMaterialsFilter; label: string; tone: '
 
 const authStore = useAuthStore()
 const productsStore = useProductsStore()
-const paymentsStore = usePaymentsStore()
 const { notify } = useNotification()
 const activeSection = computed(() => route.params.section as ProfileSection)
 
@@ -127,6 +135,30 @@ const filteredLearningCourses = computed(() => {
 
 const hasLearningCourses = computed(() => learningCourses.value.length > 0)
 
+const renewalCards = computed<RenewalPanelCard[]>(() =>
+  realLearningCourses.value.flatMap((course) => {
+    const options = productsStore.pricingByProductId[course.id]
+    if (!options?.length) return []
+    return options.map((option) => ({
+      id: `${course.id}:${option.id}`,
+      productId: course.id,
+      title: course.title,
+      description: formatRenewalPeriodLabel(option.period_months),
+      category: course.category,
+      paymentLink: option.payment_link,
+    }))
+  }),
+)
+
+const filteredRenewalCards = computed(() => {
+  if (materialsFilter.value === 'all') {
+    return renewalCards.value
+  }
+  return renewalCards.value.filter((c) => c.category === materialsFilter.value)
+})
+
+const hasRenewalCards = computed(() => renewalCards.value.length > 0)
+
 const setSection = (section: ProfileSection) => {
   void router.push({ name: 'home-section', params: { section } })
 }
@@ -135,21 +167,13 @@ const goToLearningSection = () => {
   setSection('learning')
 }
 
-const onRenewalPaymentClick = async (courseId: string) => {
-  // Mock-курс — нет реального product_id под Robokassa, отлуп
-  if (isMockData.value) {
-    notify({
-      type: 'info',
-      message: 'Демо-данные: оплата будет доступна когда подключим реальные курсы',
-    })
+const onRenewalPaymentClick = (paymentLink: string) => {
+  const link = paymentLink.trim()
+  if (!link) {
+    notify({ type: 'error', message: 'Ссылка на оплату недоступна' })
     return
   }
-  const result = await paymentsStore.renew(courseId)
-  if (!result.success || !result.data) {
-    notify({ type: 'error', message: result.error || 'Не удалось создать платёж' })
-    return
-  }
-  window.location.assign(result.data.payment_url)
+  window.open(link, '_blank', 'noopener,noreferrer')
 }
 
 async function loadCourses() {
@@ -160,6 +184,11 @@ async function loadCourses() {
     return
   }
   void productsStore.fetchAllProgress()
+}
+
+async function loadRenewalData() {
+  await loadCourses()
+  await productsStore.fetchAllPricing()
 }
 
 watch(
@@ -247,6 +276,10 @@ const onLearningTopicComplete = (topicId: string, completed: boolean) => {
 }
 
 onMounted(() => {
+  if (activeSection.value === 'renewal') {
+    void loadRenewalData()
+    return
+  }
   void loadCourses()
 })
 
@@ -259,6 +292,9 @@ watch(
     }
     if (section === 'learning') {
       void loadCourses()
+    }
+    if (section === 'renewal') {
+      void loadRenewalData()
     }
   },
 )
@@ -418,7 +454,7 @@ watch(
           >
             <HomeProfileInfoTableItem :label="authStore.studentNameBadgeLabel" tone="#178ef0" is-student-name />
 
-            <template v-if="!hasLearningCourses">
+            <template v-if="!hasRenewalCards">
               <div class="home-profile__learning-empty">
                 <p class="home-profile__learning-empty-text">
                   Здесь пока пусто, впрочем есть
@@ -441,14 +477,13 @@ watch(
 
               <div class="home-learning__courses">
                 <LearningCourseCard
-                  v-for="course in filteredLearningCourses"
-                  :key="course.id"
-                  :title="course.title"
-                  :description="course.description"
-                  :category="course.category"
-                  :completed-topics="course.completedTopics"
-                  :total-topics="course.totalTopics"
-                  :access-until="course.accessUntil"
+                  v-for="card in filteredRenewalCards"
+                  :key="card.id"
+                  :title="card.title"
+                  :description="card.description"
+                  :category="card.category"
+                  :completed-topics="0"
+                  :total-topics="0"
                   :show-progress="false"
                 >
                   <template #header="{ title, category, categoryLabel }">
@@ -464,7 +499,7 @@ watch(
                       class="learning-course-card-footer_renewal"
                       :show-access="false"
                       button-label="Перейти к оплате"
-                      @button-click="onRenewalPaymentClick(course.id)"
+                      @button-click="onRenewalPaymentClick(card.paymentLink)"
                     />
                   </template>
                 </LearningCourseCard>

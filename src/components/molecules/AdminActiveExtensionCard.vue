@@ -12,6 +12,7 @@ defineProps<Props>()
 interface Emits {
   (e: 'pay-click'): void
   (e: 'delete-click'): void
+  (e: 'edit-click'): void
 }
 
 const emit = defineEmits<Emits>()
@@ -20,7 +21,7 @@ const emit = defineEmits<Emits>()
 <template>
   <div class="admin-active-extension-card-wrap">
     <!-- Figma 452:1268 / 477:2275 — «Продление ЗК 1 тема» -->
-    <article class="admin-active-extension-card">
+    <article class="admin-active-extension-card" @click="emit('edit-click')">
       <div class="admin-active-extension-card__top">
         <p class="admin-active-extension-card__topic">{{ topicLabel }}</p>
         <div class="admin-active-extension-card__badge">
@@ -33,7 +34,7 @@ const emit = defineEmits<Emits>()
         variant="outline"
         size="small"
         shape="rounded"
-        @click="emit('pay-click')"
+        @click.stop="emit('pay-click')"
       >
         <span class="admin-active-extension-card__pay-label">Перейти к оплате</span>
         <span class="admin-active-extension-card__pay-arrow" aria-hidden="true">
@@ -57,7 +58,7 @@ const emit = defineEmits<Emits>()
       size="small"
       shape="rounded"
       text="Удалить"
-      @click="emit('delete-click')"
+      @click.stop="emit('delete-click')"
     />
   </div>
 </template>
@@ -83,6 +84,7 @@ const emit = defineEmits<Emits>()
   border-radius: var(--radius-10);
   background-color: #f5f5f5;
   box-sizing: border-box;
+  cursor: pointer;
 }
 
 .admin-active-extension-card__top {

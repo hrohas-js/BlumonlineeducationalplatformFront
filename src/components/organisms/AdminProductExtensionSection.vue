@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import BaseButton from '@/components/atoms/BaseButton.vue'
 
 export interface AdminProductExtensionTopicOption {
@@ -15,6 +15,8 @@ export interface AdminProductExtensionDurationOption {
 interface Props {
   topicOptions: AdminProductExtensionTopicOption[]
   durationOptions?: AdminProductExtensionDurationOption[]
+  isEditing?: boolean
+  submitting?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -23,9 +25,13 @@ const props = withDefaults(defineProps<Props>(), {
     { id: '2m', label: 'Продление на 2 месяца (с момента оплаты)' },
     { id: '6m', label: 'Продление на 6 месяцев (с момента оплаты)' },
   ],
+  isEditing: false,
+  submitting: false,
 })
 
 const paymentLink = defineModel<string>('paymentLink', { required: true })
+const selectedTopicId = defineModel<string | null>('topicId', { default: null })
+const selectedDurationId = defineModel<string | null>('durationId', { default: null })
 
 interface Emits {
   (e: 'select-topic', payload: { topicId: string }): void
@@ -37,8 +43,6 @@ const emit = defineEmits<Emits>()
 
 const topicOpen = ref(false)
 const durationOpen = ref(false)
-const selectedTopicId = ref<string | null>(null)
-const selectedDurationId = ref<string | null>(null)
 
 const topicSelectorEl = ref<HTMLElement | null>(null)
 const durationSelectorEl = ref<HTMLElement | null>(null)
@@ -60,23 +64,29 @@ const durationPillLabel = computed(() => {
   return opt?.label ?? durationPillPlaceholder
 })
 
+const submitLabel = computed(() => (props.isEditing ? 'Сохранить' : 'Создать'))
+
 const toggleTopic = () => {
+  if (props.isEditing) return
   durationOpen.value = false
   topicOpen.value = !topicOpen.value
 }
 
 const toggleDuration = () => {
+  if (props.isEditing) return
   topicOpen.value = false
   durationOpen.value = !durationOpen.value
 }
 
 const selectTopic = (opt: AdminProductExtensionTopicOption) => {
+  if (props.isEditing) return
   selectedTopicId.value = opt.id
   emit('select-topic', { topicId: opt.id })
   topicOpen.value = false
 }
 
 const selectDuration = (opt: AdminProductExtensionDurationOption) => {
+  if (props.isEditing) return
   selectedDurationId.value = opt.id
   emit('select-duration', { durationId: opt.id })
   durationOpen.value = false
@@ -98,6 +108,16 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('pointerdown', onDocumentPointerDown, true)
 })
+
+watch(
+  () => props.isEditing,
+  (editing) => {
+    if (editing) {
+      topicOpen.value = false
+      durationOpen.value = false
+    }
+  },
+)
 </script>
 
 <template>
@@ -110,9 +130,12 @@ onUnmounted(() => {
         <button
           type="button"
           class="admin-product-extension-section__pill"
+          :class="{ 'admin-product-extension-section__pill_disabled': isEditing }"
           :aria-expanded="topicOpen"
           aria-haspopup="listbox"
+          :aria-disabled="isEditing"
           :aria-controls="topicOpen ? 'admin-product-extension-topic-listbox' : undefined"
+          :disabled="isEditing"
           @click.stop="toggleTopic"
         >
           <span class="admin-product-extension-section__pill-handle" aria-hidden="true">
@@ -163,9 +186,12 @@ onUnmounted(() => {
         <button
           type="button"
           class="admin-product-extension-section__pill"
+          :class="{ 'admin-product-extension-section__pill_disabled': isEditing }"
           :aria-expanded="durationOpen"
           aria-haspopup="listbox"
+          :aria-disabled="isEditing"
           :aria-controls="durationOpen ? 'admin-product-extension-duration-listbox' : undefined"
+          :disabled="isEditing"
           @click.stop="toggleDuration"
         >
           <span class="admin-product-extension-section__pill-handle" aria-hidden="true">
@@ -229,8 +255,10 @@ onUnmounted(() => {
       <BaseButton
         class="admin-product-extension-section__create"
         variant="outline"
-        size="medium"
-        text="Создать"
+        size="small"
+        :text="submitLabel"
+        :disabled="submitting"
+        :loading="submitting"
         @click="emit('create')"
       />
     </div>
@@ -303,6 +331,11 @@ onUnmounted(() => {
   &:focus-visible {
     outline: none;
     box-shadow: var(--focus-ring-main);
+  }
+
+  &_disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
   }
 }
 

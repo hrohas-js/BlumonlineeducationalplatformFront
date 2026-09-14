@@ -10,6 +10,7 @@ import type {
   ProductListResponse,
   ProductDetailResponse,
   ProductProgressResponse,
+  ProductPricingOption,
   ProductsQuery,
   LessonProgressCreate,
   LessonProgressResponse,
@@ -34,6 +35,12 @@ export const productsService = {
   async getProgress(productId: string): ApiServiceResponse<ProductProgressResponse> {
     const api = useApi()
     return api.get<ProductProgressResponse>(PRODUCT_ENDPOINTS.progress(productId))
+  },
+
+  /** GET /api/v1/products/{product_id}/pricing — варианты продления с ценой и ссылкой на оплату */
+  async getPricing(productId: string): ApiServiceResponse<ProductPricingOption[]> {
+    const api = useApi()
+    return api.get<ProductPricingOption[]>(PRODUCT_ENDPOINTS.pricing(productId))
   },
 
   /** GET /api/v1/products/my-courses — продукты, к которым у пользователя есть доступ */

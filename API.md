@@ -207,6 +207,22 @@ GET /products/{id}/progress  🔒
 
 ---
 
+## Варианты продления (pricing)
+
+```
+GET /products/{product_id}/pricing  🔒
+→ [{
+    id, module_id, module_title,
+    period_months,   ← срок продления в месяцах
+    price,
+    payment_link     ← готовая ссылка на оплату
+  }]
+```
+
+Только связки с известной ценой у опубликованного курса. Для кнопок «продлить тему/курс на N мес» в кабинете ученика. Редиректишь пользователя на `payment_link` в новой вкладке.
+
+---
+
 ## История платежей и продление
 
 ```
@@ -238,6 +254,26 @@ DELETE /admin/products/{id}
 
 POST   /admin/products/{id}/image     multipart/form-data, поле: file
        → { file_url, file_name, file_size, file_type }
+```
+
+### Продления (pricing)
+
+```
+GET    /admin/products/{product_id}/pricing
+       → [{ id, product_id, module_id, module_title, period_months,
+            payment_link, price, price_synced_at, sync_error, price_conflicts, ... }]
+
+POST   /admin/products/{product_id}/pricing
+       { module_id?: uuid | null, period_months, payment_link }
+       → AdminProductPricing (201). Цена парсится из ссылки; ошибка — в sync_error.
+       module_id = null — продление всего курса («Все темы»).
+
+PUT    /admin/products/{product_id}/pricing/{pricing_id}
+       { payment_link?, price? }
+       → AdminProductPricing. Смена ссылки перепарсивает цену.
+
+DELETE /admin/products/{product_id}/pricing/{pricing_id}
+       → 204
 ```
 
 ### Модули

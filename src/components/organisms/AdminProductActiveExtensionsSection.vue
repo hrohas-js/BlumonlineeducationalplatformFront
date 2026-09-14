@@ -1,9 +1,15 @@
 <script setup lang="ts">
 import AdminActiveExtensionCard from '@/components/molecules/AdminActiveExtensionCard.vue'
-import type { AdminMaterialActiveExtensionMock } from '@/utils/adminMaterialCatalog'
+
+export interface AdminActiveExtensionCardItem {
+  id: string
+  topicLabel: string
+  productBadge: string
+  extensionText: string
+}
 
 interface Props {
-  items: AdminMaterialActiveExtensionMock[]
+  items: AdminActiveExtensionCardItem[]
 }
 
 defineProps<Props>()
@@ -11,13 +17,14 @@ defineProps<Props>()
 interface Emits {
   (e: 'pay-click', id: string): void
   (e: 'delete-click', id: string): void
+  (e: 'edit-click', id: string): void
 }
 
 const emit = defineEmits<Emits>()
 </script>
 
 <template>
-  <section class="admin-product-active-extensions-section">
+  <section v-if="items.length > 0" class="admin-product-active-extensions-section">
     <hr class="admin-product-active-extensions-section__rule" />
     <h2 class="admin-product-active-extensions-section__title">Активные</h2>
     <div class="admin-product-active-extensions-section__grid">
@@ -32,6 +39,7 @@ const emit = defineEmits<Emits>()
           :extension-text="item.extensionText"
           @pay-click="emit('pay-click', item.id)"
           @delete-click="emit('delete-click', item.id)"
+          @edit-click="emit('edit-click', item.id)"
         />
       </div>
     </div>

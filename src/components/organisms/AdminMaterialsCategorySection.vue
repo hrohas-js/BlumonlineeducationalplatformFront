@@ -464,4 +464,10 @@ const toggleExpanded = () => {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+@media (max-width: 500px) {
+  .admin-materials-category-section__grid {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

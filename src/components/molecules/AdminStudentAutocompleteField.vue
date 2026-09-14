@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useDebouncedRef } from '@/composables/useDebouncedRef'
 import type { AggregatedAdminStudentRow } from '@/stores/admin'
+import { matchesWordStart } from '@/utils/startsWithWord'
 
 export interface AddStudentRow {
   id: string
@@ -42,17 +43,11 @@ const matches = computed(() => {
   const q = debouncedQuery.value.trim().toLowerCase()
   if (!q) return []
   return props.candidates
-    .filter((student) => {
-      const haystack = [
-        student.email,
-        student.first_name,
-        student.last_name,
-        student.name,
-      ]
-        .join(' ')
-        .toLowerCase()
-      return haystack.includes(q)
-    })
+    .filter((student) =>
+      [student.email, student.first_name, student.last_name, student.name].some((field) =>
+        matchesWordStart(field, q),
+      ),
+    )
     .slice(0, 10)
 })
 

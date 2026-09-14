@@ -137,6 +137,12 @@ export interface ProductResponse {
   is_published: boolean
   is_archived?: boolean
   access_duration?: string | null
+  /** Количество модулей/тем в продукте (список admin products). */
+  modules_count?: number
+  /** Общий дедлайн продукта (ISO date / datetime). */
+  deadline?: string | null
+  /** Срок доступа в днях, если задан относительный период вместо даты. */
+  access_duration_days?: number | null
   /** Статус доступа текущего пользователя, если бэкенд отдаёт поле. */
   status?: AdminStudentAccessStatus | string
   created_at: string
@@ -148,6 +154,16 @@ export interface ProductListResponse {
   total: number
   skip: number
   limit: number
+}
+
+/** Вариант продления курса/темы: срок, цена и ссылка на оплату. */
+export interface ProductPricingOption {
+  id: string
+  module_id: string
+  module_title: string
+  period_months: number
+  price: string
+  payment_link: string
 }
 
 export interface FileResponse {
@@ -367,6 +383,38 @@ export interface AdminProductListResponse {
   total: number
   skip: number
   limit: number
+}
+
+export interface AdminProductPricingConflict {
+  id: string
+  module_title?: string
+  period_months?: number
+}
+
+export interface AdminProductPricing {
+  id: string
+  product_id: string
+  module_id: string | null
+  module_title: string | null
+  period_months: number
+  payment_link: string
+  price: string | null
+  price_synced_at: string | null
+  sync_error: string | null
+  price_conflicts: AdminProductPricingConflict[]
+  created_at: string
+  updated_at: string
+}
+
+export interface AdminProductPricingCreateRequest {
+  module_id?: string | null
+  period_months: number
+  payment_link: string
+}
+
+export interface AdminProductPricingUpdateRequest {
+  payment_link?: string
+  price?: number
 }
 
 export interface AdminModuleCreateRequest {

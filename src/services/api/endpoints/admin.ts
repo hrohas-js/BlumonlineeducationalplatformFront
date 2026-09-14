@@ -10,6 +10,9 @@ import type {
   AdminProductCreateRequest,
   AdminProductUpdateRequest,
   AdminProductListResponse,
+  AdminProductPricing,
+  AdminProductPricingCreateRequest,
+  AdminProductPricingUpdateRequest,
   AdminModuleCreateRequest,
   AdminModuleUpdateRequest,
   ModuleResponse,
@@ -100,6 +103,34 @@ export const adminService = {
   ): ApiServiceResponse<AdminFileUploadResponse> {
     const api = useApi()
     return api.uploadFile<AdminFileUploadResponse>(ADMIN_ENDPOINTS.productImage(id), file)
+  },
+
+  // --- Pricing ---
+  async listProductPricing(productId: string): ApiServiceResponse<AdminProductPricing[]> {
+    const api = useApi()
+    return api.get<AdminProductPricing[]>(ADMIN_ENDPOINTS.productPricing(productId))
+  },
+
+  async createProductPricing(
+    productId: string,
+    body: AdminProductPricingCreateRequest
+  ): ApiServiceResponse<AdminProductPricing> {
+    const api = useApi()
+    return api.post<AdminProductPricing>(ADMIN_ENDPOINTS.productPricing(productId), body)
+  },
+
+  async updateProductPricing(
+    productId: string,
+    pricingId: string,
+    body: AdminProductPricingUpdateRequest
+  ): ApiServiceResponse<AdminProductPricing> {
+    const api = useApi()
+    return api.put<AdminProductPricing>(ADMIN_ENDPOINTS.productPricingById(productId, pricingId), body)
+  },
+
+  async deleteProductPricing(productId: string, pricingId: string): ApiServiceResponse<null> {
+    const api = useApi()
+    return api.delete<null>(ADMIN_ENDPOINTS.productPricingById(productId, pricingId))
   },
 
   // --- Modules ---

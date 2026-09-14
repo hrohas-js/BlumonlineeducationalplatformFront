@@ -10,19 +10,32 @@ import type {
 } from '@/utils/adminMaterialCatalog'
 import type { ProductResponse, ProductDetailResponse } from '@/services/api/types'
 import type { AggregatedAdminStudentRow } from '@/stores/admin'
+import { accessDurationToRuLabel } from '@/utils/adminDateInput'
+import { formatDaysWord } from '@/utils/pluralizeRu'
+
+export function productDeadlineSuffix(product: ProductResponse): string {
+  if (product.is_archived) return 'закрыт'
+  const dateLabel =
+    accessDurationToRuLabel(product.deadline) || accessDurationToRuLabel(product.access_duration)
+  if (dateLabel) return dateLabel
+  if (product.access_duration_days != null) {
+    return `${product.access_duration_days} ${formatDaysWord(product.access_duration_days)}`
+  }
+  return 'бессрочно'
+}
 
 export function productToCardItem(
   product: ProductResponse,
   detail?: ProductDetailResponse | null,
   studentsCount = 0
 ): AdminMaterialCardItem {
-  const topicsCount = detail?.modules?.length ?? 0
+  const topicsCount = product.modules_count ?? detail?.modules?.length ?? 0
   return {
     id: product.id,
     title: product.title,
     topicsCount,
     usersCount: studentsCount,
-    deadlineSuffix: '—',
+    deadlineSuffix: productDeadlineSuffix(product),
   }
 }
 

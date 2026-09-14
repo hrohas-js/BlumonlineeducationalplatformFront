@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useLogout } from '@/composables/useLogout'
+import { useAppWorkspace } from '@/composables/useAppWorkspace'
 import HeaderNavSubmenuPanel from '@/components/molecules/HeaderNavSubmenuPanel.vue'
 import { USEFUL_ARTICLES_URL } from '@/constants/headerExternalLinks'
 import { TRAINING_ARCHIVE_NAV_ITEMS } from '@/constants/trainingArchiveNav'
@@ -53,13 +54,12 @@ const emit = defineEmits<{
   (event: 'open-support'): void
 }>()
 
-const route = useRoute()
 const router = useRouter()
 const { openLogoutModal } = useLogout()
+const { isAdminMode } = useAppWorkspace()
 const isProgramsOpen = ref(false)
 const isArchiveOpen = ref(false)
 
-const isAdminMode = computed(() => route.path.startsWith('/admin'))
 const items = computed(() => (isAdminMode.value ? adminItems : studentItems))
 
 const togglePrograms = () => {

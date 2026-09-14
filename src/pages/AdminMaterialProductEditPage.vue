@@ -4,13 +4,18 @@ import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/components/layouts/AppLayout.vue'
 import AdminProductEditGeneralSection from '@/components/organisms/AdminProductEditGeneralSection.vue'
 import AdminProductTopicsSection from '@/components/organisms/AdminProductTopicsSection.vue'
+import AdminProductPriceSection from '@/components/organisms/AdminProductPriceSection.vue'
 import AdminProductExtensionSection from '@/components/organisms/AdminProductExtensionSection.vue'
 import AdminProductActiveExtensionsSection from '@/components/organisms/AdminProductActiveExtensionsSection.vue'
 import AdminProductOtherSettingsSection from '@/components/organisms/AdminProductOtherSettingsSection.vue'
 import type { AdminProductTopicMenuAction } from '@/components/organisms/AdminProductTopicMenuModal.vue'
-import type { AdminMaterialActiveExtensionMock, AdminMaterialProductTopicRow } from '@/utils/adminMaterialCatalog'
+import type { AdminProductExtensionDurationOption } from '@/components/organisms/AdminProductExtensionSection.vue'
+import type { AdminActiveExtensionCardItem } from '@/components/organisms/AdminProductActiveExtensionsSection.vue'
+import type { AdminMaterialProductTopicRow } from '@/utils/adminMaterialCatalog'
 import { useAdminStore } from '@/stores/admin'
 import { adminService } from '@/services/api/endpoints/admin'
+import type { AdminProductPricing } from '@/services/api/types'
+import { formatRenewalPeriodLabel } from '@/utils/pluralizeRu'
 import {
   getAdminMaterialSectionTitle,
   isAdminMaterialSectionId,
@@ -35,11 +40,53 @@ const loading = ref(true)
 const formTitle = ref('')
 const formDescription = ref('')
 const formDeadline = ref('')
+const formPrice = ref('')
+const coursePriceSubmitting = ref(false)
 const breadcrumbProductTitle = ref('')
 const folderLabel = ref('')
 const topics = ref<AdminMaterialProductTopicRow[]>([])
-const activeExtensions = ref<AdminMaterialActiveExtensionMock[]>([])
+const productPricing = ref<AdminProductPricing[]>([])
 const paymentLink = ref('')
+const extensionTopicId = ref<string | null>(null)
+const extensionDurationId = ref<string | null>(null)
+const editingPricingId = ref<string | null>(null)
+const pricingSubmitting = ref(false)
+
+const ALL_TOPICS_ID = 'all'
+
+const PRESET_DURATION_OPTIONS: AdminProductExtensionDurationOption[] = [
+  { id: '1m', label: 'Продление на 1 месяц (с момента оплаты)' },
+  { id: '2m', label: 'Продление на 2 месяца (с момента оплаты)' },
+  { id: '6m', label: 'Продление на 6 месяцев (с момента оплаты)' },
+]
+
+function durationIdFromMonths(months: number): string {
+  if (months === 1) return '1m'
+  if (months === 2) return '2m'
+  if (months === 6) return '6m'
+  return `${months}m`
+}
+
+function monthsFromDurationId(id: string): number | null {
+  if (id === '1m') return 1
+  if (id === '2m') return 2
+  if (id === '6m') return 6
+  const match = /^(\d+)m$/.exec(id)
+  if (!match) return null
+  const n = Number(match[1])
+  return Number.isFinite(n) && n > 0 ? n : null
+}
+
+function durationLabel(months: number): string {
+  return `${formatRenewalPeriodLabel(months)} (с момента оплаты)`
+}
+
+function resetExtensionForm() {
+  editingPricingId.value = null
+  extensionTopicId.value = null
+  extensionDurationId.value = null
+  paymentLink.value = ''
+}
 
 const sectionTitle = computed(() =>
   isAdminMaterialSectionId(sectionId.value)
@@ -65,6 +112,7 @@ async function loadProduct() {
   const p = result.data
   formTitle.value = p.title
   formDescription.value = p.description ?? ''
+  formPrice.value = p.price ?? ''
   const hasAnyTopicDeadline = p.modules.some((m) => m.access_duration != null)
   formDeadline.value = hasAnyTopicDeadline ? '' : accessDurationToRuLabel(p.access_duration)
   breadcrumbProductTitle.value = p.title
@@ -76,7 +124,17 @@ async function loadProduct() {
       title: m.title,
       accessUntil: (m.access_duration ? accessDurationToRuLabel(m.access_duration) : '') || '—',
     }))
-  activeExtensions.value = []
+  await loadPricing()
+}
+
+async function loadPricing() {
+  const result = await adminService.listProductPricing(productId.value)
+  if (!result.success || !Array.isArray(result.data)) {
+    notify({ type: 'error', message: result.error || 'Не удалось загрузить продления' })
+    productPricing.value = []
+    return
+  }
+  productPricing.value = result.data
 }
 
 onMounted(() => {
@@ -84,6 +142,7 @@ onMounted(() => {
 })
 
 watch(productId, () => {
+  resetExtensionForm()
   void loadProduct()
 })
 
@@ -97,12 +156,72 @@ const breadcrumbItems = computed(() => [
 ])
 
 const extensionTopicOptions = computed(() => [
-  { id: 'all', label: 'Все темы' },
+  { id: ALL_TOPICS_ID, label: 'Все темы' },
   ...topics.value.map((t) => ({ id: t.id, label: t.title })),
 ])
 
+const extensionDurationOptions = computed<AdminProductExtensionDurationOption[]>(() => {
+  const extras: AdminProductExtensionDurationOption[] = []
+  const selected = extensionDurationId.value
+  if (selected && !PRESET_DURATION_OPTIONS.some((o) => o.id === selected)) {
+    const months = monthsFromDurationId(selected)
+    if (months) {
+      extras.push({ id: selected, label: durationLabel(months) })
+    }
+  }
+  return [...PRESET_DURATION_OPTIONS, ...extras]
+})
+
+const activeExtensionCards = computed<AdminActiveExtensionCardItem[]>(() => {
+  const badge = formTitle.value.trim() || productDetail.value?.title || ''
+  return productPricing.value.map((item) => ({
+    id: item.id,
+    topicLabel: item.module_title?.trim() || 'Все темы',
+    productBadge: badge,
+    extensionText: durationLabel(item.period_months),
+  }))
+})
+
+function notifyPricingSideEffects(item: AdminProductPricing) {
+  if (item.sync_error) {
+    notify({ type: 'warning', message: item.sync_error })
+  }
+  if (item.price_conflicts?.length) {
+    notify({ type: 'warning', message: 'Цена совпадает с другой связкой продления' })
+  }
+}
+
 const onCancel = () => {
   void router.back()
+}
+
+function parseCoursePrice(raw: string): number | null {
+  const normalized = raw.trim().replace(/\s/g, '').replace(',', '.')
+  if (!normalized) return null
+  const value = Number(normalized)
+  if (!Number.isFinite(value) || value < 0) return null
+  return value
+}
+
+const onSaveCoursePrice = async () => {
+  if (coursePriceSubmitting.value) return
+  const price = parseCoursePrice(formPrice.value)
+  if (price === null) {
+    notify({ type: 'warning', message: 'Укажите корректную цену' })
+    return
+  }
+
+  coursePriceSubmitting.value = true
+  const result = await adminStore.updateProduct(productId.value, { price })
+  coursePriceSubmitting.value = false
+  if (!result.success) {
+    notify({ type: 'error', message: result.error || 'Не удалось сохранить цену' })
+    return
+  }
+  if (result.data?.price != null) {
+    formPrice.value = String(result.data.price)
+  }
+  notify({ type: 'success', message: 'Цена сохранена' })
 }
 
 const onSave = async () => {
@@ -150,15 +269,97 @@ const onCreateTopic = async () => {
   ]
 }
 
-const onExtensionCreate = () => {
-  notify({ type: 'info', message: 'Продления настраиваются через оплату на стороне Robokassa' })
+const onExtensionCreate = async () => {
+  if (pricingSubmitting.value) return
+
+  const topicId = extensionTopicId.value
+  const durationId = extensionDurationId.value
+  const link = paymentLink.value.trim()
+
+  if (!topicId) {
+    notify({ type: 'warning', message: 'Выберите тему' })
+    return
+  }
+  if (!durationId) {
+    notify({ type: 'warning', message: 'Выберите срок продления' })
+    return
+  }
+  if (!link) {
+    notify({ type: 'warning', message: 'Укажите ссылку на оплату' })
+    return
+  }
+
+  const periodMonths = monthsFromDurationId(durationId)
+  if (!periodMonths) {
+    notify({ type: 'warning', message: 'Некорректный срок продления' })
+    return
+  }
+
+  pricingSubmitting.value = true
+
+  if (editingPricingId.value) {
+    const result = await adminService.updateProductPricing(productId.value, editingPricingId.value, {
+      payment_link: link,
+    })
+    pricingSubmitting.value = false
+    if (!result.success || !result.data) {
+      notify({ type: 'error', message: result.error || 'Не удалось сохранить продление' })
+      return
+    }
+    notifyPricingSideEffects(result.data)
+    resetExtensionForm()
+    await loadPricing()
+    notify({ type: 'success', message: 'Продление сохранено' })
+    return
+  }
+
+  const result = await adminService.createProductPricing(productId.value, {
+    module_id: topicId === ALL_TOPICS_ID ? null : topicId,
+    period_months: periodMonths,
+    payment_link: link,
+  })
+  pricingSubmitting.value = false
+  if (!result.success || !result.data) {
+    notify({ type: 'error', message: result.error || 'Не удалось создать продление' })
+    return
+  }
+  notifyPricingSideEffects(result.data)
+  resetExtensionForm()
+  await loadPricing()
+  notify({ type: 'success', message: 'Продление создано' })
 }
 
-const onExtensionSelectTopic = (_payload: { topicId: string }) => {}
-const onExtensionSelectDuration = (_payload: { durationId: string }) => {}
+const onActiveExtensionEdit = (id: string) => {
+  const item = productPricing.value.find((p) => p.id === id)
+  if (!item) return
+  editingPricingId.value = item.id
+  extensionTopicId.value = item.module_id ?? ALL_TOPICS_ID
+  extensionDurationId.value = durationIdFromMonths(item.period_months)
+  paymentLink.value = item.payment_link ?? ''
+}
 
-const onActiveExtensionDelete = (id: string) => {
-  activeExtensions.value = activeExtensions.value.filter((item) => item.id !== id)
+const onActiveExtensionPay = (id: string) => {
+  const item = productPricing.value.find((p) => p.id === id)
+  const link = item?.payment_link?.trim() ?? ''
+  if (!link) {
+    notify({ type: 'error', message: 'Ссылка на оплату недоступна' })
+    return
+  }
+  window.open(link, '_blank', 'noopener,noreferrer')
+}
+
+const onActiveExtensionDelete = async (id: string) => {
+  if (!window.confirm('Удалить это продление?')) return
+  const result = await adminService.deleteProductPricing(productId.value, id)
+  if (!result.success) {
+    notify({ type: 'error', message: result.error || 'Не удалось удалить продление' })
+    return
+  }
+  if (editingPricingId.value === id) {
+    resetExtensionForm()
+  }
+  await loadPricing()
+  notify({ type: 'success', message: 'Продление удалено' })
 }
 
 const onTopicEditClick = (topicId: string) => {
@@ -307,18 +508,28 @@ const onUnarchive = async () => {
           @topic-edit-click="onTopicEditClick"
         />
 
+        <AdminProductPriceSection
+          v-model:price="formPrice"
+          :submitting="coursePriceSubmitting"
+          @save="onSaveCoursePrice"
+        />
+
         <AdminProductExtensionSection
           :topic-options="extensionTopicOptions"
+          :duration-options="extensionDurationOptions"
+          :is-editing="Boolean(editingPricingId)"
+          :submitting="pricingSubmitting"
           v-model:payment-link="paymentLink"
-          @select-topic="onExtensionSelectTopic"
-          @select-duration="onExtensionSelectDuration"
+          v-model:topic-id="extensionTopicId"
+          v-model:duration-id="extensionDurationId"
           @create="onExtensionCreate"
         />
 
         <AdminProductActiveExtensionsSection
-          :items="activeExtensions"
-          @pay-click="() => {}"
+          :items="activeExtensionCards"
+          @pay-click="onActiveExtensionPay"
           @delete-click="onActiveExtensionDelete"
+          @edit-click="onActiveExtensionEdit"
         />
 
         <AdminProductOtherSettingsSection

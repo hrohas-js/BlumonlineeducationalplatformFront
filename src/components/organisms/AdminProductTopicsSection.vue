@@ -123,7 +123,7 @@ const onDeadlineSave = (payload: { accessUntil: string }) => {
       <BaseButton
         class="admin-product-topics-section__create"
         variant="outline"
-        size="medium"
+        size="small"
         text="Создать новую тему"
         @click="emit('create-topic')"
       />

@@ -11,6 +11,7 @@ import type {
   ProductResponse,
   ProductProgressResponse,
   ProductDetailResponse,
+  ProductPricingOption,
   ProductsQuery,
 } from '@/services/api/types'
 
@@ -19,6 +20,7 @@ export const useProductsStore = defineStore('products', () => {
   const myCourses = ref<ProductResponse[]>([])
   const progressByProductId = ref<Record<string, ProductProgressResponse>>({})
   const productDetails = ref<Record<string, ProductDetailResponse>>({})
+  const pricingByProductId = ref<Record<string, ProductPricingOption[]>>({})
   const loading = ref<boolean>(false)
   const error = ref<string | null>(null)
 
@@ -70,6 +72,25 @@ export const useProductsStore = defineStore('products', () => {
     await Promise.all(myCourses.value.map((c) => fetchProgress(c.id)))
   }
 
+  async function fetchPricing(productId: string) {
+    const result = await productsService.getPricing(productId)
+    const options = result.success && Array.isArray(result.data) ? result.data : []
+    pricingByProductId.value = {
+      ...pricingByProductId.value,
+      [productId]: options,
+    }
+    if (!result.success) {
+      return { success: false as const, error: result.error || 'Не удалось загрузить варианты продления' }
+    }
+    return { success: true as const, data: options }
+  }
+
+  /** Параллельно подтянуть pricing по всем my-courses (для карточек /renewal). */
+  async function fetchAllPricing() {
+    if (myCourses.value.length === 0) return
+    await Promise.all(myCourses.value.map((c) => fetchPricing(c.id)))
+  }
+
   async function fetchProductDetail(productId: string) {
     const result = await productsService.getById(productId)
     if (result.success && result.data) {
@@ -91,6 +112,7 @@ export const useProductsStore = defineStore('products', () => {
     myCourses.value = []
     progressByProductId.value = {}
     productDetails.value = {}
+    pricingByProductId.value = {}
     error.value = null
   }
 
@@ -98,6 +120,7 @@ export const useProductsStore = defineStore('products', () => {
     myCourses,
     progressByProductId,
     productDetails,
+    pricingByProductId,
     loading,
     error,
     hasCourses,
@@ -105,6 +128,8 @@ export const useProductsStore = defineStore('products', () => {
     fetchMyCourses,
     fetchProgress,
     fetchAllProgress,
+    fetchPricing,
+    fetchAllPricing,
     fetchProductDetail,
     completeLesson,
     reset,

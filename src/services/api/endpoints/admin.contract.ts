@@ -4,6 +4,9 @@ export const ADMIN_ENDPOINTS = {
   productArchive: (id: string) => `/api/v1/admin/products/${id}/archive`,
   productUnarchive: (id: string) => `/api/v1/admin/products/${id}/unarchive`,
   productImage: (id: string) => `/api/v1/admin/products/${id}/image`,
+  productPricing: (productId: string) => `/api/v1/admin/products/${productId}/pricing`,
+  productPricingById: (productId: string, pricingId: string) =>
+    `/api/v1/admin/products/${productId}/pricing/${pricingId}`,
   productStudents: (id: string) => `/api/v1/admin/products/${id}/students`,
   productStudentsExport: (id: string) => `/api/v1/admin/products/${id}/students/export`,
   productModules: (courseId: string) => `/api/v1/admin/products/${courseId}/modules`,
