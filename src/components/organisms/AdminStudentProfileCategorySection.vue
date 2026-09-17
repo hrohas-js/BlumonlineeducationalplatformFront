@@ -173,14 +173,15 @@ const onGeneralAccess = (productId: string) => {
               <RouterLink
                 class="admin-student-profile-category-section__pill-btn admin-student-profile-category-section__pill-btn_link"
                 :to="{
-                  name: 'admin-student-folder-lessons-access',
+                  name: 'admin-student-product-topics',
                   params: {
                     sectionId: studentsListSectionId,
                     studentId: studentRowId,
                     materialSectionKey: sectionKey,
-                    sourceProductId: product.id,
+                    productId: product.id,
                   },
                 }"
+                :aria-label="`Доступ к урокам (модулям): ${product.title}`"
               >
                 <svg
                   class="admin-student-profile-category-section__pill-btn-icon"
@@ -629,18 +630,13 @@ const onGeneralAccess = (productId: string) => {
 }
 
 @media (max-width: 1023px) {
-  .admin-student-profile-category-section__trigger {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
   .admin-student-profile-category-section__item-title {
     font-size: var(--size-15);
   }
 
   .admin-student-profile-category-section__item-right {
-    width: 100%;
-    justify-content: space-between;
+    justify-content: flex-end;
+    gap: var(--sp-10);
   }
 
   .admin-student-profile-category-section__stat-value {

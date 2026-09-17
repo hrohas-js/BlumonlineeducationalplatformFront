@@ -146,6 +146,10 @@ onUnmounted(() => {
 
 <style lang="scss" scoped>
 .admin-product-edit-breadcrumbs {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+
   &__list {
     display: flex;
     flex-wrap: wrap;
@@ -154,6 +158,8 @@ onUnmounted(() => {
     padding: 0;
     list-style: none;
     gap: var(--sp-15);
+    min-width: 0;
+    max-width: 100%;
   }
 
   &__item {
@@ -161,6 +167,11 @@ onUnmounted(() => {
     align-items: center;
     gap: var(--sp-15);
     min-width: 0;
+
+    &:last-child {
+      flex: 1 1 100%;
+      max-width: 100%;
+    }
   }
 
   &__dropdown-wrap {
@@ -177,7 +188,6 @@ onUnmounted(() => {
     font-size: var(--size-20);
     line-height: normal;
     color: var(--black);
-    white-space: nowrap;
   }
 
   &__link {
@@ -190,6 +200,7 @@ onUnmounted(() => {
     text-decoration: none;
     cursor: pointer;
     transition: border-color 0.25s ease;
+    white-space: nowrap;
 
     &:hover {
       border-bottom-color: var(--podcherkivanie-pri-navedenii);
@@ -209,7 +220,9 @@ onUnmounted(() => {
   }
 
   &__text {
-    text-align: center;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   &__sep {

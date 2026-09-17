@@ -375,9 +375,9 @@ watch(
   border: 1px solid #010307;
   border-radius: var(--radius-10);
   background-color: #f5f5f5;
-  min-width: 100%;
-  width: max-content;
-  max-width: min(520px, calc(100vw - 48px));
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
 }
 
 .admin-product-extension-section__dropdown-row {
@@ -442,8 +442,6 @@ watch(
   }
 
   .admin-product-extension-section__dropdown-row-label {
-    white-space: normal;
-    overflow-wrap: break-word;
     min-width: 0;
   }
 
@@ -466,13 +464,10 @@ watch(
 }
 
 .admin-product-extension-section__dropdown-row-label {
-  white-space: nowrap;
-}
-
-@media (max-width: 639px) {
-  .admin-product-extension-section__dropdown-row-label {
-    white-space: normal;
-  }
+  flex: 1;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .admin-product-extension-section__payment {

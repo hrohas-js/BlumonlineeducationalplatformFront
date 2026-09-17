@@ -110,7 +110,7 @@ const onOpenStudents = (section: AdminCategorySectionConfig) => {
     margin-top: var(--sp-20);
     display: flex;
     flex-direction: column;
-    gap: var(--sp-8);
+    gap: var(--sp-20);
   }
 
   &__back {

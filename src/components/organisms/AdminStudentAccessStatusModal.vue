@@ -507,7 +507,7 @@ const onSave = () => {
 
 @media (max-width: 1023px) {
   .admin-student-access-status-modal__title {
-    font-size: var(--size-15);
+    font-size: 18.75px;
   }
 
   .admin-student-access-status-modal__user-name {
@@ -523,6 +523,10 @@ const onSave = () => {
   }
 
   .admin-student-access-status-modal__notify-email {
+    font-size: var(--size-15);
+  }
+
+  :deep(.admin-student-access-status-modal__save) {
     font-size: var(--size-15);
   }
 }
@@ -554,7 +558,7 @@ const onSave = () => {
 
   .admin-student-access-status-modal__title {
     padding: 0 var(--sp-32) 0 var(--sp-4);
-    font-size: var(--size-15);
+    font-size: 18.75px;
     line-height: 1.3;
   }
 
@@ -576,29 +580,18 @@ const onSave = () => {
   }
 
   .admin-student-access-status-modal__option {
-    display: grid;
-    grid-template-columns: 25px 40px minmax(0, 1fr);
-    grid-template-rows: auto auto;
-    column-gap: var(--sp-12);
-    row-gap: var(--sp-8);
-    align-items: start;
-  }
-
-  .admin-student-access-status-modal__radio-visual {
-    grid-column: 1;
-    grid-row: 1;
+    display: flex;
+    gap: var(--sp-12);
   }
 
   .admin-student-access-status-modal__status-icon {
-    grid-column: 2;
-    grid-row: 1;
     width: 40px;
     height: 40px;
   }
 
   .admin-student-access-status-modal__option-text {
-    grid-column: 1 / -1;
-    grid-row: 2;
+    flex: 1;
+    min-width: 0;
     font-size: var(--size-15);
     line-height: 1.35;
   }
@@ -635,6 +628,7 @@ const onSave = () => {
   :deep(.admin-student-access-status-modal__save) {
     width: 100%;
     min-height: 44px;
+    font-size: var(--size-15);
   }
 }
 
@@ -650,8 +644,7 @@ const onSave = () => {
   }
 
   .admin-student-access-status-modal__option {
-    grid-template-columns: 22px 36px minmax(0, 1fr);
-    column-gap: var(--sp-10);
+    gap: var(--sp-10);
   }
 
   .admin-student-access-status-modal__radio-visual {

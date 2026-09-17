@@ -439,8 +439,8 @@ const toggleExpanded = () => {
   }
 
   .admin-materials-category-section__item-right {
-    width: 100%;
     justify-content: flex-end;
+    gap: var(--sp-10);
   }
 
   .admin-materials-category-section__item-title,

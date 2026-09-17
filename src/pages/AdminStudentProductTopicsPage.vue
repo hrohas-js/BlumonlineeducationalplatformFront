@@ -12,20 +12,33 @@ import {
   isAdminStudentsSectionParam,
   type AdminMaterialSectionId,
 } from '@/constants/adminMaterials'
-import { deadlineRuLabelToIso, formatLocalDateForInput } from '@/utils/adminDateInput'
-import {
-  resolveAdminStudentRow,
-  type AdminTopicGradeStatus,
-  type AdminProductTopicRow,
-} from '@/utils/adminMockStudents'
+import { formatLocalDateForInput } from '@/utils/adminDateInput'
+import type { AdminTopicGradeStatus, AdminProductTopicRow } from '@/utils/adminMockStudents'
 import { useAdminStore } from '@/stores/admin'
-// import { useNotification } from '@/composables/useNotification'
+
+interface PageStudent {
+  id: string
+  name: string
+  avatarUrl: string | null
+}
+
+function formatTopicTitle(index: number, rawTitle: string): string {
+  const title = rawTitle.trim()
+  const alreadyNumbered = new RegExp(`^${index}\\s*тема\\b`, 'i')
+  if (alreadyNumbered.test(title)) return title
+  return `${index} тема: ${title}`
+}
 
 const route = useRoute()
 const router = useRouter()
 const adminStore = useAdminStore()
-// const { notify } = useNotification()
+
 const topicSource = ref<AdminProductTopicRow[]>([])
+const student = ref<PageStudent | null>(null)
+const productTitle = ref('')
+const loading = ref(true)
+const loadError = ref('')
+let loadSeq = 0
 
 const sectionId = computed(() => route.params.sectionId as string)
 const studentId = computed(() => route.params.studentId as string)
@@ -40,15 +53,6 @@ const validatedMaterialSection = computed<AdminMaterialSectionId | null>(() =>
   isAdminMaterialSectionId(materialSectionKey.value) ? materialSectionKey.value : null,
 )
 
-const student = computed(() => {
-  if (!validatedScope.value) return null
-  const agg = adminStore.findAggregatedStudent(validatedScope.value, studentId.value)
-  if (agg) {
-    return { id: agg.user_id, name: agg.name, email: agg.email, productsCount: agg.productIds.length }
-  }
-  return resolveAdminStudentRow(validatedScope.value, studentId.value)
-})
-
 const accentColor = computed(() => {
   const k = validatedMaterialSection.value
   if (!k) return ADMIN_MATERIAL_SECTION_BORDER_COLORS.courses
@@ -61,33 +65,103 @@ const sectionBreadcrumbTitle = computed(() => {
   return ADMIN_MATERIAL_SECTION_TITLES[k]
 })
 
-const productTitle = computed(() => adminStore.productDetails[productId.value]?.title ?? '')
+const profileBackTo = computed(() => ({
+  name: 'admin-materials-student-profile' as const,
+  params: { sectionId: sectionId.value, studentId: studentId.value },
+}))
 
-async function loadTopics() {
-  const pid = productId.value
-  if (!pid) return
+async function loadPage() {
+  const seq = ++loadSeq
+  const sid = sectionId.value
+  const stid = studentId.value
+  const mkey = materialSectionKey.value
+  const pid = productId.value.trim()
+
+  if (!isAdminStudentsSectionParam(sid)) {
+    loading.value = false
+    void router.replace({ name: 'admin-materials' })
+    return
+  }
+  if (!isAdminMaterialSectionId(mkey) || !stid.trim() || !pid) {
+    loading.value = false
+    void router.replace({
+      name: 'admin-materials-student-profile',
+      params: { sectionId: sid, studentId: stid },
+    })
+    return
+  }
+
+  loading.value = true
+  loadError.value = ''
+  student.value = null
+  productTitle.value = ''
+  topicSource.value = []
+
+  const profileRes = await adminStore.fetchStudentProfileProducts(stid)
+  if (seq !== loadSeq) return
+  if (!profileRes.success) {
+    loadError.value = profileRes.error || 'Не удалось загрузить данные ученика'
+    loading.value = false
+    return
+  }
+
+  const productRow = Object.values(profileRes.data.bySection)
+    .flat()
+    .find((p) => p.id === pid)
+  if (!productRow) {
+    loading.value = false
+    void router.replace({
+      name: 'admin-materials-student-profile',
+      params: { sectionId: sid, studentId: stid },
+    })
+    return
+  }
+
+  const u = profileRes.data.user
+  student.value = {
+    id: u.id,
+    name: [u.first_name, u.last_name].filter(Boolean).join(' ').trim() || u.email,
+    avatarUrl: null,
+  }
+  productTitle.value = productRow.title
+
   const detail = await adminStore.fetchProductDetail(pid)
-  if (!detail.success || !detail.data) return
+  if (seq !== loadSeq) return
+  if (!detail.success || !detail.data) {
+    loadError.value = detail.error || 'Не удалось загрузить темы продукта'
+    loading.value = false
+    return
+  }
+
+  productTitle.value = detail.data.title || productRow.title
+
   const studentsRes = await adminStore.fetchStudentsForProduct(pid)
+  if (seq !== loadSeq) return
   const studentRow = studentsRes.success
-    ? studentsRes.data?.find((s) => s.user_id === studentId.value)
+    ? studentsRes.data?.find((s) => s.user_id === stid)
     : undefined
+  const gradeStatus: AdminTopicGradeStatus = studentRow?.is_completed ? 'passed' : 'neutral'
+
   topicSource.value = [...detail.data.modules]
     .sort((a, b) => a.order_index - b.order_index)
-    .map((m) => ({
+    .map((m, index) => ({
       id: m.id,
-      title: m.title,
-      deadlineLabel: studentRow?.deadline
-        ? new Date(studentRow.deadline).toLocaleDateString('ru-RU')
-        : null,
-      gradeStatus: (studentRow?.is_completed ? 'passed' : 'neutral') as AdminTopicGradeStatus,
+      title: formatTopicTitle(index + 1, m.title),
+      deadlineLabel: null,
+      gradeStatus,
       topicEnabled: true,
     }))
+
+  loading.value = false
 }
 
-watch([productId, studentId], () => {
-  void loadTopics()
-}, { immediate: true })
+watch(
+  () => [sectionId.value, studentId.value, materialSectionKey.value, productId.value] as const,
+  () => {
+    void loadPage()
+  },
+  { immediate: true },
+)
 
 const minDateForDateInput = computed(() => formatLocalDateForInput(new Date()))
 
@@ -101,54 +175,14 @@ watch(
     const nextDl: Record<string, string> = {}
     const nextG: Record<string, AdminTopicGradeStatus> = {}
     const nextE: Record<string, boolean> = {}
-    const minStr = minDateForDateInput.value
     for (const r of rows) {
-      const fromMock = deadlineRuLabelToIso(r.deadlineLabel)
-      nextDl[r.id] = fromMock && fromMock < minStr ? minStr : fromMock
+      nextDl[r.id] = ''
       nextG[r.id] = r.gradeStatus
       nextE[r.id] = r.topicEnabled
     }
     deadlineByTopicId.value = nextDl
     gradeByTopicId.value = nextG
     enabledByTopicId.value = nextE
-  },
-  { immediate: true },
-)
-
-function isProductInStudentProfile(): boolean {
-  const pid = productId.value
-  if (!pid.trim()) return false
-  return Boolean(adminStore.productDetails[pid])
-}
-
-watch(
-  () =>
-    [sectionId.value, studentId.value, materialSectionKey.value, productId.value] as const,
-  ([sid, stid, mkey, pid]) => {
-    if (!isAdminStudentsSectionParam(sid)) {
-      void router.replace({ name: 'admin-materials' })
-      return
-    }
-    const row =
-      adminStore.findAggregatedStudent(sid, stid) ??
-      resolveAdminStudentRow(sid, stid)
-    if (!row) {
-      void router.replace({ name: 'admin-materials-students', params: { sectionId: sid } })
-      return
-    }
-    if (!isAdminMaterialSectionId(mkey)) {
-      void router.replace({
-        name: 'admin-materials-student-profile',
-        params: { sectionId: sid, studentId: stid },
-      })
-      return
-    }
-    if (!pid.trim() || !isProductInStudentProfile()) {
-      void router.replace({
-        name: 'admin-materials-student-profile',
-        params: { sectionId: sid, studentId: stid },
-      })
-    }
   },
   { immediate: true },
 )
@@ -186,17 +220,11 @@ const setTopicEnabled = (id: string, value: boolean) => {
 <template>
   <AppLayout>
     <section
-      v-if="student && validatedScope && validatedMaterialSection && productTitle"
+      v-if="validatedScope && validatedMaterialSection"
       class="admin-student-product-topics-page"
     >
       <div class="admin-student-product-topics-page__panel">
-        <RouterLink
-          class="admin-student-product-topics-page__back"
-          :to="{
-            name: 'admin-materials-student-profile',
-            params: { sectionId: validatedScope, studentId: student.id },
-          }"
-        >
+        <RouterLink class="admin-student-product-topics-page__back" :to="profileBackTo">
           <svg
             class="admin-student-product-topics-page__back-icon"
             width="20"
@@ -219,81 +247,89 @@ const setTopicEnabled = (id: string, value: boolean) => {
 
         <h1 class="admin-student-product-topics-page__title">Темы продукта</h1>
 
-        <div class="admin-student-product-topics-page__user">
-          <div class="admin-student-product-topics-page__avatar">
-            <img
-              v-if="student.avatarUrl"
-              class="admin-student-product-topics-page__avatar-img"
-              :src="student.avatarUrl"
-              alt=""
-            />
-            <svg
-              v-else
-              class="admin-student-product-topics-page__avatar-placeholder"
-              width="52"
-              height="52"
-              viewBox="0 0 52 52"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              <circle cx="26" cy="26" r="25" stroke="currentColor" stroke-width="2" />
-              <circle cx="26" cy="20" r="8" stroke="currentColor" stroke-width="1.5" />
-              <path
-                d="M14 42c0-6.627 5.373-12 12-12s12 5.373 12 12"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-              />
-            </svg>
-          </div>
-          <span class="admin-student-product-topics-page__user-name">{{ student.name }}</span>
-        </div>
+        <p v-if="loading" class="admin-student-product-topics-page__status">Загружаем темы…</p>
+        <p v-else-if="loadError" class="admin-student-product-topics-page__error">{{ loadError }}</p>
 
-        <div class="admin-student-product-topics-page__toolbar">
-          <div class="admin-student-product-topics-page__crumbs">
-            <span class="admin-student-product-topics-page__crumb">{{ sectionBreadcrumbTitle }}</span>
-            <span class="admin-student-product-topics-page__crumb-sep" aria-hidden="true">
-              <svg width="30" height="8" viewBox="0 0 30 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M0 4h22M22 1l5 3-5 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+        <template v-else-if="student && productTitle">
+          <div class="admin-student-product-topics-page__user">
+            <div class="admin-student-product-topics-page__avatar">
+              <img
+                v-if="student.avatarUrl"
+                class="admin-student-product-topics-page__avatar-img"
+                :src="student.avatarUrl"
+                alt=""
+              />
+              <svg
+                v-else
+                class="admin-student-product-topics-page__avatar-placeholder"
+                width="52"
+                height="52"
+                viewBox="0 0 52 52"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <circle cx="26" cy="26" r="25" stroke="currentColor" stroke-width="2" />
+                <circle cx="26" cy="20" r="8" stroke="currentColor" stroke-width="1.5" />
+                <path
+                  d="M14 42c0-6.627 5.373-12 12-12s12 5.373 12 12"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                />
               </svg>
-            </span>
-            <span class="admin-student-product-topics-page__crumb admin-student-product-topics-page__crumb_current">
-              {{ productTitle }}
-            </span>
-          </div>
-          <button
-            type="button"
-            class="admin-student-product-topics-page__open-all"
-            :style="{ '--product-topics-accent': accentColor }"
-            @click="openAllTopics"
-          >
-            Открыть все темы продукта
-          </button>
-        </div>
-
-        <ul class="admin-student-product-topics-page__list" aria-label="Темы продукта">
-          <li v-for="row in topicSource" :key="row.id" class="admin-student-product-topics-page__row">
-            <span class="admin-student-product-topics-page__topic-title">{{ row.title }}</span>
-            <div class="admin-student-product-topics-page__row-controls">
-              <AdminDateField
-                label="Дедлайн"
-                :model-value="deadlineByTopicId[row.id] ?? ''"
-                :min="minDateForDateInput"
-                @update:model-value="updateDeadline(row.id, $event)"
-              />
-              <AdminTopicGradeBadge
-                :variant="gradeByTopicId[row.id] === 'passed' ? 'passed' : 'neutral'"
-                @toggle="toggleGrade(row.id)"
-              />
-              <AdminToggleSwitch
-                :model-value="enabledByTopicId[row.id] ?? false"
-                :label="`Доступ к теме: ${row.title}`"
-                @update:model-value="setTopicEnabled(row.id, $event)"
-              />
             </div>
-          </li>
-        </ul>
+            <span class="admin-student-product-topics-page__user-name">{{ student.name }}</span>
+          </div>
+
+          <div class="admin-student-product-topics-page__toolbar">
+            <div class="admin-student-product-topics-page__crumbs">
+              <span class="admin-student-product-topics-page__crumb">{{ sectionBreadcrumbTitle }}</span>
+              <span class="admin-student-product-topics-page__crumb-sep" aria-hidden="true">
+                <svg width="30" height="8" viewBox="0 0 30 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0 4h22M22 1l5 3-5 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                </svg>
+              </span>
+              <span class="admin-student-product-topics-page__crumb admin-student-product-topics-page__crumb_current">
+                {{ productTitle }}
+              </span>
+            </div>
+            <button
+              type="button"
+              class="admin-student-product-topics-page__open-all"
+              :style="{ '--product-topics-accent': accentColor }"
+              @click="openAllTopics"
+            >
+              Открыть все темы продукта
+            </button>
+          </div>
+
+          <p v-if="topicSource.length === 0" class="admin-student-product-topics-page__empty">
+            У этого продукта пока нет тем
+          </p>
+          <ul v-else class="admin-student-product-topics-page__list" aria-label="Темы продукта">
+            <li v-for="row in topicSource" :key="row.id" class="admin-student-product-topics-page__row">
+              <span class="admin-student-product-topics-page__topic-title">{{ row.title }}</span>
+              <div class="admin-student-product-topics-page__row-controls">
+                <AdminDateField
+                  label="Дедлайн"
+                  :model-value="deadlineByTopicId[row.id] ?? ''"
+                  :min="minDateForDateInput"
+                  @update:model-value="updateDeadline(row.id, $event)"
+                />
+                <AdminTopicGradeBadge
+                  :variant="gradeByTopicId[row.id] === 'passed' ? 'passed' : 'neutral'"
+                  @toggle="toggleGrade(row.id)"
+                />
+                <AdminToggleSwitch
+                  :model-value="enabledByTopicId[row.id] ?? false"
+                  :label="`Доступ к теме: ${row.title}`"
+                  @update:model-value="setTopicEnabled(row.id, $event)"
+                />
+              </div>
+            </li>
+          </ul>
+        </template>
       </div>
     </section>
   </AppLayout>
@@ -365,6 +401,23 @@ const setTopicEnabled = (id: string, value: boolean) => {
   line-height: normal;
   text-align: center;
   color: #010307;
+}
+
+.admin-student-product-topics-page__status,
+.admin-student-product-topics-page__empty {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-family);
+  font-size: var(--size-20);
+  color: #010307;
+}
+
+.admin-student-product-topics-page__error {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-family);
+  font-size: var(--size-20);
+  color: var(--error);
 }
 
 .admin-student-product-topics-page__user {
@@ -532,6 +585,13 @@ const setTopicEnabled = (id: string, value: boolean) => {
   }
 
   .admin-student-product-topics-page__topic-title {
+    font-size: var(--size-15);
+    flex: 1 1 100%;
+  }
+
+  .admin-student-product-topics-page__status,
+  .admin-student-product-topics-page__empty,
+  .admin-student-product-topics-page__error {
     font-size: var(--size-15);
   }
 }
