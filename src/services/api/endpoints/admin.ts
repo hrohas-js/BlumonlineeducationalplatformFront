@@ -30,10 +30,17 @@ import type {
   LessonVideoResponse,
   LessonVideoUpdate,
   LessonVideoReorderRequest,
+  LessonSubsectionResponse,
+  LessonSubsectionCreateRequest,
+  LessonSubsectionUpdateRequest,
+  LessonSubsectionReorderRequest,
   AdminGrantAccessRequest,
   AdminDeadlineUpdateRequest,
   AdminStudentAccessUpdateRequest,
   AdminStudentAccessUpdateResponse,
+  AdminStudentModuleItem,
+  AdminStudentModuleUpdateRequest,
+  AdminStudentModulesAccessRequest,
   AdminStudentProductsResponse,
   AdminStudentsListResponse,
   AdminBulkStudentsRequest,
@@ -250,7 +257,11 @@ export const adminService = {
   async uploadLessonVideo(
     id: string,
     file: File,
-    options?: { title?: string | null; onProgress?: (percent: number) => void }
+    options?: {
+      title?: string | null
+      subsectionId?: string | null
+      onProgress?: (percent: number) => void
+    }
   ): ApiServiceResponse<LessonVideoResponse> {
     const onProgress = options?.onProgress
     const contentType = resolveVideoContentType(file)
@@ -291,10 +302,14 @@ export const adminService = {
     }
 
     onProgress?.(95)
-    const confirmResult = await this.confirmLessonVideo(id, {
+    const confirmBody: LessonVideoConfirmRequest = {
       file_key,
       title: options?.title?.trim() || null,
-    })
+    }
+    if (options?.subsectionId) {
+      confirmBody.subsection_id = options.subsectionId
+    }
+    const confirmResult = await this.confirmLessonVideo(id, confirmBody)
     if (!confirmResult.success || !confirmResult.data) {
       return {
         data: null,
@@ -331,6 +346,42 @@ export const adminService = {
   ): ApiServiceResponse<MessageResponse> {
     const api = useApi()
     return api.put<MessageResponse>(ADMIN_ENDPOINTS.lessonVideosReorder(lessonId), body)
+  },
+
+  async createLessonSubsection(
+    lessonId: string,
+    body: LessonSubsectionCreateRequest,
+  ): ApiServiceResponse<LessonSubsectionResponse> {
+    const api = useApi()
+    return api.post<LessonSubsectionResponse>(ADMIN_ENDPOINTS.lessonSubsections(lessonId), body)
+  },
+
+  async reorderLessonSubsections(
+    lessonId: string,
+    body: LessonSubsectionReorderRequest,
+  ): ApiServiceResponse<MessageResponse> {
+    const api = useApi()
+    return api.put<MessageResponse>(ADMIN_ENDPOINTS.lessonSubsectionsReorder(lessonId), body)
+  },
+
+  async updateLessonSubsection(
+    lessonId: string,
+    subsectionId: string,
+    body: LessonSubsectionUpdateRequest,
+  ): ApiServiceResponse<LessonSubsectionResponse> {
+    const api = useApi()
+    return api.patch<LessonSubsectionResponse>(
+      ADMIN_ENDPOINTS.lessonSubsectionById(lessonId, subsectionId),
+      body,
+    )
+  },
+
+  async deleteLessonSubsection(
+    lessonId: string,
+    subsectionId: string,
+  ): ApiServiceResponse<null> {
+    const api = useApi()
+    return api.delete<null>(ADMIN_ENDPOINTS.lessonSubsectionById(lessonId, subsectionId))
   },
 
   async uploadLessonFile(id: string, file: File): ApiServiceResponse<AdminFileUploadResponse> {
@@ -383,6 +434,35 @@ export const adminService = {
     return api.patch<AdminStudentAccessUpdateResponse>(
       ADMIN_ENDPOINTS.userProductAccessUpdate(userId, productId),
       body
+    )
+  },
+
+  async listStudentModules(
+    productId: string,
+    userId: string,
+  ): ApiServiceResponse<AdminStudentModuleItem[]> {
+    const api = useApi()
+    return api.get<AdminStudentModuleItem[]>(ADMIN_ENDPOINTS.studentModules(productId, userId))
+  },
+
+  async updateStudentModule(
+    userId: string,
+    moduleId: string,
+    body: AdminStudentModuleUpdateRequest,
+  ): ApiServiceResponse<AdminStudentModuleItem> {
+    const api = useApi()
+    return api.patch<AdminStudentModuleItem>(ADMIN_ENDPOINTS.userModuleAccess(userId, moduleId), body)
+  },
+
+  async setAllStudentModulesAccess(
+    userId: string,
+    productId: string,
+    body: AdminStudentModulesAccessRequest,
+  ): ApiServiceResponse<AdminStudentModuleItem[]> {
+    const api = useApi()
+    return api.put<AdminStudentModuleItem[]>(
+      ADMIN_ENDPOINTS.userProductModulesAccess(userId, productId),
+      body,
     )
   },
 

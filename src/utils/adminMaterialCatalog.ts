@@ -251,8 +251,16 @@ export interface AdminTopicEditVideoMock {
   videoSrc?: string
   fileName?: string
   orderIndex?: number
+  subsectionId?: string | null
   /** true — видео уже сохранено на сервере (есть LessonVideo.id). */
   persisted?: boolean
+}
+
+export interface AdminTopicEditSubsectionMock {
+  id: string
+  title: string
+  orderIndex: number
+  videos: AdminTopicEditVideoMock[]
 }
 
 export interface AdminTopicEditContentMock {

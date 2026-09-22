@@ -14,6 +14,8 @@ import type {
   ProductsQuery,
   LessonProgressCreate,
   LessonProgressResponse,
+  ModulePassRequest,
+  ModulePassResponse,
   ApiServiceResponse,
 } from '../types'
 import { PRODUCT_ENDPOINTS } from './auth.contract'
@@ -56,5 +58,14 @@ export const productsService = {
   ): ApiServiceResponse<LessonProgressResponse> {
     const api = useApi()
     return api.post<LessonProgressResponse>(PRODUCT_ENDPOINTS.completeLesson(lessonId), payload)
+  },
+
+  /** POST /api/v1/products/modules/{module_id}/pass */
+  async passModule(
+    moduleId: string,
+    payload: ModulePassRequest,
+  ): ApiServiceResponse<ModulePassResponse> {
+    const api = useApi()
+    return api.post<ModulePassResponse>(PRODUCT_ENDPOINTS.passModule(moduleId), payload)
   },
 }

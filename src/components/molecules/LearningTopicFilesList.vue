@@ -1,10 +1,39 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import type { LearningTopicFile } from '@/types/learning-course'
-import { formatLearningFileSize, isLearningTopicImageFile } from '@/utils/learningTopicFile'
+import { useNotification } from '@/composables/useNotification'
+import {
+  downloadLearningTopicFile,
+  formatLearningFileSize,
+  isLearningTopicImageFile,
+} from '@/utils/learningTopicFile'
 
 defineProps<{
   files: LearningTopicFile[]
 }>()
+
+const { notify } = useNotification()
+const downloadingIds = ref(new Set<string>())
+
+function isDownloading(fileId: string): boolean {
+  return downloadingIds.value.has(fileId)
+}
+
+async function onFileClick(event: MouseEvent, file: LearningTopicFile) {
+  event.preventDefault()
+  if (isDownloading(file.id)) return
+
+  downloadingIds.value = new Set(downloadingIds.value).add(file.id)
+  try {
+    await downloadLearningTopicFile(file.fileUrl, file.fileName)
+  } catch {
+    notify({ type: 'error', message: 'Не удалось скачать файл' })
+  } finally {
+    const next = new Set(downloadingIds.value)
+    next.delete(file.id)
+    downloadingIds.value = next
+  }
+}
 </script>
 
 <template>
@@ -12,9 +41,13 @@ defineProps<{
     <li v-for="file in files" :key="file.id" class="learning-topic-files-list__item">
       <a
         class="learning-topic-files-list__link"
+        :class="{ 'learning-topic-files-list__link_busy': isDownloading(file.id) }"
         :href="file.fileUrl"
-        target="_blank"
+        :download="file.fileName"
         rel="noopener noreferrer"
+        :aria-busy="isDownloading(file.id) ? 'true' : undefined"
+        :aria-disabled="isDownloading(file.id) ? 'true' : undefined"
+        @click="onFileClick($event, file)"
       >
         <span class="learning-topic-files-list__icon" aria-hidden="true">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -74,6 +107,11 @@ defineProps<{
 
     &:hover {
       background: var(--fon-bloka);
+    }
+
+    &_busy {
+      opacity: 0.6;
+      pointer-events: none;
     }
   }
 

@@ -12,9 +12,15 @@ import {
   isAdminStudentsSectionParam,
   type AdminMaterialSectionId,
 } from '@/constants/adminMaterials'
-import { formatLocalDateForInput } from '@/utils/adminDateInput'
-import type { AdminTopicGradeStatus, AdminProductTopicRow } from '@/utils/adminMockStudents'
+import {
+  dateInputToDeadlineIso,
+  formatLocalDateForInput,
+  isoDateTimeToDateInput,
+} from '@/utils/adminDateInput'
+import { adminService } from '@/services/api/endpoints/admin'
 import { useAdminStore } from '@/stores/admin'
+import { useNotification } from '@/composables/useNotification'
+import type { AdminStudentModuleItem } from '@/services/api/types'
 
 interface PageStudent {
   id: string
@@ -29,15 +35,22 @@ function formatTopicTitle(index: number, rawTitle: string): string {
   return `${index} тема: ${title}`
 }
 
+function sortStudentModules(items: AdminStudentModuleItem[]): AdminStudentModuleItem[] {
+  return [...items].sort((a, b) => a.order_index - b.order_index)
+}
+
 const route = useRoute()
 const router = useRouter()
 const adminStore = useAdminStore()
+const { notify } = useNotification()
 
-const topicSource = ref<AdminProductTopicRow[]>([])
+const modules = ref<AdminStudentModuleItem[]>([])
 const student = ref<PageStudent | null>(null)
 const productTitle = ref('')
 const loading = ref(true)
 const loadError = ref('')
+const openingAll = ref(false)
+const savingByModuleId = ref<Record<string, boolean>>({})
 let loadSeq = 0
 
 const sectionId = computed(() => route.params.sectionId as string)
@@ -70,6 +83,31 @@ const profileBackTo = computed(() => ({
   params: { sectionId: sectionId.value, studentId: studentId.value },
 }))
 
+const minDateForDateInput = computed(() => formatLocalDateForInput(new Date()))
+
+const topicRows = computed(() =>
+  modules.value.map((row, index) => ({
+    ...row,
+    displayTitle: formatTopicTitle(index + 1, row.title),
+    deadlineInput: isoDateTimeToDateInput(row.deadline),
+  })),
+)
+
+function isRowBusy(moduleId: string): boolean {
+  return openingAll.value || Boolean(savingByModuleId.value[moduleId])
+}
+
+function replaceModule(updated: AdminStudentModuleItem) {
+  modules.value = modules.value.map((row) => (row.module_id === updated.module_id ? updated : row))
+}
+
+function setModuleSaving(moduleId: string, saving: boolean) {
+  const next = { ...savingByModuleId.value }
+  if (saving) next[moduleId] = true
+  else delete next[moduleId]
+  savingByModuleId.value = next
+}
+
 async function loadPage() {
   const seq = ++loadSeq
   const sid = sectionId.value
@@ -95,7 +133,7 @@ async function loadPage() {
   loadError.value = ''
   student.value = null
   productTitle.value = ''
-  topicSource.value = []
+  modules.value = []
 
   const profileRes = await adminStore.fetchStudentProfileProducts(stid)
   if (seq !== loadSeq) return
@@ -125,33 +163,15 @@ async function loadPage() {
   }
   productTitle.value = productRow.title
 
-  const detail = await adminStore.fetchProductDetail(pid)
+  const modulesRes = await adminService.listStudentModules(pid, stid)
   if (seq !== loadSeq) return
-  if (!detail.success || !detail.data) {
-    loadError.value = detail.error || 'Не удалось загрузить темы продукта'
+  if (!modulesRes.success || !modulesRes.data) {
+    loadError.value = modulesRes.error || 'Не удалось загрузить темы продукта'
     loading.value = false
     return
   }
 
-  productTitle.value = detail.data.title || productRow.title
-
-  const studentsRes = await adminStore.fetchStudentsForProduct(pid)
-  if (seq !== loadSeq) return
-  const studentRow = studentsRes.success
-    ? studentsRes.data?.find((s) => s.user_id === stid)
-    : undefined
-  const gradeStatus: AdminTopicGradeStatus = studentRow?.is_completed ? 'passed' : 'neutral'
-
-  topicSource.value = [...detail.data.modules]
-    .sort((a, b) => a.order_index - b.order_index)
-    .map((m, index) => ({
-      id: m.id,
-      title: formatTopicTitle(index + 1, m.title),
-      deadlineLabel: null,
-      gradeStatus,
-      topicEnabled: true,
-    }))
-
+  modules.value = sortStudentModules(modulesRes.data)
   loading.value = false
 }
 
@@ -163,57 +183,67 @@ watch(
   { immediate: true },
 )
 
-const minDateForDateInput = computed(() => formatLocalDateForInput(new Date()))
+async function setTopicOpen(moduleId: string, isOpen: boolean) {
+  const row = modules.value.find((item) => item.module_id === moduleId)
+  if (!row || row.is_open === isOpen || isRowBusy(moduleId)) return
 
-const deadlineByTopicId = ref<Record<string, string>>({})
-const gradeByTopicId = ref<Record<string, AdminTopicGradeStatus>>({})
-const enabledByTopicId = ref<Record<string, boolean>>({})
+  const previous = { ...row }
+  replaceModule({ ...row, is_open: isOpen })
+  setModuleSaving(moduleId, true)
 
-watch(
-  topicSource,
-  (rows) => {
-    const nextDl: Record<string, string> = {}
-    const nextG: Record<string, AdminTopicGradeStatus> = {}
-    const nextE: Record<string, boolean> = {}
-    for (const r of rows) {
-      nextDl[r.id] = ''
-      nextG[r.id] = r.gradeStatus
-      nextE[r.id] = r.topicEnabled
-    }
-    deadlineByTopicId.value = nextDl
-    gradeByTopicId.value = nextG
-    enabledByTopicId.value = nextE
-  },
-  { immediate: true },
-)
+  const result = await adminService.updateStudentModule(studentId.value, moduleId, {
+    is_open: isOpen,
+  })
+  if (!result.success || !result.data) {
+    replaceModule(previous)
+    notify({ type: 'error', message: result.error || 'Не удалось обновить доступ к теме' })
+  } else {
+    replaceModule(result.data)
+  }
+  setModuleSaving(moduleId, false)
+}
 
-const updateDeadline = (id: string, value: string) => {
+async function updateDeadline(moduleId: string, value: string) {
+  const row = modules.value.find((item) => item.module_id === moduleId)
+  if (!row || isRowBusy(moduleId)) return
+
   const minStr = minDateForDateInput.value
-  let v = value.trim()
-  if (v && v < minStr) {
-    v = minStr
+  let next = value.trim()
+  if (next && next < minStr) next = minStr
+
+  const currentInput = isoDateTimeToDateInput(row.deadline)
+  if (next === currentInput) return
+
+  const previous = { ...row }
+  const nextIso = dateInputToDeadlineIso(next)
+  replaceModule({ ...row, deadline: nextIso })
+  setModuleSaving(moduleId, true)
+
+  const result = await adminService.updateStudentModule(studentId.value, moduleId, {
+    deadline: nextIso,
+  })
+  if (!result.success || !result.data) {
+    replaceModule(previous)
+    notify({ type: 'error', message: result.error || 'Не удалось обновить дедлайн' })
+  } else {
+    replaceModule(result.data)
   }
-  deadlineByTopicId.value = { ...deadlineByTopicId.value, [id]: v }
+  setModuleSaving(moduleId, false)
 }
 
-const toggleGrade = (id: string) => {
-  const cur = gradeByTopicId.value[id] ?? 'neutral'
-  gradeByTopicId.value = {
-    ...gradeByTopicId.value,
-    [id]: cur === 'passed' ? 'neutral' : 'passed',
-  }
-}
+async function openAllTopics() {
+  if (openingAll.value || modules.value.length === 0) return
 
-const openAllTopics = () => {
-  const next = { ...enabledByTopicId.value }
-  for (const k of Object.keys(next)) {
-    next[k] = true
+  openingAll.value = true
+  const result = await adminService.setAllStudentModulesAccess(studentId.value, productId.value, {
+    is_open: true,
+  })
+  if (!result.success || !result.data) {
+    notify({ type: 'error', message: result.error || 'Не удалось открыть все темы' })
+  } else {
+    modules.value = sortStudentModules(result.data)
   }
-  enabledByTopicId.value = next
-}
-
-const setTopicEnabled = (id: string, value: boolean) => {
-  enabledByTopicId.value = { ...enabledByTopicId.value, [id]: value }
+  openingAll.value = false
 }
 </script>
 
@@ -298,33 +328,37 @@ const setTopicEnabled = (id: string, value: boolean) => {
               type="button"
               class="admin-student-product-topics-page__open-all"
               :style="{ '--product-topics-accent': accentColor }"
+              :disabled="openingAll || modules.length === 0"
               @click="openAllTopics"
             >
               Открыть все темы продукта
             </button>
           </div>
 
-          <p v-if="topicSource.length === 0" class="admin-student-product-topics-page__empty">
+          <p v-if="topicRows.length === 0" class="admin-student-product-topics-page__empty">
             У этого продукта пока нет тем
           </p>
           <ul v-else class="admin-student-product-topics-page__list" aria-label="Темы продукта">
-            <li v-for="row in topicSource" :key="row.id" class="admin-student-product-topics-page__row">
-              <span class="admin-student-product-topics-page__topic-title">{{ row.title }}</span>
+            <li
+              v-for="row in topicRows"
+              :key="row.module_id"
+              class="admin-student-product-topics-page__row"
+            >
+              <span class="admin-student-product-topics-page__topic-title">{{ row.displayTitle }}</span>
               <div class="admin-student-product-topics-page__row-controls">
                 <AdminDateField
                   label="Дедлайн"
-                  :model-value="deadlineByTopicId[row.id] ?? ''"
+                  :model-value="row.deadlineInput"
                   :min="minDateForDateInput"
-                  @update:model-value="updateDeadline(row.id, $event)"
+                  :disabled="isRowBusy(row.module_id)"
+                  @update:model-value="updateDeadline(row.module_id, $event)"
                 />
-                <AdminTopicGradeBadge
-                  :variant="gradeByTopicId[row.id] === 'passed' ? 'passed' : 'neutral'"
-                  @toggle="toggleGrade(row.id)"
-                />
+                <AdminTopicGradeBadge :variant="row.passed ? 'passed' : 'neutral'" />
                 <AdminToggleSwitch
-                  :model-value="enabledByTopicId[row.id] ?? false"
-                  :label="`Доступ к теме: ${row.title}`"
-                  @update:model-value="setTopicEnabled(row.id, $event)"
+                  :model-value="row.is_open"
+                  :disabled="isRowBusy(row.module_id)"
+                  :label="`Доступ к теме: ${row.displayTitle}`"
+                  @update:model-value="setTopicOpen(row.module_id, $event)"
                 />
               </div>
             </li>
@@ -466,6 +500,8 @@ const setTopicEnabled = (id: string, value: boolean) => {
   border: 1px solid #010307;
   border-radius: 10px;
   box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
 }
 
 .admin-student-product-topics-page__crumbs {
@@ -506,18 +542,25 @@ const setTopicEnabled = (id: string, value: boolean) => {
   font-family: var(--font-family);
   font-weight: var(--font-medium);
   font-size: var(--size-20);
-  line-height: normal;
+  line-height: 1.2;
   white-space: nowrap;
   cursor: pointer;
   flex-shrink: 0;
+  box-sizing: border-box;
+  max-width: 100%;
 
-  &:hover {
+  &:hover:not(:disabled) {
     filter: brightness(1.03);
   }
 
   &:focus-visible {
     outline: none;
     box-shadow: var(--focus-ring-main);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 }
 
@@ -564,6 +607,10 @@ const setTopicEnabled = (id: string, value: boolean) => {
 }
 
 @media (max-width: 1023px) {
+  .admin-student-product-topics-page__panel {
+    padding: var(--sp-24) var(--sp-16);
+  }
+
   .admin-student-product-topics-page__back {
     font-size: var(--size-15);
   }
@@ -576,11 +623,23 @@ const setTopicEnabled = (id: string, value: boolean) => {
     font-size: var(--size-15);
   }
 
+  .admin-student-product-topics-page__toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-student-product-topics-page__crumbs {
+    width: 100%;
+  }
+
   .admin-student-product-topics-page__crumb {
     font-size: var(--size-15);
   }
 
   .admin-student-product-topics-page__open-all {
+    width: 100%;
+    white-space: normal;
+    text-align: center;
     font-size: var(--size-15);
   }
 

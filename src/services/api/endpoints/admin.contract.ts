@@ -25,6 +25,11 @@ export const ADMIN_ENDPOINTS = {
   lessonVideoById: (lessonId: string, videoId: string) =>
     `/api/v1/admin/products/lessons/${lessonId}/videos/${videoId}`,
   lessonVideosReorder: (id: string) => `/api/v1/admin/products/lessons/${id}/videos/reorder`,
+  lessonSubsections: (id: string) => `/api/v1/admin/products/lessons/${id}/subsections`,
+  lessonSubsectionsReorder: (id: string) =>
+    `/api/v1/admin/products/lessons/${id}/subsections/reorder`,
+  lessonSubsectionById: (lessonId: string, subsectionId: string) =>
+    `/api/v1/admin/products/lessons/${lessonId}/subsections/${subsectionId}`,
   lessonFiles: (id: string) => `/api/v1/admin/products/lessons/${id}/files`,
   fileById: (id: string) => `/api/v1/admin/products/files/${id}`,
   userAccess: (userId: string) => `/api/v1/admin/products/users/${userId}/access`,
@@ -36,6 +41,12 @@ export const ADMIN_ENDPOINTS = {
     `/api/v1/admin/products/users/${userId}/products/${productId}`,
   userProductAccessUpdate: (userId: string, productId: string) =>
     `/api/v1/admin/products/users/${userId}/products/${productId}/access`,
+  studentModules: (productId: string, userId: string) =>
+    `/api/v1/admin/products/${productId}/students/${userId}/modules`,
+  userModuleAccess: (userId: string, moduleId: string) =>
+    `/api/v1/admin/products/users/${userId}/modules/${moduleId}`,
+  userProductModulesAccess: (userId: string, productId: string) =>
+    `/api/v1/admin/products/users/${userId}/products/${productId}/modules/access`,
   studentProducts: (userId: string) => `/api/v1/admin/students/${userId}/products`,
   studentsBulk: '/api/v1/admin/students/bulk',
   studentsBulkExcel: '/api/v1/admin/students/bulk/excel',

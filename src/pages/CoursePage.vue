@@ -17,7 +17,11 @@ import {
   STUDENT_PRODUCT_BLOCKED_MESSAGE,
 } from '@/constants/studentProductAccess'
 import type { LearningCourseDetail } from '@/types/learning-course'
-import type { ProductDetailResponse, ProductProgressResponse } from '@/services/api/types'
+import type {
+  ModulePassResponse,
+  ProductDetailResponse,
+  ProductProgressResponse,
+} from '@/services/api/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -135,32 +139,91 @@ function onNextTopic(topicId: string) {
   openTopicLesson(topicId)
 }
 
+function applyModulePassToProgress(pass: ModulePassResponse, moduleTitle: string) {
+  const current = progress.value
+  if (!current) {
+    progress.value = {
+      product_id: productId.value,
+      total_lessons: 0,
+      completed_lessons: 0,
+      progress_percent: 0,
+      deadline: null,
+      days_left: null,
+      modules: [
+        {
+          module_id: pass.module_id,
+          title: moduleTitle,
+          passed: pass.passed,
+          passed_at: pass.passed_at,
+          lessons: [],
+        },
+      ],
+    }
+    return
+  }
+
+  const modules = current.modules.map((moduleProgress) =>
+    moduleProgress.module_id === pass.module_id
+      ? { ...moduleProgress, passed: pass.passed, passed_at: pass.passed_at }
+      : moduleProgress,
+  )
+  if (!modules.some((moduleProgress) => moduleProgress.module_id === pass.module_id)) {
+    modules.push({
+      module_id: pass.module_id,
+      title: moduleTitle,
+      passed: pass.passed,
+      passed_at: pass.passed_at,
+      lessons: [],
+    })
+  }
+  progress.value = { ...current, modules }
+}
+
+function mergePassedIntoProgress(
+  refreshed: ProductProgressResponse,
+  pass: ModulePassResponse,
+): ProductProgressResponse {
+  const modules = refreshed.modules.map((moduleProgress) => {
+    if (moduleProgress.module_id !== pass.module_id) return moduleProgress
+    return {
+      ...moduleProgress,
+      passed: moduleProgress.passed ?? pass.passed,
+      passed_at: moduleProgress.passed_at ?? pass.passed_at,
+    }
+  })
+  if (!modules.some((moduleProgress) => moduleProgress.module_id === pass.module_id)) {
+    const existing = progress.value?.modules.find((moduleProgress) => moduleProgress.module_id === pass.module_id)
+    modules.push({
+      module_id: pass.module_id,
+      title: existing?.title ?? '',
+      passed: pass.passed,
+      passed_at: pass.passed_at,
+      lessons: existing?.lessons ?? [],
+    })
+  }
+  return { ...refreshed, modules }
+}
+
 async function onCompleteTopic(topicId: string, completed: boolean) {
-  if (isAccessDenied.value || !product.value || !completed) return
-  const module = product.value.modules.find((m) => m.id === topicId)
+  if (isAccessDenied.value || !product.value) return
+  const module = product.value.modules.find((item) => item.id === topicId)
   if (!module) return
 
   completing.value = true
-  const lessons = [...module.lessons].sort((a, b) => a.order_index - b.order_index)
-  for (const lesson of lessons) {
-    const lp = progress.value?.modules
-      .find((m) => m.module_id === topicId)
-      ?.lessons.find((l) => l.id === lesson.id)
-    if (lp?.is_completed) continue
-
-    const result = await productsService.completeLesson(lesson.id, {})
-    if (!result.success) {
-      notify({ type: 'error', message: result.error || 'Не удалось отметить урок' })
-      completing.value = false
-      return
-    }
+  const result = await productsService.passModule(topicId, { passed: completed })
+  if (!result.success || !result.data) {
+    notify({ type: 'error', message: result.error || 'Не удалось обновить отметку' })
+    completing.value = false
+    return
   }
+
+  applyModulePassToProgress(result.data, module.title)
 
   const refreshed = await productsService.getProgress(productId.value)
   if (refreshed.success && refreshed.data) {
-    progress.value = refreshed.data
+    progress.value = mergePassedIntoProgress(refreshed.data, result.data)
   }
-  notify({ type: 'success', message: 'Тема отмечена как изученная' })
+
   completing.value = false
 }
 

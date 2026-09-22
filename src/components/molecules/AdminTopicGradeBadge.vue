@@ -1,31 +1,23 @@
 <script setup lang="ts">
 export type AdminTopicGradeBadgeVariant = 'passed' | 'neutral'
 
-interface Props {
+defineProps<{
   variant: AdminTopicGradeBadgeVariant
-}
-
-defineProps<Props>()
-
-interface Emits {
-  (e: 'toggle'): void
-}
-
-const emit = defineEmits<Emits>()
+}>()
 </script>
 
 <template>
-  <button
-    type="button"
+  <span
     class="admin-topic-grade-badge"
     :class="{
       'admin-topic-grade-badge_passed': variant === 'passed',
       'admin-topic-grade-badge_neutral': variant === 'neutral',
     }"
-    @click="emit('toggle')"
+    role="status"
+    :aria-label="variant === 'passed' ? 'Зачёт' : 'Без зачёта'"
   >
     Зачёт
-  </button>
+  </span>
 </template>
 
 <style lang="scss" scoped>
@@ -39,16 +31,6 @@ const emit = defineEmits<Emits>()
   font-size: var(--size-20);
   line-height: normal;
   white-space: nowrap;
-  cursor: pointer;
-  transition:
-    background-color 0.2s ease,
-    color 0.2s ease,
-    border-color 0.2s ease;
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring-main);
-  }
 }
 
 .admin-topic-grade-badge_passed {

@@ -49,6 +49,7 @@ const toggle = () => {
   display: flex;
   flex-direction: column;
   gap: var(--sp-10);
+  max-width: 100%;
 
   &_filled .learning-collapsible-chip__trigger {
     background: var(--osnovnoy-fon);
@@ -72,6 +73,8 @@ const toggle = () => {
     gap: var(--sp-10);
     cursor: pointer;
     width: fit-content;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   &__label {
@@ -79,7 +82,9 @@ const toggle = () => {
     font-weight: var(--font-medium);
     font-size: var(--size-15);
     color: var(--osnovnoy-tekst);
-    white-space: nowrap;
+    min-width: 0;
+    white-space: normal;
+    word-break: break-word;
   }
 
   &__content {

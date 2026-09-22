@@ -23,12 +23,19 @@ export interface LearningTopicVideo {
   files: LearningTopicFile[]
 }
 
+export interface LearningTopicSubsection {
+  id: string
+  title: string
+  videos: LearningTopicVideo[]
+}
+
 export interface LearningCourseTopic {
   id: string
   title: string
   accessUntil: string | null
   isCompleted: boolean
   videos: LearningTopicVideo[]
+  subsections: LearningTopicSubsection[]
   materialsHtml?: string
   materialsText?: string
 }

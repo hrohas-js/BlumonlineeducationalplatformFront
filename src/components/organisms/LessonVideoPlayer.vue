@@ -194,6 +194,13 @@ function seekTo(seconds: number) {
   v.currentTime = Math.min(max, Math.max(0, seconds))
 }
 
+function pausePlayback() {
+  const v = videoRef.value
+  if (!v) return
+  v.pause()
+  paused.value = true
+}
+
 function seekFromRatio(ratio: number) {
   const v = videoRef.value
   if (!v || !duration.value) return
@@ -498,6 +505,7 @@ onUnmounted(() => {
 
 defineExpose({
   seekTo,
+  pause: pausePlayback,
 })
 </script>
 

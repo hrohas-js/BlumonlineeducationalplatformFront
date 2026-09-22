@@ -5,9 +5,11 @@ import LearningCourseAccessProgress from '@/components/molecules/LearningCourseA
 import LearningCollapsibleChip from '@/components/molecules/LearningCollapsibleChip.vue'
 import LearningTopicCompleteToggle from '@/components/molecules/LearningTopicCompleteToggle.vue'
 import LearningTopicFilesList from '@/components/molecules/LearningTopicFilesList.vue'
+import LearningTopicSubsectionVideosList from '@/components/molecules/LearningTopicSubsectionVideosList.vue'
 import LearningTopicVideoBlock from '@/components/molecules/LearningTopicVideoBlock.vue'
+import LessonVideoPlaybackModal from '@/components/organisms/LessonVideoPlaybackModal.vue'
 import { getNextTopicId } from '@/utils/mapProductToLearningDetail'
-import type { LearningCourseDetail } from '@/types/learning-course'
+import type { LearningCourseDetail, LearningTopicVideo } from '@/types/learning-course'
 
 const props = withDefaults(
   defineProps<{
@@ -33,6 +35,7 @@ const topic = computed(() => props.course.topics.find((t) => t.id === props.sele
 const nextTopicId = computed(() => getNextTopicId(props.course, props.selectedTopicId))
 
 const topicCompleted = ref(false)
+const playbackVideo = ref<LearningTopicVideo | null>(null)
 
 watch(
   () => topic.value?.isCompleted,
@@ -42,14 +45,38 @@ watch(
   { immediate: true },
 )
 
+watch(
+  () => props.completing,
+  (isCompleting, wasCompleting) => {
+    if (wasCompleting && !isCompleting) {
+      topicCompleted.value = topic.value?.isCompleted ?? false
+    }
+  },
+)
+
+watch(
+  () => props.selectedTopicId,
+  () => {
+    playbackVideo.value = null
+  },
+)
+
 const accessLabel = computed(() => topic.value?.accessUntil ?? 'бессрочно')
 
 const topicFiles = computed(() => topic.value?.videos.flatMap((video) => video.files) ?? [])
 
-const hasMedia = computed(
-  () =>
-    Boolean(topic.value?.videos.some((video) => video.src)) || topicFiles.value.length > 0,
-)
+const subsections = computed(() => topic.value?.subsections ?? [])
+
+const hasLessonSubsections = computed(() => subsections.value.length > 0)
+
+const hasMedia = computed(() => {
+  if (props.lessonLayout) {
+    return hasLessonSubsections.value || topicFiles.value.length > 0
+  }
+  return (
+    Boolean(topic.value?.videos.some((video) => video.src)) || topicFiles.value.length > 0
+  )
+})
 
 const visibleVideos = computed(() => {
   const videos = topic.value?.videos ?? []
@@ -68,6 +95,14 @@ const goNextTopic = () => {
   if (nextTopicId.value) {
     emit('next-topic', nextTopicId.value)
   }
+}
+
+function onSelectSubsectionVideo(video: LearningTopicVideo) {
+  playbackVideo.value = video
+}
+
+function onClosePlayback() {
+  playbackVideo.value = null
 }
 </script>
 
@@ -124,6 +159,18 @@ const goNextTopic = () => {
       >
         <LearningTopicFilesList :files="topicFiles" />
       </LearningCollapsibleChip>
+
+      <LearningCollapsibleChip
+        v-for="subsection in subsections"
+        :key="subsection.id"
+        :label="subsection.title"
+        variant="filled"
+      >
+        <LearningTopicSubsectionVideosList
+          :videos="subsection.videos"
+          @select="onSelectSubsectionVideo"
+        />
+      </LearningCollapsibleChip>
     </template>
 
     <template v-else>
@@ -145,14 +192,16 @@ const goNextTopic = () => {
     </template>
 
     <template v-if="hasMedia">
-      <LearningTopicVideoBlock
-        v-for="video in visibleVideos"
-        :key="video.id"
-        :video="video"
-        :lesson-layout="lessonLayout"
-        :loading="videoLoadingById?.[video.id]"
-        :error="videoErrorById?.[video.id]"
-      />
+      <template v-if="!lessonLayout">
+        <LearningTopicVideoBlock
+          v-for="video in visibleVideos"
+          :key="video.id"
+          :video="video"
+          :lesson-layout="lessonLayout"
+          :loading="videoLoadingById?.[video.id]"
+          :error="videoErrorById?.[video.id]"
+        />
+      </template>
     </template>
     <p v-else class="learning-topic-study-panel__empty">Здесь пока пусто</p>
 
@@ -163,6 +212,14 @@ const goNextTopic = () => {
         @update:model-value="onCompleteChange"
       />
     </footer>
+
+    <LessonVideoPlaybackModal
+      :is-open="Boolean(playbackVideo)"
+      :video="playbackVideo"
+      :loading="playbackVideo ? videoLoadingById?.[playbackVideo.id] : false"
+      :error="playbackVideo ? videoErrorById?.[playbackVideo.id] : undefined"
+      @close="onClosePlayback"
+    />
   </section>
 </template>
 
@@ -172,6 +229,7 @@ const goNextTopic = () => {
   flex-direction: column;
   gap: var(--sp-20);
   margin-top: var(--sp-20);
+  min-width: 0;
 
   &_lesson {
     margin-top: 0;
@@ -249,6 +307,11 @@ const goNextTopic = () => {
     display: flex;
     justify-content: flex-end;
     margin-top: var(--sp-20);
+  }
+
+  :deep(.learning-collapsible-chip__content) {
+    width: 100%;
+    min-width: 0;
   }
 }
 

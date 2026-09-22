@@ -2,10 +2,12 @@ import type {
   LearningCourseCategory,
   LearningCourseDetail,
   LearningCourseTopic,
+  LearningTopicSubsection,
   LearningTopicVideo,
 } from '@/types/learning-course'
 import type {
   LessonResponse,
+  LessonSubsectionResponse,
   LessonVideoResponse,
   ModuleResponse,
   ProductDetailResponse,
@@ -59,6 +61,29 @@ function lessonVideoToLearningVideo(
   }
 }
 
+function uniqueVideosById(videos: LessonVideoResponse[]): LessonVideoResponse[] {
+  const seen = new Set<string>()
+  const unique: LessonVideoResponse[] = []
+  for (const video of videos) {
+    if (seen.has(video.id)) continue
+    seen.add(video.id)
+    unique.push(video)
+  }
+  return unique
+}
+
+function sourceVideosForSubsection(
+  lesson: LessonResponse,
+  subsection: LessonSubsectionResponse,
+): LessonVideoResponse[] {
+  const nested = subsection.videos
+  const source =
+    nested != null
+      ? nested
+      : (lesson.videos ?? []).filter((video) => video.subsection_id === subsection.id)
+  return uniqueVideosById(source).sort((a, b) => a.order_index - b.order_index)
+}
+
 function lessonToVideos(
   lesson: LessonResponse,
   isCompleted: boolean,
@@ -83,6 +108,25 @@ function lessonToVideos(
   return sorted.map((video, index) =>
     lessonVideoToLearningVideo(video, lesson, isCompleted, index === 0, videoSrcByVideoId),
   )
+}
+
+function lessonToSubsections(
+  lesson: LessonResponse,
+  isCompleted: boolean,
+  videoSrcByVideoId: Record<string, string>,
+): LearningTopicSubsection[] {
+  const subsections = [...(lesson.subsections ?? [])].sort(
+    (a, b) => a.order_index - b.order_index,
+  )
+  return subsections.map((subsection) => ({
+    id: subsection.id,
+    title: subsection.title.trim() || 'Название подраздела',
+    videos: sourceVideosForSubsection(lesson, subsection)
+      .map((video) =>
+        lessonVideoToLearningVideo(video, lesson, isCompleted, false, videoSrcByVideoId),
+      )
+      .filter((video) => Boolean(video.src?.trim())),
+  }))
 }
 
 function splitModuleDescription(
@@ -119,11 +163,15 @@ function moduleToTopic(
     id: module.id,
     title: formatTopicTitle(module.order_index, module.title),
     accessUntil: formatAccessUntil(progress?.deadline ?? null),
-    isCompleted: lessons.length > 0 && completedCount >= lessons.length,
+    isCompleted: moduleProgress?.passed ?? (lessons.length > 0 && completedCount >= lessons.length),
     ...splitModuleDescription(module.description),
     videos: lessons.flatMap((lesson) => {
       const lp = moduleProgress?.lessons.find((l) => l.id === lesson.id)
       return lessonToVideos(lesson, lp?.is_completed ?? false, videoSrcByVideoId)
+    }),
+    subsections: lessons.flatMap((lesson) => {
+      const lp = moduleProgress?.lessons.find((l) => l.id === lesson.id)
+      return lessonToSubsections(lesson, lp?.is_completed ?? false, videoSrcByVideoId)
     }),
   }
 }

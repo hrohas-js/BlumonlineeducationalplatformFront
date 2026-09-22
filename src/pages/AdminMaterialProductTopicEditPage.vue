@@ -9,8 +9,12 @@ import AdminLabeledControlRow from '@/components/molecules/AdminLabeledControlRo
 import AdminTopicChaptersModal from '@/components/organisms/AdminTopicChaptersModal.vue'
 import AdminTopicEditMaterialsSection from '@/components/organisms/AdminTopicEditMaterialsSection.vue'
 import AdminTopicEditVideosSection from '@/components/organisms/AdminTopicEditVideosSection.vue'
-import type { AdminTopicEditMaterialFileMock, AdminTopicEditVideoMock } from '@/utils/adminMaterialCatalog'
-import type { LessonChapter } from '@/services/api/types'
+import type {
+  AdminTopicEditMaterialFileMock,
+  AdminTopicEditSubsectionMock,
+  AdminTopicEditVideoMock,
+} from '@/utils/adminMaterialCatalog'
+import type { LessonChapter, LessonVideoResponse } from '@/services/api/types'
 import { useAdminStore } from '@/stores/admin'
 import { adminService } from '@/services/api/endpoints/admin'
 import {
@@ -31,7 +35,8 @@ const topicId = computed(() => route.params.topicId as string)
 
 const lessonTitle = ref('')
 const materialFiles = ref<AdminTopicEditMaterialFileMock[]>([])
-const videos = ref<AdminTopicEditVideoMock[]>([])
+const ungroupedVideos = ref<AdminTopicEditVideoMock[]>([])
+const subsections = ref<AdminTopicEditSubsectionMock[]>([])
 const loading = ref(true)
 const saving = ref(false)
 const chaptersSaving = ref(false)
@@ -43,6 +48,7 @@ const videoUploadProgressById = ref<Record<string, number | null>>({})
 const deletingFileId = ref<string | null>(null)
 const deletingVideoId = ref<string | null>(null)
 const uploadingMaterials = ref(false)
+const subsectionBusy = ref(false)
 
 const productDetail = computed(() => adminStore.productDetails[productId.value] ?? null)
 
@@ -50,7 +56,7 @@ const moduleData = computed(() =>
   productDetail.value?.modules.find((m) => m.id === topicId.value) ?? null,
 )
 
-function emptyVideoSlot(): AdminTopicEditVideoMock {
+function emptyVideoSlot(subsectionId: string | null = null): AdminTopicEditVideoMock {
   return {
     id: crypto.randomUUID(),
     title: 'Видео 1',
@@ -58,21 +64,61 @@ function emptyVideoSlot(): AdminTopicEditVideoMock {
     chapters: [],
     videoSrc: '',
     persisted: false,
+    subsectionId,
   }
+}
+
+function uniqueVideosById(videos: LessonVideoResponse[]): LessonVideoResponse[] {
+  const seen = new Set<string>()
+  const unique: LessonVideoResponse[] = []
+  for (const video of videos) {
+    if (seen.has(video.id)) continue
+    seen.add(video.id)
+    unique.push(video)
+  }
+  return unique
+}
+
+function mapLessonVideo(
+  video: LessonVideoResponse,
+  subsectionId: string | null = video.subsection_id ?? null,
+): AdminTopicEditVideoMock {
+  const chapters = video.chapters ?? []
+  return {
+    id: video.id,
+    title: video.title?.trim() || `Видео ${video.order_index}`,
+    orderIndex: video.order_index,
+    chapters,
+    timecodeEnabled: chapters.length > 0,
+    videoSrc: video.video_url ?? '',
+    fileName: video.video_url ? 'video' : undefined,
+    persisted: true,
+    subsectionId,
+  }
+}
+
+function allVideoRows(): AdminTopicEditVideoMock[] {
+  return [...ungroupedVideos.value, ...subsections.value.flatMap((subsection) => subsection.videos)]
+}
+
+function findVideoRow(videoId: string): AdminTopicEditVideoMock | undefined {
+  return allVideoRows().find((video) => video.id === videoId)
 }
 
 function mapFilesFromLesson() {
   const mod = moduleData.value
   if (!mod) {
     materialFiles.value = []
-    videos.value = [emptyVideoSlot()]
+    ungroupedVideos.value = [emptyVideoSlot()]
+    subsections.value = []
     primaryLessonId.value = null
     return
   }
   lessonTitle.value = mod.title
   if (mod.lessons.length === 0) {
     materialFiles.value = []
-    videos.value = [emptyVideoSlot()]
+    ungroupedVideos.value = [emptyVideoSlot()]
+    subsections.value = []
     primaryLessonId.value = null
     return
   }
@@ -82,24 +128,33 @@ function mapFilesFromLesson() {
     id: f.id,
     fileName: f.file_name,
   }))
-  const lessonVideos = [...(lesson.videos ?? [])].sort((a, b) => a.order_index - b.order_index)
-  if (lessonVideos.length === 0) {
-    videos.value = [emptyVideoSlot()]
-    return
-  }
-  videos.value = lessonVideos.map((v) => {
-    const chapters = v.chapters ?? []
-    return {
-      id: v.id,
-      title: v.title?.trim() || `Видео ${v.order_index}`,
-      orderIndex: v.order_index,
-      chapters,
-      timecodeEnabled: chapters.length > 0,
-      videoSrc: v.video_url ?? '',
-      fileName: v.video_url ? 'video' : undefined,
-      persisted: true,
-    }
-  })
+
+  const groupedIds = new Set<string>()
+  subsections.value = [...(lesson.subsections ?? [])]
+    .sort((a, b) => a.order_index - b.order_index)
+    .map((subsection) => {
+      const nested = subsection.videos
+      const source =
+        nested != null
+          ? nested
+          : (lesson.videos ?? []).filter((video) => video.subsection_id === subsection.id)
+      const unique = uniqueVideosById(source).sort((a, b) => a.order_index - b.order_index)
+      unique.forEach((video) => groupedIds.add(video.id))
+      return {
+        id: subsection.id,
+        title: subsection.title,
+        orderIndex: subsection.order_index,
+        videos: unique.map((video) => mapLessonVideo(video, subsection.id)),
+      }
+    })
+
+  const ungrouped = uniqueVideosById(lesson.videos ?? [])
+    .filter((video) => !video.subsection_id && !groupedIds.has(video.id))
+    .sort((a, b) => a.order_index - b.order_index)
+    .map((video) => mapLessonVideo(video, null))
+
+  ungroupedVideos.value =
+    ungrouped.length === 0 && subsections.value.length === 0 ? [emptyVideoSlot()] : ungrouped
 }
 
 async function load(options?: { silent?: boolean }) {
@@ -190,13 +245,22 @@ const ensureLesson = async (): Promise<string | null> => {
   return result.data.id
 }
 
-const onVideoFileSelected = async ({ videoId, file }: { videoId: string; file: File }) => {
+const onVideoFileSelected = async ({
+  videoId,
+  file,
+  subsectionId,
+}: {
+  videoId: string
+  file: File
+  subsectionId?: string | null
+}) => {
   const lessonId = await ensureLesson()
   if (!lessonId) return
 
-  const row = videos.value.find((v) => v.id === videoId)
+  const row = findVideoRow(videoId)
   const replaceVideoId = row?.persisted ? videoId : null
   const title = row?.title?.trim() || file.name.replace(/\.[^.]+$/, '')
+  const resolvedSubsectionId = row?.subsectionId ?? subsectionId ?? null
 
   videoUploadProgressById.value = {
     ...videoUploadProgressById.value,
@@ -205,6 +269,7 @@ const onVideoFileSelected = async ({ videoId, file }: { videoId: string; file: F
 
   const result = await adminService.uploadLessonVideo(lessonId, file, {
     title,
+    subsectionId: resolvedSubsectionId,
     onProgress: (percent) => {
       videoUploadProgressById.value = {
         ...videoUploadProgressById.value,
@@ -246,7 +311,7 @@ function snapshotFailedVideoRows(
   const snapshots = new Map<string, AdminTopicEditVideoMock>()
   for (const { videoId } of items) {
     if (!failedIds.has(videoId)) continue
-    const row = videos.value.find((v) => v.id === videoId)
+    const row = findVideoRow(videoId)
     if (!row) continue
     snapshots.set(videoId, {
       ...row,
@@ -275,22 +340,47 @@ function restoreFailedVideoRows(
       videoSrc: URL.createObjectURL(file),
       fileName: file.name,
       persisted: false,
+      subsectionId: row?.subsectionId ?? null,
     })
   }
 
   if (!extras.length) return
 
   const hasPreview = (row: AdminTopicEditVideoMock) => Boolean(row.videoSrc?.trim())
-  videos.value = [
-    ...videos.value.filter((row) => row.persisted || hasPreview(row)),
-    ...extras,
-  ]
+  const extrasBySubsection = new Map<string | null, AdminTopicEditVideoMock[]>()
+  for (const extra of extras) {
+    const key = extra.subsectionId ?? null
+    const list = extrasBySubsection.get(key) ?? []
+    list.push(extra)
+    extrasBySubsection.set(key, list)
+  }
+
+  for (const [subsectionId, groupExtras] of extrasBySubsection) {
+    if (!subsectionId) {
+      ungroupedVideos.value = [
+        ...ungroupedVideos.value.filter((row) => row.persisted || hasPreview(row)),
+        ...groupExtras,
+      ]
+      continue
+    }
+    const subsection = subsections.value.find((item) => item.id === subsectionId)
+    if (!subsection) {
+      ungroupedVideos.value = [...ungroupedVideos.value, ...groupExtras]
+      continue
+    }
+    subsection.videos = [
+      ...subsection.videos.filter((row) => row.persisted || hasPreview(row)),
+      ...groupExtras,
+    ]
+  }
 }
 
 const onVideoFilesSelected = async ({
   items,
+  subsectionId,
 }: {
   items: { videoId: string; file: File }[]
+  subsectionId?: string | null
 }) => {
   if (!items.length) return
 
@@ -308,11 +398,13 @@ const onVideoFilesSelected = async ({
   const failedIds = new Set<string>()
 
   for (const { videoId, file } of items) {
-    const row = videos.value.find((v) => v.id === videoId)
+    const row = findVideoRow(videoId)
     const title = row?.title?.trim() || file.name.replace(/\.[^.]+$/, '')
+    const resolvedSubsectionId = row?.subsectionId ?? subsectionId ?? null
 
     const result = await adminService.uploadLessonVideo(lessonId, file, {
       title,
+      subsectionId: resolvedSubsectionId,
       onProgress: (percent) => {
         videoUploadProgressById.value = {
           ...videoUploadProgressById.value,
@@ -369,7 +461,11 @@ const onVideoDelete = async (videoId: string) => {
   if (deletingVideoId.value) return
   const lessonId = primaryLessonId.value
   if (!lessonId) {
-    videos.value = videos.value.filter((v) => v.id !== videoId)
+    ungroupedVideos.value = ungroupedVideos.value.filter((v) => v.id !== videoId)
+    subsections.value = subsections.value.map((subsection) => ({
+      ...subsection,
+      videos: subsection.videos.filter((v) => v.id !== videoId),
+    }))
     return
   }
   deletingVideoId.value = videoId
@@ -384,7 +480,7 @@ const onVideoDelete = async (videoId: string) => {
 }
 
 const onVideoTitleCommit = async ({ videoId, title }: { videoId: string; title: string }) => {
-  const row = videos.value.find((v) => v.id === videoId)
+  const row = findVideoRow(videoId)
   if (!row?.persisted) return
   const lessonId = primaryLessonId.value
   if (!lessonId) return
@@ -454,12 +550,12 @@ const onMaterialDelete = async (fileId: string) => {
 
 const editingVideoChapters = computed((): LessonChapter[] => {
   if (!editingVideoId.value) return []
-  const row = videos.value.find((v) => v.id === editingVideoId.value)
+  const row = findVideoRow(editingVideoId.value)
   return row?.chapters ?? []
 })
 
 const onOpenTimecodeModal = (videoId: string) => {
-  const row = videos.value.find((v) => v.id === videoId)
+  const row = findVideoRow(videoId)
   if (!row?.persisted) {
     notify({ type: 'error', message: 'Сначала загрузите видео' })
     return
@@ -484,7 +580,7 @@ const onSaveChapters = async (chapters: LessonChapter[]) => {
     notify({ type: 'error', message: result.error || 'Не удалось сохранить тайм-коды' })
     return
   }
-  const row = videos.value.find((v) => v.id === videoId)
+  const row = findVideoRow(videoId)
   if (row) {
     row.chapters = chapters
     row.timecodeEnabled = chapters.length > 0
@@ -493,6 +589,103 @@ const onSaveChapters = async (chapters: LessonChapter[]) => {
   editingVideoId.value = null
   notify({ type: 'success', message: 'Тайм-коды сохранены' })
   await load({ silent: true })
+}
+
+const onSubsectionCreate = async () => {
+  if (subsectionBusy.value) return
+  subsectionBusy.value = true
+  try {
+    const lessonId = await ensureLesson()
+    if (!lessonId) return
+    const result = await adminService.createLessonSubsection(lessonId, {
+      title: 'Название подраздела',
+    })
+    if (!result.success) {
+      notify({ type: 'error', message: result.error || 'Не удалось создать подраздел' })
+      return
+    }
+    notify({ type: 'success', message: 'Подраздел добавлен' })
+    await load({ silent: true })
+  } finally {
+    subsectionBusy.value = false
+  }
+}
+
+const onSubsectionRename = async ({
+  subsectionId,
+  title,
+}: {
+  subsectionId: string
+  title: string
+}) => {
+  const lessonId = primaryLessonId.value
+  if (!lessonId) return
+  const result = await adminService.updateLessonSubsection(lessonId, subsectionId, { title })
+  if (!result.success) {
+    notify({ type: 'error', message: result.error || 'Не удалось сохранить название подраздела' })
+    await load({ silent: true })
+    return
+  }
+  const subsection = subsections.value.find((item) => item.id === subsectionId)
+  if (subsection) {
+    subsection.title = result.data?.title?.trim() || title
+    if (result.data?.order_index != null) {
+      subsection.orderIndex = result.data.order_index
+    }
+  }
+}
+
+const onSubsectionDelete = async (subsectionId: string) => {
+  const lessonId = primaryLessonId.value
+  if (!lessonId || subsectionBusy.value) return
+  subsectionBusy.value = true
+  try {
+    const result = await adminService.deleteLessonSubsection(lessonId, subsectionId)
+    if (!result.success) {
+      notify({ type: 'error', message: result.error || 'Не удалось удалить подраздел' })
+      return
+    }
+    notify({ type: 'success', message: 'Подраздел удалён' })
+    await load({ silent: true })
+  } finally {
+    subsectionBusy.value = false
+  }
+}
+
+const onSubsectionMove = async ({
+  subsectionId,
+  direction,
+}: {
+  subsectionId: string
+  direction: -1 | 1
+}) => {
+  const lessonId = primaryLessonId.value
+  if (!lessonId || subsectionBusy.value) return
+  const currentIndex = subsections.value.findIndex((item) => item.id === subsectionId)
+  const targetIndex = currentIndex + direction
+  if (currentIndex < 0 || targetIndex < 0 || targetIndex >= subsections.value.length) return
+
+  const next = [...subsections.value]
+  const [moved] = next.splice(currentIndex, 1)
+  if (!moved) return
+  next.splice(targetIndex, 0, moved)
+
+  subsectionBusy.value = true
+  try {
+    const result = await adminService.reorderLessonSubsections(lessonId, {
+      subsections: next.map((item, index) => ({
+        subsection_id: item.id,
+        order_index: index,
+      })),
+    })
+    if (!result.success) {
+      notify({ type: 'error', message: result.error || 'Не удалось изменить порядок подразделов' })
+      return
+    }
+    await load({ silent: true })
+  } finally {
+    subsectionBusy.value = false
+  }
 }
 
 const onSave = async () => {
@@ -541,14 +734,20 @@ const onSave = async () => {
         </AdminLabeledControlRow>
 
         <AdminTopicEditVideosSection
-          v-model:videos="videos"
+          v-model:ungrouped-videos="ungroupedVideos"
+          v-model:subsections="subsections"
           :upload-progress-by-id="videoUploadProgressById"
           :deleting-video-id="deletingVideoId"
+          :subsection-busy="subsectionBusy"
           @video-file-selected="onVideoFileSelected"
           @video-files-selected="onVideoFilesSelected"
           @open-timecode-modal="onOpenTimecodeModal"
           @video-delete="onVideoDelete"
           @video-title-commit="onVideoTitleCommit"
+          @subsection-create="onSubsectionCreate"
+          @subsection-rename="onSubsectionRename"
+          @subsection-delete="onSubsectionDelete"
+          @subsection-move="onSubsectionMove"
         />
 
         <AdminTopicEditMaterialsSection

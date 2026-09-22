@@ -22,6 +22,7 @@ const closedClubDetail: LearningCourseDetail = {
       title: '1 тема: Стресс',
       accessUntil: '01.01.2026',
       isCompleted: true,
+      subsections: [],
       materialsHtml:
         '<p>Материалы по теме «Стресс»: конспект лекции и дополнительные ссылки на исследования.</p>',
       videos: [
@@ -89,6 +90,7 @@ const closedClubDetail: LearningCourseDetail = {
       title: '2 тема: ДСТ',
       accessUntil: '01.04.2026',
       isCompleted: false,
+      subsections: [],
       videos: [
         {
           id: 'cc-t2-v1',
@@ -105,6 +107,7 @@ const closedClubDetail: LearningCourseDetail = {
       title: '3 тема: СД',
       accessUntil: '01.08.2026',
       isCompleted: false,
+      subsections: [],
       videos: [
         {
           id: 'cc-t3-v1',
@@ -121,6 +124,7 @@ const closedClubDetail: LearningCourseDetail = {
       title: '4 тема: АИТ и ЩЖ',
       accessUntil: '01.12.2026',
       isCompleted: false,
+      subsections: [],
       videos: [
         {
           id: 'cc-t4-v1',
@@ -149,6 +153,7 @@ const conferenceDetail: LearningCourseDetail = {
       title: 'Запись конференции',
       accessUntil: null,
       isCompleted: true,
+      subsections: [],
       materialsHtml: '<p>Материалы конференции 2023: презентации спикеров.</p>',
       videos: [
         {
@@ -177,6 +182,7 @@ const conferenceTopicStudyDetail: LearningCourseDetail = {
       title: 'Тема конференции: Как считать человека по лицу и внешним признакам',
       accessUntil: null,
       isCompleted: true,
+      subsections: [],
       materialsHtml: '<p>Материалы конференции 2023: презентации спикеров.</p>',
       videos: conferenceDetail.topics[0]!.videos,
     },

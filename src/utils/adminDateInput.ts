@@ -9,6 +9,21 @@ export function formatLocalDateForInput(d: Date): string {
   return `${y}-${m}-${day}`
 }
 
+/** ISO datetime / date → `YYYY-MM-DD` для `input type="date"`; иначе пустая строка. */
+export function isoDateTimeToDateInput(value: string | null | undefined): string {
+  if (!value) return ''
+  const datePart = value.trim().slice(0, 10)
+  return ISO_DATE.test(datePart) ? datePart : ''
+}
+
+/** `YYYY-MM-DD` → `YYYY-MM-DDT00:00:00Z`; пустая строка → `null`. */
+export function dateInputToDeadlineIso(value: string): string | null {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  if (!ISO_DATE.test(trimmed)) return null
+  return `${trimmed}T00:00:00Z`
+}
+
 /** `ДД.ММ.ГГГГ` → `YYYY-MM-DD` для `input type="date"`; иначе пустая строка. */
 export function deadlineRuLabelToIso(label: string | null | undefined): string {
   if (!label) return ''

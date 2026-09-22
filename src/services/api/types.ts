@@ -190,8 +190,36 @@ export interface LessonVideoResponse {
   title?: string | null
   order_index: number
   video_url?: string | null
+  subsection_id?: string | null
   /** Пустые/`null` с бэка нормализуются как `[]`. */
   chapters?: LessonChapter[] | null
+}
+
+export interface LessonSubsectionResponse {
+  id: string
+  lesson_id: string
+  title: string
+  order_index: number
+  /** Пустые/`null` с бэка нормализуются как `[]`. */
+  videos?: LessonVideoResponse[] | null
+}
+
+export interface LessonSubsectionCreateRequest {
+  title: string
+}
+
+export interface LessonSubsectionUpdateRequest {
+  title?: string
+  order_index?: number
+}
+
+export interface LessonSubsectionReorderItem {
+  subsection_id: string
+  order_index: number
+}
+
+export interface LessonSubsectionReorderRequest {
+  subsections: LessonSubsectionReorderItem[]
 }
 
 export interface LessonResponse {
@@ -201,6 +229,8 @@ export interface LessonResponse {
   description: string | null
   /** Пустые/`null` с бэка нормализуются как `[]`. */
   videos?: LessonVideoResponse[] | null
+  /** Пустые/`null` с бэка нормализуются как `[]`. */
+  subsections?: LessonSubsectionResponse[] | null
   order_index: number
   files: FileResponse[]
   created_at: string
@@ -233,6 +263,8 @@ export interface LessonWithProgress extends LessonResponse {
 export interface ModuleProgressResponse {
   module_id: string
   title: string
+  passed?: boolean
+  passed_at?: string | null
   lessons: LessonWithProgress[]
 }
 
@@ -246,6 +278,16 @@ export interface ProductProgressResponse {
   /** Статус доступа текущего пользователя, если бэкенд отдаёт поле. */
   status?: AdminStudentAccessStatus | string
   modules: ModuleProgressResponse[]
+}
+
+export interface ModulePassRequest {
+  passed: boolean
+}
+
+export interface ModulePassResponse {
+  module_id: string
+  passed: boolean
+  passed_at: string | null
 }
 
 export interface LessonProgressCreate {
@@ -485,11 +527,13 @@ export interface AdminLessonVideoUploadUrlResponse {
 export interface LessonVideoConfirmRequest {
   file_key: string
   title?: string | null
+  subsection_id?: string | null
 }
 
 export interface LessonVideoUpdate {
   title?: string | null
   order_index?: number | null
+  subsection_id?: string | null
   /** Передать `[]` — очистить таймкоды. Не передавать поле — оставить как есть. */
   chapters?: LessonChapter[]
 }
@@ -520,6 +564,27 @@ export interface AdminGrantAccessRequest {
 
 export interface AdminDeadlineUpdateRequest {
   deadline: string
+}
+
+export interface AdminStudentModuleItem {
+  module_id: string
+  title: string
+  order_index: number
+  is_open: boolean
+  deadline: string | null
+  passed: boolean
+  passed_at: string | null
+  is_available: boolean
+}
+
+export interface AdminStudentModuleUpdateRequest {
+  is_open?: boolean
+  deadline?: string | null
+  passed?: boolean
+}
+
+export interface AdminStudentModulesAccessRequest {
+  is_open: boolean
 }
 
 export type AdminStudentAccessStatus = 'active' | 'paused' | 'blocked' | 'deleted'

@@ -20,6 +20,7 @@ export const PRODUCT_ENDPOINTS = {
   pricing: (id: string) => `/api/v1/products/${id}/pricing`,
   myCourses: '/api/v1/products/my-courses',
   completeLesson: (lessonId: string) => `/api/v1/products/lessons/${lessonId}/complete`,
+  passModule: (moduleId: string) => `/api/v1/products/modules/${moduleId}/pass`,
 } as const
 
 export const PAYMENT_ENDPOINTS = {
