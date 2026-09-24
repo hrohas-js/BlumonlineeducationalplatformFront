@@ -67,11 +67,17 @@ const topicFiles = computed(() => topic.value?.videos.flatMap((video) => video.f
 
 const subsections = computed(() => topic.value?.subsections ?? [])
 
+const ungroupedVideos = computed(() => topic.value?.ungroupedVideos ?? [])
+
 const hasLessonSubsections = computed(() => subsections.value.length > 0)
 
 const hasMedia = computed(() => {
   if (props.lessonLayout) {
-    return hasLessonSubsections.value || topicFiles.value.length > 0
+    return (
+      hasLessonSubsections.value ||
+      ungroupedVideos.value.length > 0 ||
+      topicFiles.value.length > 0
+    )
   }
   return (
     Boolean(topic.value?.videos.some((video) => video.src)) || topicFiles.value.length > 0
@@ -159,6 +165,23 @@ function onClosePlayback() {
       >
         <LearningTopicFilesList :files="topicFiles" />
       </LearningCollapsibleChip>
+
+      <LearningCollapsibleChip
+        v-if="ungroupedVideos.length > 0 && hasLessonSubsections"
+        label="Видео без подраздела"
+        variant="filled"
+      >
+        <LearningTopicSubsectionVideosList
+          :videos="ungroupedVideos"
+          @select="onSelectSubsectionVideo"
+        />
+      </LearningCollapsibleChip>
+
+      <LearningTopicSubsectionVideosList
+        v-else-if="ungroupedVideos.length > 0"
+        :videos="ungroupedVideos"
+        @select="onSelectSubsectionVideo"
+      />
 
       <LearningCollapsibleChip
         v-for="subsection in subsections"

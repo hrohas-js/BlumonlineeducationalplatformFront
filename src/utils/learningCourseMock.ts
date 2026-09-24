@@ -23,6 +23,7 @@ const closedClubDetail: LearningCourseDetail = {
       accessUntil: '01.01.2026',
       isCompleted: true,
       subsections: [],
+      ungroupedVideos: [],
       materialsHtml:
         '<p>Материалы по теме «Стресс»: конспект лекции и дополнительные ссылки на исследования.</p>',
       videos: [
@@ -91,6 +92,7 @@ const closedClubDetail: LearningCourseDetail = {
       accessUntil: '01.04.2026',
       isCompleted: false,
       subsections: [],
+      ungroupedVideos: [],
       videos: [
         {
           id: 'cc-t2-v1',
@@ -108,6 +110,7 @@ const closedClubDetail: LearningCourseDetail = {
       accessUntil: '01.08.2026',
       isCompleted: false,
       subsections: [],
+      ungroupedVideos: [],
       videos: [
         {
           id: 'cc-t3-v1',
@@ -125,6 +128,7 @@ const closedClubDetail: LearningCourseDetail = {
       accessUntil: '01.12.2026',
       isCompleted: false,
       subsections: [],
+      ungroupedVideos: [],
       videos: [
         {
           id: 'cc-t4-v1',
@@ -154,6 +158,7 @@ const conferenceDetail: LearningCourseDetail = {
       accessUntil: null,
       isCompleted: true,
       subsections: [],
+      ungroupedVideos: [],
       materialsHtml: '<p>Материалы конференции 2023: презентации спикеров.</p>',
       videos: [
         {
@@ -183,6 +188,7 @@ const conferenceTopicStudyDetail: LearningCourseDetail = {
       accessUntil: null,
       isCompleted: true,
       subsections: [],
+      ungroupedVideos: [],
       materialsHtml: '<p>Материалы конференции 2023: презентации спикеров.</p>',
       videos: conferenceDetail.topics[0]!.videos,
     },

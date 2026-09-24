@@ -35,6 +35,8 @@ export interface LearningCourseTopic {
   accessUntil: string | null
   isCompleted: boolean
   videos: LearningTopicVideo[]
+  /** Видео урока без subsection_id, не попавшие ни в один подраздел. */
+  ungroupedVideos: LearningTopicVideo[]
   subsections: LearningTopicSubsection[]
   materialsHtml?: string
   materialsText?: string

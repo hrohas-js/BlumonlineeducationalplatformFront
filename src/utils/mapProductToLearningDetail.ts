@@ -110,6 +110,24 @@ function lessonToVideos(
   )
 }
 
+function lessonToUngroupedVideos(
+  lesson: LessonResponse,
+  isCompleted: boolean,
+  videoSrcByVideoId: Record<string, string>,
+): LearningTopicVideo[] {
+  const groupedIds = new Set<string>()
+  for (const subsection of lesson.subsections ?? []) {
+    for (const video of sourceVideosForSubsection(lesson, subsection)) {
+      groupedIds.add(video.id)
+    }
+  }
+  return uniqueVideosById(lesson.videos ?? [])
+    .filter((video) => !video.subsection_id && !groupedIds.has(video.id))
+    .sort((a, b) => a.order_index - b.order_index)
+    .map((video) => lessonVideoToLearningVideo(video, lesson, isCompleted, false, videoSrcByVideoId))
+    .filter((video) => Boolean(video.src?.trim()))
+}
+
 function lessonToSubsections(
   lesson: LessonResponse,
   isCompleted: boolean,
@@ -203,6 +221,10 @@ function moduleToTopic(
     videos: lessons.flatMap((lesson) => {
       const lp = moduleProgress?.lessons.find((l) => l.id === lesson.id)
       return lessonToVideos(lesson, lp?.is_completed ?? false, videoSrcByVideoId)
+    }),
+    ungroupedVideos: lessons.flatMap((lesson) => {
+      const lp = moduleProgress?.lessons.find((l) => l.id === lesson.id)
+      return lessonToUngroupedVideos(lesson, lp?.is_completed ?? false, videoSrcByVideoId)
     }),
     subsections: lessons.flatMap((lesson) => {
       const lp = moduleProgress?.lessons.find((l) => l.id === lesson.id)
