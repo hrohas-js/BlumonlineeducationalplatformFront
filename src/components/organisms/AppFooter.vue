@@ -108,9 +108,9 @@ const instagramGradientId = 'app-footer-instagram-gradient'
       </section>
 
       <section class="app-footer__legal" aria-label="Юридическая информация">
-        <a href="/src/assets/docs/Политика_обработки_персональных_данных.pdf" target="_blank" class="app-footer__legal-link">Политика обработки персональных данных</a>
-        <a href="/src/assets/docs/Ограничение ответственности.pdf" target="_blank" class="app-footer__legal-link">Ограничение ответственности</a>
-        <a href="/src/assets/docs/Договор оферты.pdf" target="_blank" class="app-footer__legal-link">Договор оферта</a>
+        <a href="/Политика_обработки_персональных_данных.pdf" target="_blank" class="app-footer__legal-link">Политика обработки персональных данных</a>
+        <a href="/Ограничение ответственности.pdf" target="_blank" class="app-footer__legal-link">Ограничение ответственности</a>
+        <a href="/Договор оферты.pdf" target="_blank" class="app-footer__legal-link">Договор оферта</a>
       </section>
     </div>
 
