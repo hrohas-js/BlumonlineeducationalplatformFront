@@ -15,6 +15,7 @@ const props = withDefaults(
     completedTopics: number
     totalTopics: number
     accessUntil?: string | null
+    progressPercentOverride?: number
     showProgress?: boolean
   }>(),
   {
@@ -32,6 +33,10 @@ const categoryLabelMap: Record<CourseCategory, string> = {
 const categoryLabel = computed(() => categoryLabelMap[props.category])
 
 const progressPercent = computed(() => {
+  if (props.progressPercentOverride !== undefined) {
+    const rounded = Math.round(props.progressPercentOverride)
+    return Math.min(100, Math.max(0, rounded))
+  }
   if (props.totalTopics <= 0) {
     return 0
   }

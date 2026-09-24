@@ -148,6 +148,33 @@ function formatTopicTitle(orderIndex: number, title: string): string {
   return `${orderIndex} тема: ${trimmed}`
 }
 
+export function isProgressModuleCompleted(module: {
+  passed?: boolean
+  lessons?: { is_completed: boolean }[]
+}): boolean {
+  if (module.passed != null) return module.passed
+  const lessons = module.lessons ?? []
+  return lessons.length > 0 && lessons.every((lesson) => lesson.is_completed)
+}
+
+/** «Пройдено тем» — число модулей, а не completed_lessons. */
+export function countProgressTopics(progress: ProductProgressResponse | null | undefined): {
+  completedTopics: number
+  totalTopics: number
+} {
+  const modules = progress?.modules ?? []
+  if (modules.length > 0) {
+    return {
+      completedTopics: modules.filter((module) => isProgressModuleCompleted(module)).length,
+      totalTopics: modules.length,
+    }
+  }
+  return {
+    completedTopics: progress?.completed_lessons ?? 0,
+    totalTopics: progress?.total_lessons ?? 0,
+  }
+}
+
 function moduleToTopic(
   module: ModuleResponse,
   progress: ProductProgressResponse | null,
@@ -155,15 +182,23 @@ function moduleToTopic(
 ): LearningCourseTopic {
   const moduleProgress = progress?.modules.find((m) => m.module_id === module.id)
   const lessons = [...module.lessons].sort((a, b) => a.order_index - b.order_index)
-  const completedCount = moduleProgress
-    ? moduleProgress.lessons.filter((l) => l.is_completed).length
-    : 0
 
   return {
     id: module.id,
     title: formatTopicTitle(module.order_index, module.title),
     accessUntil: formatAccessUntil(progress?.deadline ?? null),
-    isCompleted: moduleProgress?.passed ?? (lessons.length > 0 && completedCount >= lessons.length),
+    isCompleted: moduleProgress
+      ? isProgressModuleCompleted({
+          passed: moduleProgress.passed,
+          lessons:
+            lessons.length > 0
+              ? lessons.map((lesson) => ({
+                  is_completed:
+                    moduleProgress.lessons.find((item) => item.id === lesson.id)?.is_completed ?? false,
+                }))
+              : moduleProgress.lessons,
+        })
+      : false,
     ...splitModuleDescription(module.description),
     videos: lessons.flatMap((lesson) => {
       const lp = moduleProgress?.lessons.find((l) => l.id === lesson.id)
@@ -194,8 +229,9 @@ export function mapProductToLearningDetail(
     title: product.title,
     category: mapProductTypeToCategory(product.product_type),
     descriptionLines,
-    completedTopics: progress?.completed_lessons ?? 0,
-    totalTopics: progress?.total_lessons ?? topics.length,
+    completedTopics: topics.filter((topic) => topic.isCompleted).length,
+    totalTopics: topics.length > 0 ? topics.length : (progress?.total_lessons ?? 0),
+    ...(progress != null ? { progressPercentOverride: progress.progress_percent } : {}),
     accessUntil: formatAccessUntil(progress?.deadline ?? null),
     topics,
   }

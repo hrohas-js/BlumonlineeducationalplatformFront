@@ -16,7 +16,8 @@ const props = withDefaults(
 
 const progressPercent = computed(() => {
   if (props.progressPercentOverride !== undefined) {
-    return Math.min(100, Math.max(0, props.progressPercentOverride))
+    const rounded = Math.round(props.progressPercentOverride)
+    return Math.min(100, Math.max(0, rounded))
   }
   if (props.totalTopics <= 0) return 0
   const raw = Math.round((props.completedTopics / props.totalTopics) * 100)

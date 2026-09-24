@@ -28,6 +28,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useProductsStore } from '@/stores/products'
 import { useNotification } from '@/composables/useNotification'
 import { isStudentProductBlocked } from '@/constants/studentProductAccess'
+import { countProgressTopics } from '@/utils/mapProductToLearningDetail'
 import { formatRenewalPeriodLabel } from '@/utils/pluralizeRu'
 import type { ProductResponse } from '@/services/api/types'
 
@@ -44,6 +45,7 @@ type LearningPanelCourse = {
   completedTopics: number
   totalTopics: number
   accessUntil?: string | null
+  progressPercentOverride?: number
   status?: string | null
 }
 
@@ -87,14 +89,16 @@ function formatDeadline(iso: string | null): string | null {
 
 function toLearningPanelCourse(p: ProductResponse): LearningPanelCourse {
   const progress = productsStore.progressByProductId[p.id]
+  const topicCounts = countProgressTopics(progress)
   return {
     id: p.id,
     title: p.title,
     description: p.description ?? '',
     category: mapProductTypeToCategory(p.product_type),
-    completedTopics: progress?.completed_lessons ?? 0,
-    totalTopics: progress?.total_lessons ?? 0,
+    completedTopics: topicCounts.completedTopics,
+    totalTopics: topicCounts.totalTopics,
     accessUntil: formatDeadline(progress?.deadline ?? null),
+    ...(progress != null ? { progressPercentOverride: progress.progress_percent } : {}),
     status: p.status ?? progress?.status ?? null,
   }
 }
@@ -393,6 +397,7 @@ watch(
                   :completed-topics="course.completedTopics"
                   :total-topics="course.totalTopics"
                   :access-until="course.accessUntil"
+                  :progress-percent-override="course.progressPercentOverride"
                   class="home-learning__course-card"
                 >
                   <template #header="{ title, category, categoryLabel }">
