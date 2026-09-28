@@ -283,11 +283,11 @@ onUnmounted(() => {
 @media (max-width: 479px) {
   .lesson-video-playback-modal {
     padding: var(--sp-12);
-    align-items: flex-end;
   }
 
   .lesson-video-playback-modal__content {
     max-height: calc(100vh - var(--sp-24));
+    max-height: calc(100dvh - var(--sp-24));
     padding: var(--sp-20) var(--sp-16);
     border-radius: 16px;
   }

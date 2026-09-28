@@ -406,7 +406,8 @@ async function toggleFullscreen() {
 function onFullscreenChange() {
   const fs = Boolean(document.fullscreenElement && rootRef.value === document.fullscreenElement)
   isFullscreen.value = fs
-  if (fs) {
+  const showEscHint = window.matchMedia('(hover: hover) and (pointer: fine)').matches
+  if (fs && showEscHint) {
     fullscreenHint.value = true
     if (hintTimer) clearTimeout(hintTimer)
     hintTimer = setTimeout(() => {

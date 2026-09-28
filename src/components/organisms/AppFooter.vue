@@ -1,5 +1,4 @@
 <script setup lang="ts">
-const currentYear = new Date().getFullYear()
 const instagramGradientId = 'app-footer-instagram-gradient'
 </script>
 
@@ -115,7 +114,7 @@ const instagramGradientId = 'app-footer-instagram-gradient'
     </div>
 
     <div class="app-footer__bottom">
-      <p class="app-footer__bottom-text">Doktor_Blum&copy; {{ currentYear }}</p>
+      <p class="app-footer__bottom-text">Doktor_Blum&copy;</p>
       <p class="app-footer__bottom-text">Все права защищены</p>
     </div>
   </footer>

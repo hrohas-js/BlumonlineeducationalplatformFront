@@ -365,7 +365,7 @@ const cancelEditing = () => {
   background-color: var(--white);
   font-family: var(--font-family);
   font-weight: var(--font-semi-bold);
-  font-size: var(--size-20);
+  font-size: var(--size-15);
   line-height: normal;
   color: #010307;
   cursor: pointer;
