@@ -167,6 +167,10 @@ onUnmounted(() => {
     border-bottom: var(--border-2) solid transparent;
     transition: border-color 0.25s ease;
 
+    @media (max-width: 1034px) {
+      font-size: var(--size-16);
+    }
+
     &:hover {
       border-bottom-color: var(--podcherkivanie-pri-navedenii);
     }

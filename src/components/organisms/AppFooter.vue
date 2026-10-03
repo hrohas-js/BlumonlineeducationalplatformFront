@@ -136,13 +136,15 @@ const instagramGradientId = 'app-footer-instagram-gradient'
 
   &__columns {
     margin-top: var(--sp-40);
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: clamp(24px, calc(24px + 45 * ((100vw - 1024px) / 256)), 69px);
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+    column-gap: clamp(24px, calc(24px + 45 * ((100vw - 1024px) / 256)), 69px);
   }
 
   &__social {
+    justify-self: start;
+    max-width: 100%;
     display: flex;
     align-items: center;
     gap: var(--sp-20);
@@ -164,6 +166,8 @@ const instagramGradientId = 'app-footer-instagram-gradient'
   }
 
   &__links {
+    justify-self: center;
+    max-width: 100%;
     display: flex;
     flex-direction: column;
     gap: var(--sp-20);
@@ -180,6 +184,8 @@ const instagramGradientId = 'app-footer-instagram-gradient'
   }
 
   &__legal {
+    justify-self: end;
+    max-width: 100%;
     padding-bottom: var(--sp-17);
     display: flex;
     flex-direction: column;
@@ -223,6 +229,7 @@ const instagramGradientId = 'app-footer-instagram-gradient'
 
     &__columns {
       margin-top: var(--sp-40);
+      display: flex;
       flex-direction: column;
       align-items: center;
       gap: var(--sp-80);

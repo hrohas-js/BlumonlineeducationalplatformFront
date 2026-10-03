@@ -1,18 +1,24 @@
 <script setup lang="ts">
-import { STUDENT_PRODUCT_BLOCKED_MESSAGE } from '@/constants/studentProductAccess'
+import { computed } from 'vue'
+import {
+  STUDENT_PRODUCT_BLOCKED_MESSAGE,
+  STUDENT_PRODUCT_PAUSED_MESSAGE,
+  resolveStudentProductAccessStatus,
+  type StudentProductAccessStatus,
+} from '@/constants/studentProductAccess'
 
 const props = withDefaults(
   defineProps<{
     accessLabel?: string
     buttonLabel?: string
     showAccess?: boolean
-    accessDenied?: boolean
+    accessStatus?: StudentProductAccessStatus | string | null
   }>(),
   {
     accessLabel: '',
     buttonLabel: 'К изучению',
     showAccess: true,
-    accessDenied: false,
+    accessStatus: 'active',
   },
 )
 
@@ -20,8 +26,13 @@ const emit = defineEmits<{
   buttonClick: []
 }>()
 
+const resolvedStatus = computed(() => resolveStudentProductAccessStatus(props.accessStatus))
+const isPaused = computed(() => resolvedStatus.value === 'paused')
+const isBlocked = computed(() => resolvedStatus.value === 'blocked')
+const isEntryClosed = computed(() => isPaused.value || isBlocked.value)
+
 const onButtonClick = () => {
-  if (props.accessDenied) return
+  if (isEntryClosed.value) return
   emit('buttonClick')
 }
 </script>
@@ -31,7 +42,7 @@ const onButtonClick = () => {
     <button
       type="button"
       class="learning-course-card-footer__button"
-      :disabled="accessDenied"
+      :disabled="isEntryClosed"
       @click="onButtonClick"
     >
       <span>{{ buttonLabel }}</span>
@@ -43,7 +54,11 @@ const onButtonClick = () => {
       </svg>
     </button>
 
-    <span v-if="accessDenied" class="learning-course-card-footer__access">
+    <div v-if="isPaused" class="learning-course-card-footer__meta">
+      <span v-if="showAccess" class="learning-course-card-footer__access">Срок доступа: {{ accessLabel }}</span>
+      <span class="learning-course-card-footer__access">{{ STUDENT_PRODUCT_PAUSED_MESSAGE }}</span>
+    </div>
+    <span v-else-if="isBlocked" class="learning-course-card-footer__access">
       {{ STUDENT_PRODUCT_BLOCKED_MESSAGE }}
     </span>
     <span v-else-if="showAccess" class="learning-course-card-footer__access">Срок доступа: {{ accessLabel }}</span>
@@ -87,11 +102,19 @@ const onButtonClick = () => {
     }
   }
 
+  &__meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+
   &__access {
     font-family: var(--font-family);
     font-weight: var(--font-medium);
     font-size: var(--size-10);
     color: var(--osnovnoy-tekst);
+    text-align: right;
   }
 
   &_renewal &__button {

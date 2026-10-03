@@ -281,7 +281,7 @@ const showUngrouped = computed(() => ungroupedVideos.value.length > 0)
           <BaseButton
             class="admin-topic-edit-videos-section__add-btn"
             variant="outline"
-            size="medium"
+            size="small"
             shape="rounded"
             text="Добавить видеофайл"
             :disabled="addFilesDisabled"

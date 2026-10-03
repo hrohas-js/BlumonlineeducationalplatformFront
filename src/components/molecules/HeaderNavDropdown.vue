@@ -124,6 +124,10 @@ onUnmounted(() => {
     cursor: pointer;
     transition: border-color 0.25s ease, color 0.25s ease;
 
+    @media (max-width: 1034px) {
+      font-size: var(--size-16);
+    }
+
     &:hover,
     &:focus-visible,
     &_open {

@@ -27,7 +27,11 @@ import {
 import { useAuthStore } from '@/stores/auth'
 import { useProductsStore } from '@/stores/products'
 import { useNotification } from '@/composables/useNotification'
-import { isStudentProductBlocked } from '@/constants/studentProductAccess'
+import {
+  canEnterStudentProduct,
+  isStudentProductVisible,
+  resolveStudentProductAccessStatus,
+} from '@/constants/studentProductAccess'
 import { countProgressTopics } from '@/utils/mapProductToLearningDetail'
 import { formatRenewalPeriodLabel } from '@/utils/pluralizeRu'
 import type { ProductResponse } from '@/services/api/types'
@@ -130,17 +134,21 @@ const showLearningCourseHeader = computed(
   () => learningView.value === 'course' || learningView.value === 'topic',
 )
 
+const visibleLearningCourses = computed(() =>
+  learningCourses.value.filter((course) => isStudentProductVisible(course.status)),
+)
+
 const filteredLearningCourses = computed(() => {
   if (materialsFilter.value === 'all') {
-    return learningCourses.value
+    return visibleLearningCourses.value
   }
-  return learningCourses.value.filter((c) => c.category === materialsFilter.value)
+  return visibleLearningCourses.value.filter((c) => c.category === materialsFilter.value)
 })
 
-const hasLearningCourses = computed(() => learningCourses.value.length > 0)
+const hasLearningCourses = computed(() => visibleLearningCourses.value.length > 0)
 
 const renewalCards = computed<RenewalPanelCard[]>(() =>
-  realLearningCourses.value.flatMap((course) => {
+  realLearningCourses.value.filter((course) => isStudentProductVisible(course.status)).flatMap((course) => {
     const options = productsStore.pricingByProductId[course.id]
     if (!options?.length) return []
     return options.map((option) => ({
@@ -221,7 +229,7 @@ function resetLearningDrillDown() {
 
 const onStudyClick = (courseId: string) => {
   const course = learningCourses.value.find((item) => item.id === courseId)
-  if (isStudentProductBlocked(course?.status)) return
+  if (!canEnterStudentProduct(course?.status)) return
 
   if (isMockData.value) {
     const detail = getMockLearningCourseDetail(courseId)
@@ -419,7 +427,7 @@ watch(
                   <template #footer="{ accessLabel }">
                     <LearningCourseCardFooter
                       :access-label="accessLabel"
-                      :access-denied="isStudentProductBlocked(course.status)"
+                      :access-status="resolveStudentProductAccessStatus(course.status)"
                       @button-click="onStudyClick(course.id)"
                     />
                   </template>

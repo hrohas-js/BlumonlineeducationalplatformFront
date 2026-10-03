@@ -40,7 +40,7 @@ import { ADMIN_STUDENTS_SCOPE_ALL } from '@/constants/adminMaterials'
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: var(--sp-40);
+  gap: var(--sp-20);
   width: 100%;
   max-width: 292px;
 

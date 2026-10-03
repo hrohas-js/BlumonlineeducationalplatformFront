@@ -177,6 +177,7 @@ watch(
     display: flex;
     flex-direction: column;
     gap: var(--sp-10);
+    width: 100%;
   }
 
   &__trigger {
@@ -326,7 +327,6 @@ watch(
 
     &__image {
       width: 100%;
-      max-width: 403px;
       height: auto;
       aspect-ratio: 403 / 410;
     }

@@ -10,11 +10,14 @@ import LearningCourseOverviewPanel from '@/components/organisms/LearningCourseOv
 import LearningTopicStudyPanel from '@/components/organisms/LearningTopicStudyPanel.vue'
 import { productsService } from '@/services/api/endpoints/products'
 import { useAuthStore } from '@/stores/auth'
+import { useProductsStore } from '@/stores/products'
 import { useNotification } from '@/composables/useNotification'
 import { findTopicByLessonId, mapProductToLearningDetail } from '@/utils/mapProductToLearningDetail'
 import {
-  isStudentProductBlocked,
+  readStudentProductAccessStatus,
   STUDENT_PRODUCT_BLOCKED_MESSAGE,
+  STUDENT_PRODUCT_PAUSED_MESSAGE,
+  type StudentProductAccessStatus,
 } from '@/constants/studentProductAccess'
 import type { LearningCourseDetail } from '@/types/learning-course'
 import type {
@@ -26,6 +29,7 @@ import type {
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const productsStore = useProductsStore()
 const { notify } = useNotification()
 
 const productId = computed<string>(() => String(route.params.productId))
@@ -35,11 +39,13 @@ const lessonIdParam = computed<string | null>(() => {
   return Array.isArray(v) ? v[0] : (v as string)
 })
 
+type CourseAccessView = 'open' | StudentProductAccessStatus
+
 const product = ref<ProductDetailResponse | null>(null)
 const progress = ref<ProductProgressResponse | null>(null)
 const loading = ref(false)
 const completing = ref(false)
-const accessDenied = ref(false)
+const accessView = ref<CourseAccessView>('open')
 const activeTopicId = ref<string | null>(null)
 
 const learningDetail = computed<LearningCourseDetail | null>(() => {
@@ -55,51 +61,72 @@ const selectedTopicId = computed<string | null>(() => {
 
 const isOverview = computed(() => !lessonIdParam.value)
 
-const isAccessDenied = computed(
-  () =>
-    accessDenied.value ||
-    isStudentProductBlocked(product.value?.status) ||
-    isStudentProductBlocked(progress.value?.status),
+const isEntryClosed = computed(
+  () => accessView.value === 'paused' || accessView.value === 'blocked',
 )
+
+function knownAccessStatus(): StudentProductAccessStatus | null {
+  const cached = productsStore.myCourses.find((item) => item.id === productId.value)
+  return (
+    readStudentProductAccessStatus(product.value?.status) ??
+    readStudentProductAccessStatus(progress.value?.status) ??
+    readStudentProductAccessStatus(cached?.status)
+  )
+}
 
 async function loadProduct() {
   loading.value = true
-  accessDenied.value = false
+  accessView.value = 'open'
   product.value = null
   progress.value = null
+
+  const cachedCourses = productsStore.myCourses.length
+    ? Promise.resolve()
+    : productsStore.fetchMyCourses()
 
   const [detailResult, progressResult] = await Promise.all([
     productsService.getById(productId.value),
     productsService.getProgress(productId.value),
+    cachedCourses,
   ])
-
-  const deniedByApi =
-    detailResult.errorCode === 'permission_denied' ||
-    progressResult.errorCode === 'permission_denied'
-
-  if (deniedByApi) {
-    accessDenied.value = true
-    loading.value = false
-    return
-  }
 
   if (detailResult.success && detailResult.data) {
     product.value = detailResult.data
-  } else {
-    notify({ type: 'error', message: detailResult.error || 'Не удалось загрузить курс' })
   }
 
   if (progressResult.success && progressResult.data) {
     progress.value = progressResult.data
   }
 
-  if (
-    isStudentProductBlocked(product.value?.status) ||
-    isStudentProductBlocked(progress.value?.status)
-  ) {
-    accessDenied.value = true
+  const status = knownAccessStatus()
+  if (status === 'deleted') {
+    product.value = null
+    progress.value = null
+    goToLearningCourses()
+    return
   }
 
+  if (status === 'paused' || status === 'blocked') {
+    accessView.value = status
+    loading.value = false
+    return
+  }
+
+  const deniedByApi =
+    detailResult.errorCode === 'permission_denied' ||
+    progressResult.errorCode === 'permission_denied'
+
+  if (deniedByApi) {
+    accessView.value = 'blocked'
+    loading.value = false
+    return
+  }
+
+  if (!product.value) {
+    notify({ type: 'error', message: detailResult.error || 'Не удалось загрузить курс' })
+  }
+
+  accessView.value = 'open'
   loading.value = false
 }
 
@@ -109,7 +136,7 @@ function goToLearningCourses() {
 }
 
 function goBack() {
-  if (isAccessDenied.value) {
+  if (isEntryClosed.value) {
     goToLearningCourses()
     return
   }
@@ -121,7 +148,7 @@ function goBack() {
 }
 
 function openTopicLesson(topicId: string) {
-  if (isAccessDenied.value) return
+  if (isEntryClosed.value) return
   activeTopicId.value = topicId
   const topic = learningDetail.value?.topics.find((t) => t.id === topicId)
   const firstVideo = topic?.videos[0]
@@ -205,7 +232,7 @@ function mergePassedIntoProgress(
 }
 
 async function onCompleteTopic(topicId: string, completed: boolean) {
-  if (isAccessDenied.value || !product.value) return
+  if (isEntryClosed.value || !product.value) return
   const module = product.value.modules.find((item) => item.id === topicId)
   if (!module) return
 
@@ -250,7 +277,7 @@ watch(
       <div v-if="loading" class="home-profile__loading">Загружаем курс…</div>
 
       <article
-        v-else-if="isAccessDenied"
+        v-else-if="accessView === 'blocked'"
         class="home-profile__panel home-profile__panel_learning"
       >
         <button type="button" class="home-learning__back" @click="goToLearningCourses">
@@ -258,6 +285,17 @@ watch(
           К моим курсам
         </button>
         <p class="home-profile__empty">{{ STUDENT_PRODUCT_BLOCKED_MESSAGE }}</p>
+      </article>
+
+      <article
+        v-else-if="accessView === 'paused'"
+        class="home-profile__panel home-profile__panel_learning"
+      >
+        <button type="button" class="home-learning__back" @click="goToLearningCourses">
+          <span aria-hidden="true">←</span>
+          К моим курсам
+        </button>
+        <p class="home-profile__empty">{{ STUDENT_PRODUCT_PAUSED_MESSAGE }}</p>
       </article>
 
       <article

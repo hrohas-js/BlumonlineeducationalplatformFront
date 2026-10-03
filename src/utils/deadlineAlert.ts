@@ -1,3 +1,4 @@
+import { canReceiveDeadlineAlert } from '@/constants/studentProductAccess'
 import type { ProductProgressResponse, ProductResponse } from '@/services/api/types'
 
 export const DEADLINE_ALERT_THRESHOLD_DAYS = 10
@@ -67,6 +68,9 @@ export function getCoursesNeedingDeadlineAlert(
 
   for (const course of courses) {
     const progress = progressMap[course.id]
+    if (!canReceiveDeadlineAlert(course.status ?? progress?.status)) {
+      continue
+    }
     if (!isCourseNeedingDeadlineAlert(progress)) {
       continue
     }
