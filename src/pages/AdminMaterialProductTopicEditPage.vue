@@ -675,7 +675,7 @@ const onSubsectionMove = async ({
     const result = await adminService.reorderLessonSubsections(lessonId, {
       subsections: next.map((item, index) => ({
         subsection_id: item.id,
-        order_index: index,
+        order_index: index + 1,
       })),
     })
     if (!result.success) {
