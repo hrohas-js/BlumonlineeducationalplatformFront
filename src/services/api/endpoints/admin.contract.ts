@@ -48,6 +48,7 @@ export const ADMIN_ENDPOINTS = {
   userProductModulesAccess: (userId: string, productId: string) =>
     `/api/v1/admin/products/users/${userId}/products/${productId}/modules/access`,
   studentProducts: (userId: string) => `/api/v1/admin/students/${userId}/products`,
+  studentsExport: '/api/v1/admin/students/export',
   studentsBulk: '/api/v1/admin/students/bulk',
   studentsBulkExcel: '/api/v1/admin/students/bulk/excel',
   payments: '/api/v1/admin/payments',

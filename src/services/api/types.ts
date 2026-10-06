@@ -404,6 +404,16 @@ export interface AdminProductsQuery {
   limit?: number
 }
 
+export interface AdminStudentsExportQuery {
+  product_type?: string
+  is_archived?: boolean
+}
+
+export interface AdminStudentsCsvFile {
+  blob: Blob
+  contentDisposition: string | null
+}
+
 export interface AdminProductCreateRequest {
   product_type: string
   title: string

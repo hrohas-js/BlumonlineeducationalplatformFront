@@ -11,11 +11,12 @@ interface Props {
   categoryTitle: string
   sectionId: AdminStudentsSectionScope
   usersCount: number
+  exporting?: boolean
 }
 
 interface Emits {
   (e: 'add-student'): void
-  (e: 'export-xlsx'): void
+  (e: 'export-csv'): void
 }
 
 defineProps<Props>()
@@ -257,8 +258,10 @@ const onMenuItemClick = () => {
         <button
           type="button"
           class="admin-materials-students-toolbar__icon-btn"
-          aria-label="Скачать учеников в формате xlsx"
-          @click="emit('export-xlsx')"
+          aria-label="Скачать учеников в формате CSV"
+          :disabled="exporting"
+          :aria-busy="exporting"
+          @click="emit('export-csv')"
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <path
@@ -573,6 +576,11 @@ const onMenuItemClick = () => {
 
   &:hover {
     opacity: 0.85;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
   }
 }
 

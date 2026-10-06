@@ -43,6 +43,8 @@ import type {
   AdminStudentModulesAccessRequest,
   AdminStudentProductsResponse,
   AdminStudentsListResponse,
+  AdminStudentsExportQuery,
+  AdminStudentsCsvFile,
   AdminBulkStudentsRequest,
   AdminBulkStudentsResponse,
   AdminPaymentsQuery,
@@ -63,6 +65,8 @@ import type {
 import { ADMIN_ENDPOINTS } from './admin.contract'
 import { resolveVideoContentType } from '@/utils/adminTopicVideoFile'
 import axios from 'axios'
+
+const STUDENTS_EXPORT_TIMEOUT_MS = 120_000
 
 export const adminService = {
   // --- Products ---
@@ -497,6 +501,25 @@ export const adminService = {
     )
   },
 
+  async exportAllStudentsCsv(
+    query?: AdminStudentsExportQuery,
+  ): ApiServiceResponse<AdminStudentsCsvFile> {
+    const api = useApi()
+    return apiCallBlob(async () => {
+      const response = await api.raw.get<Blob>(ADMIN_ENDPOINTS.studentsExport, {
+        responseType: 'blob',
+        timeout: STUDENTS_EXPORT_TIMEOUT_MS,
+        ...(query ? { params: query } : {}),
+      })
+      return {
+        data: {
+          blob: response.data,
+          contentDisposition: contentDispositionHeader(response.headers),
+        },
+      }
+    }, 'Export students failed')
+  },
+
   async bulkAddStudents(body: AdminBulkStudentsRequest): ApiServiceResponse<AdminBulkStudentsResponse> {
     const api = useApi()
     return api.post<AdminBulkStudentsResponse>(ADMIN_ENDPOINTS.studentsBulk, body)
@@ -612,16 +635,59 @@ export const adminService = {
   },
 }
 
-async function apiCallBlob(
-  request: () => Promise<{ data: Blob }>,
-  errorMessage: string
-): Promise<import('../types').ApiResult<Blob>> {
+async function apiCallBlob<T>(
+  request: () => Promise<{ data: T }>,
+  errorMessage: string,
+): Promise<ApiResult<T>> {
   try {
     const response = await request()
     return { data: response.data, error: null, errorCode: null, success: true }
   } catch (error: unknown) {
     console.error(errorMessage, error)
-    const message = error instanceof Error ? error.message : errorMessage
+    const parsed = await messageFromBlobError(error)
+    const message = parsed ?? (error instanceof Error ? error.message : errorMessage)
     return { data: null, error: message, errorCode: null, success: false }
   }
+}
+
+function contentDispositionHeader(headers: unknown): string | null {
+  if (!headers || typeof headers !== 'object') return null
+  const bag = headers as {
+    get?: (name: string) => unknown
+    'content-disposition'?: unknown
+  }
+  const fromGetter = typeof bag.get === 'function' ? bag.get('content-disposition') : undefined
+  const value = fromGetter ?? bag['content-disposition']
+  if (typeof value === 'string' && value.length > 0) return value
+  if (Array.isArray(value) && typeof value[0] === 'string' && value[0].length > 0) return value[0]
+  return null
+}
+
+async function messageFromBlobError(error: unknown): Promise<string | null> {
+  const data = axios.isAxiosError(error) ? error.response?.data : undefined
+  let body: unknown = data
+  if (data instanceof Blob) {
+    const text = await data.text()
+    if (!text) return null
+    try {
+      body = JSON.parse(text) as unknown
+    } catch {
+      return null
+    }
+  }
+  if (!body || typeof body !== 'object') return null
+  const record = body as { detail?: unknown; message?: string }
+  if (typeof record.message === 'string' && record.message.length > 0) return record.message
+  const detail = record.detail
+  if (typeof detail === 'string' && detail.length > 0) return detail
+  if (!Array.isArray(detail)) return null
+  const parts = detail
+    .map((item) => {
+      if (item && typeof item === 'object' && 'msg' in item) {
+        return String((item as { msg: unknown }).msg)
+      }
+      return typeof item === 'string' ? item : ''
+    })
+    .filter((part) => part.length > 0)
+  return parts.length > 0 ? parts.join('; ') : null
 }

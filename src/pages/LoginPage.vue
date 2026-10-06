@@ -178,11 +178,10 @@ const handleSubmit = async () => {
           <div v-if="mode === 'register'" class="login-page__agreements">
             <AgreementCheck v-model="consentData">
               Я даю согласие на обработку персональных данных в соответствии с
-              <a href="#">Согласием на обработку персональных данных</a>
-              и <a href="#">Политикой обработки персональных данных</a>
+              <a href="/Политика_обработки_персональных_данных.pdf" target="_blank">Политикой обработки персональных данных</a>
             </AgreementCheck>
             <AgreementCheck v-model="consentOffer">
-              Я принимаю условия <a href="#">Публичной оферты</a>
+              Я принимаю условия <a href="/Договор оферты.pdf" target="_blank">Публичной оферты</a>
             </AgreementCheck>
           </div>
         </form>

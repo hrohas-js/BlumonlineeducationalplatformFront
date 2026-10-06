@@ -14,6 +14,7 @@ import {
 import type { AdminStudentRow } from '@/utils/adminMockStudents'
 import { useAdminStore } from '@/stores/admin'
 import { adminService } from '@/services/api/endpoints/admin'
+import { studentsScopeToExportQuery } from '@/utils/adminProductType'
 import { useNotification } from '@/composables/useNotification'
 
 const route = useRoute()
@@ -21,6 +22,7 @@ const router = useRouter()
 const adminStore = useAdminStore()
 const { notify } = useNotification()
 const loading = ref(true)
+const exporting = ref(false)
 
 const sectionId = computed(() => route.params.sectionId as string)
 const validatedStudentsScope = computed<AdminStudentsSectionScope | null>(() =>
@@ -134,30 +136,49 @@ const onAddStudent = () => {
   })
 }
 
-const onExportXlsx = async () => {
+const onExportCsv = async () => {
+  if (exporting.value) return
   const scope = validatedStudentsScope.value
-  if (!scope || scope === ADMIN_STUDENTS_SCOPE_ALL) {
-    notify({ type: 'info', message: 'Выберите секцию с продуктами для экспорта CSV' })
-    return
+  if (!scope) return
+  exporting.value = true
+  try {
+    const result = await adminService.exportAllStudentsCsv(studentsScopeToExportQuery(scope))
+    if (!result.success || !result.data) {
+      notify({ type: 'error', message: result.error || 'Не удалось выгрузить' })
+      return
+    }
+    const url = URL.createObjectURL(result.data.blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filenameFromContentDisposition(
+      result.data.contentDisposition,
+      `students-${scope}.csv`,
+    )
+    a.click()
+    URL.revokeObjectURL(url)
+  } finally {
+    exporting.value = false
   }
-  if (!isAdminMaterialSectionId(scope)) return
-  await adminStore.fetchProductsForSection(scope)
-  const products = adminStore.productsBySection[scope] ?? []
-  if (products.length === 0) {
-    notify({ type: 'warning', message: 'Нет продуктов для экспорта' })
-    return
+}
+
+function filenameFromContentDisposition(header: string | null, fallback: string): string {
+  if (!header) return fallback
+  const encoded = /filename\*\s*=\s*UTF-8''([^;]+)/i.exec(header)
+  let name = ''
+  if (encoded?.[1]) {
+    try {
+      name = decodeURIComponent(encoded[1].trim().replace(/^"|"$/g, ''))
+    } catch {
+      name = ''
+    }
   }
-  const result = await adminService.exportStudentsCsv(products[0].id)
-  if (!result.success || !result.data) {
-    notify({ type: 'error', message: result.error || 'Не удалось выгрузить' })
-    return
+  if (!name) {
+    const quoted = /filename\s*=\s*"([^"]+)"/i.exec(header)
+    const plain = /filename\s*=\s*([^;]+)/i.exec(header)
+    name = (quoted?.[1] ?? plain?.[1] ?? '').trim()
   }
-  const url = URL.createObjectURL(result.data)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `students-${products[0].id}.csv`
-  a.click()
-  URL.revokeObjectURL(url)
+  name = name.replace(/[/\\]/g, '').trim()
+  return name || fallback
 }
 </script>
 
@@ -171,8 +192,9 @@ const onExportXlsx = async () => {
           :category-title="categoryTitle"
           :section-id="validatedStudentsScope"
           :users-count="toolbarUserCount"
+          :exporting="exporting"
           @add-student="onAddStudent"
-          @export-xlsx="onExportXlsx"
+          @export-csv="onExportCsv"
         />
 
         <div v-if="validatedStudentsScope" class="admin-materials-students-page__sheet">
