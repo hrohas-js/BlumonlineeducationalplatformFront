@@ -245,6 +245,16 @@ const ensureLesson = async (): Promise<string | null> => {
   return result.data.id
 }
 
+/** Порядок сохранённых видео урока до замены файла. Новое видео займёт слот старого. */
+function snapshotPersistedVideoOrder(): { id: string; orderIndex: number }[] {
+  return allVideoRows()
+    .filter((video) => video.persisted)
+    .map((video, index) => ({
+      id: video.id,
+      orderIndex: video.orderIndex ?? index + 1,
+    }))
+}
+
 const onVideoFileSelected = async ({
   videoId,
   file,
@@ -261,6 +271,8 @@ const onVideoFileSelected = async ({
   const replaceVideoId = row?.persisted ? videoId : null
   const title = row?.title?.trim() || file.name.replace(/\.[^.]+$/, '')
   const resolvedSubsectionId = row?.subsectionId ?? subsectionId ?? null
+  const replacedChapters: LessonChapter[] = replaceVideoId ? [...(row?.chapters ?? [])] : []
+  const persistedOrder = replaceVideoId ? snapshotPersistedVideoOrder() : []
 
   videoUploadProgressById.value = {
     ...videoUploadProgressById.value,
@@ -289,11 +301,39 @@ const onVideoFileSelected = async ({
   }
 
   if (replaceVideoId) {
+    const newVideoId = result.data.id
+    const chaptersResult = await adminService.updateLessonVideo(lessonId, newVideoId, {
+      chapters: replacedChapters,
+    })
+    if (!chaptersResult.success) {
+      notify({
+        type: 'error',
+        message: chaptersResult.error || 'Видео загружено, но не удалось сохранить таймкоды',
+      })
+      await load({ silent: true })
+      return
+    }
+
     const del = await adminService.deleteLessonVideo(lessonId, replaceVideoId)
     if (!del.success) {
       notify({
         type: 'error',
         message: del.error || 'Видео загружено, но старое не удалось удалить',
+      })
+      await load({ silent: true })
+      return
+    }
+
+    const reorder = await adminService.reorderLessonVideos(lessonId, {
+      videos: persistedOrder.map((item) => ({
+        video_id: item.id === replaceVideoId ? newVideoId : item.id,
+        order_index: item.orderIndex,
+      })),
+    })
+    if (!reorder.success) {
+      notify({
+        type: 'error',
+        message: reorder.error || 'Видео заменено, но не удалось сохранить порядок',
       })
       await load({ silent: true })
       return
