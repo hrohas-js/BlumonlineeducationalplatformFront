@@ -44,6 +44,11 @@ defineProps<{
     background: var(--obramlenie-inoe);
     border: var(--border-3) solid var(--obramlenie-inoe);
   }
+
+  &_archive {
+    background: #010307;
+    border: var(--border-3) solid #010307;
+  }
 }
 
 @media (max-width: 1023px) {

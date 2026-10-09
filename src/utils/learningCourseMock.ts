@@ -19,7 +19,7 @@ const closedClubDetail: LearningCourseDetail = {
   topics: [
     {
       id: 'cc-t1',
-      title: '1 тема: Стресс',
+      title: 'Стресс',
       accessUntil: '01.01.2026',
       isCompleted: true,
       subsections: [],
@@ -88,7 +88,7 @@ const closedClubDetail: LearningCourseDetail = {
     },
     {
       id: 'cc-t2',
-      title: '2 тема: ДСТ',
+      title: 'ДСТ',
       accessUntil: '01.04.2026',
       isCompleted: false,
       subsections: [],
@@ -106,7 +106,7 @@ const closedClubDetail: LearningCourseDetail = {
     },
     {
       id: 'cc-t3',
-      title: '3 тема: СД',
+      title: 'СД',
       accessUntil: '01.08.2026',
       isCompleted: false,
       subsections: [],
@@ -124,7 +124,7 @@ const closedClubDetail: LearningCourseDetail = {
     },
     {
       id: 'cc-t4',
-      title: '4 тема: АИТ и ЩЖ',
+      title: 'АИТ и ЩЖ',
       accessUntil: '01.12.2026',
       isCompleted: false,
       subsections: [],

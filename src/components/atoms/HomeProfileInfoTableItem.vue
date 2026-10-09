@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-type InfoTableTone = '#f07917' | '#178ef0' | '#0098a3' | '#b842ef'
+type InfoTableTone = '#f07917' | '#178ef0' | '#0098a3' | '#b842ef' | '#010307'
 
 const props = withDefaults(
   defineProps<{

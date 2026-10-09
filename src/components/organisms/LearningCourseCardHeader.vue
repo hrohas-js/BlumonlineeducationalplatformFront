@@ -1,5 +1,5 @@
 <script setup lang="ts">
-type CourseCategory = 'courses' | 'projects' | 'other'
+type CourseCategory = 'courses' | 'projects' | 'other' | 'archive'
 
 defineProps<{
   title: string
@@ -52,6 +52,10 @@ defineProps<{
 
     &_other {
       background: var(--obramlenie-inoe);
+    }
+
+    &_archive {
+      background: #010307;
     }
   }
 }

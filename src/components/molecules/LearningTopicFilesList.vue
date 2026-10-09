@@ -1,16 +1,20 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { LearningTopicFile } from '@/types/learning-course'
 import { useNotification } from '@/composables/useNotification'
 import {
+  compareLearningFileNames,
   downloadLearningTopicFile,
   formatLearningFileSize,
-  isLearningTopicImageFile,
 } from '@/utils/learningTopicFile'
 
-defineProps<{
+const props = defineProps<{
   files: LearningTopicFile[]
 }>()
+
+const sortedFiles = computed(() =>
+  [...props.files].sort((a, b) => compareLearningFileNames(a.fileName, b.fileName)),
+)
 
 const { notify } = useNotification()
 const downloadingIds = ref(new Set<string>())
@@ -38,7 +42,7 @@ async function onFileClick(event: MouseEvent, file: LearningTopicFile) {
 
 <template>
   <ul class="learning-topic-files-list" aria-label="Файлы учебного материала">
-    <li v-for="file in files" :key="file.id" class="learning-topic-files-list__item">
+    <li v-for="file in sortedFiles" :key="file.id">
       <a
         class="learning-topic-files-list__link"
         :class="{ 'learning-topic-files-list__link_busy': isDownloading(file.id) }"
@@ -68,13 +72,6 @@ async function onFileClick(event: MouseEvent, file: LearningTopicFile) {
         </span>
         <span class="learning-topic-files-list__action">Открыть</span>
       </a>
-      <img
-        v-if="isLearningTopicImageFile(file.fileType)"
-        class="learning-topic-files-list__preview"
-        :src="file.fileUrl"
-        :alt="file.fileName"
-        loading="lazy"
-      />
     </li>
   </ul>
 </template>
@@ -87,12 +84,6 @@ async function onFileClick(event: MouseEvent, file: LearningTopicFile) {
   display: flex;
   flex-direction: column;
   gap: var(--sp-10);
-
-  &__item {
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-10);
-  }
 
   &__link {
     display: flex;
@@ -150,13 +141,6 @@ async function onFileClick(event: MouseEvent, file: LearningTopicFile) {
     font-weight: var(--font-medium);
     font-size: var(--size-13);
     color: var(--dopolnitelnyy-tekst);
-  }
-
-  &__preview {
-    width: 100%;
-    max-width: 320px;
-    border-radius: var(--radius-10);
-    object-fit: contain;
   }
 }
 </style>

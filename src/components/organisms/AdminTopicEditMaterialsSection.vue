@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import type { AdminTopicEditMaterialFileMock } from '@/utils/adminMaterialCatalog'
 import { isAllowedTopicMaterialFileName } from '@/utils/adminMaterialCatalog'
+import { compareLearningFileNames } from '@/utils/learningTopicFile'
 
 const files = defineModel<AdminTopicEditMaterialFileMock[]>('files', { required: true })
 
@@ -39,7 +40,10 @@ function isServerFileId(id: string): boolean {
   return SERVER_FILE_ID_RE.test(id)
 }
 
-const displayedFiles = computed(() => (isEditing.value ? draftFiles.value : files.value))
+const displayedFiles = computed(() => {
+  const source = isEditing.value ? draftFiles.value : files.value
+  return [...source].sort((a, b) => compareLearningFileNames(a.fileName, b.fileName))
+})
 
 const isDeleting = computed(() => props.deletingFileId != null)
 

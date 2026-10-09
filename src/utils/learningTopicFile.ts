@@ -30,6 +30,10 @@ export function resolveLearningTopicFileType(
   return 'other'
 }
 
+export function compareLearningFileNames(a: string, b: string): number {
+  return a.localeCompare(b, 'ru', { sensitivity: 'base', numeric: true })
+}
+
 export function formatLearningFileSize(bytes?: number | null): string | null {
   if (bytes == null || bytes <= 0) return null
   if (bytes < 1024) return `${bytes} Б`
@@ -45,10 +49,6 @@ export function mapFileResponseToLearningTopicFile(file: FileResponse): Learning
     fileType: resolveLearningTopicFileType(file.file_type, file.file_name),
     fileSize: file.file_size,
   }
-}
-
-export function isLearningTopicImageFile(fileType: LearningTopicFileType): boolean {
-  return fileType === 'png' || fileType === 'jpeg'
 }
 
 function sanitizeDownloadFileName(fileName: string): string {

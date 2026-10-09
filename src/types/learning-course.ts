@@ -1,4 +1,4 @@
-export type LearningCourseCategory = 'courses' | 'projects' | 'other'
+export type LearningCourseCategory = 'courses' | 'projects' | 'other' | 'archive'
 
 export type LearningTopicFileType = 'pdf' | 'docx' | 'png' | 'jpeg' | 'other'
 

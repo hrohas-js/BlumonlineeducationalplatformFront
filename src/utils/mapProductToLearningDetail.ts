@@ -158,14 +158,6 @@ function splitModuleDescription(
   return { materialsText: trimmed }
 }
 
-function formatTopicTitle(orderIndex: number, title: string): string {
-  const trimmed = title.trim()
-  if (/^\d+\s*тема\s*:/i.test(trimmed)) {
-    return trimmed
-  }
-  return `${orderIndex} тема: ${trimmed}`
-}
-
 export function isProgressModuleCompleted(module: {
   passed?: boolean
   lessons?: { is_completed: boolean }[]
@@ -203,7 +195,7 @@ function moduleToTopic(
 
   return {
     id: module.id,
-    title: formatTopicTitle(module.order_index, module.title),
+    title: module.title.trim(),
     accessUntil: formatAccessUntil(progress?.deadline ?? null),
     isCompleted: moduleProgress
       ? isProgressModuleCompleted({
@@ -249,7 +241,7 @@ export function mapProductToLearningDetail(
   return {
     id: product.id,
     title: product.title,
-    category: mapProductTypeToCategory(product.product_type),
+    category: product.is_archived ? 'archive' : mapProductTypeToCategory(product.product_type),
     descriptionLines,
     completedTopics: topics.filter((topic) => topic.isCompleted).length,
     totalTopics: topics.length > 0 ? topics.length : (progress?.total_lessons ?? 0),

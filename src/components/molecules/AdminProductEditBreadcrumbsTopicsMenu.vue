@@ -106,11 +106,10 @@ const topicTo = (topicId: string) => ({
   z-index: calc(var(--z-header) + 1);
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 15px;
   box-sizing: border-box;
-  min-width: max(100%, 280px);
-  width: max-content;
+  width: min(420px, calc(100vw - 32px));
   max-width: min(420px, calc(100vw - 32px));
   padding: var(--sp-20);
   border: 1px solid #010307;
@@ -121,8 +120,10 @@ const topicTo = (topicId: string) => ({
 
 .admin-product-edit-breadcrumbs-topics-menu__item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 15px;
+  min-width: 0;
+  width: 100%;
   margin: 0;
   padding: 0;
   border: none;
@@ -162,11 +163,13 @@ const topicTo = (topicId: string) => ({
 }
 
 .admin-product-edit-breadcrumbs-topics-menu__label {
+  min-width: 0;
   font-family: var(--font-family);
   font-weight: var(--font-semi-bold);
   font-size: var(--size-20);
-  line-height: normal;
-  white-space: nowrap;
+  line-height: 1.3;
+  white-space: normal;
+  overflow-wrap: anywhere;
   transition: color 0.15s ease;
 }
 

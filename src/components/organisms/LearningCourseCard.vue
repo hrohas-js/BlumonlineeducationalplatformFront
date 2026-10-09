@@ -5,7 +5,7 @@ import LearningCourseCardFooter from '@/components/organisms/LearningCourseCardF
 import LearningCourseCardHeader from '@/components/organisms/LearningCourseCardHeader.vue'
 import LearningCourseCardProgress from '@/components/organisms/LearningCourseCardProgress.vue'
 
-type CourseCategory = 'courses' | 'projects' | 'other'
+type CourseCategory = 'courses' | 'projects' | 'other' | 'archive'
 
 const props = withDefaults(
   defineProps<{
@@ -28,6 +28,7 @@ const categoryLabelMap: Record<CourseCategory, string> = {
   courses: 'Курсы',
   projects: 'Проекты',
   other: 'Иное',
+  archive: 'Архив',
 }
 
 const categoryLabel = computed(() => categoryLabelMap[props.category])

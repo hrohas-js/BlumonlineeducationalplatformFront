@@ -18,7 +18,7 @@ import ProfileDetailsForm from '@/components/organisms/ProfileDetailsForm.vue'
 import HomeGlossaryPanel from '@/components/organisms/HomeGlossaryPanel.vue'
 import SupportContactsGrid from '@/components/molecules/SupportContactsGrid.vue'
 import type { ProfileSection } from '@/components/home/profile-menu.types'
-import type { LearningCourseDetail, LearningViewMode } from '@/types/learning-course'
+import type { LearningCourseCategory, LearningCourseDetail, LearningViewMode } from '@/types/learning-course'
 import {
   getMockLearningCourseDetail,
   getMockLearningCourseDetailForTopic,
@@ -39,13 +39,15 @@ import type { ProductResponse } from '@/services/api/types'
 const route = useRoute()
 const router = useRouter()
 
-type LearningMaterialsFilter = 'all' | 'courses' | 'projects' | 'other'
+type LearningMaterialsFilter = 'all' | 'courses' | 'projects' | 'other' | 'archive'
+type RenewalMaterialsFilter = Exclude<LearningMaterialsFilter, 'archive'>
+type FilterTone = '#178ef0' | '#0098a3' | '#b842ef' | '#010307'
 
 type LearningPanelCourse = {
   id: string
   title: string
   description: string
-  category: 'courses' | 'projects' | 'other'
+  category: LearningCourseCategory
   completedTopics: number
   totalTopics: number
   accessUntil?: string | null
@@ -58,15 +60,20 @@ type RenewalPanelCard = {
   productId: string
   title: string
   description: string
-  category: 'courses' | 'projects' | 'other'
+  category: Exclude<LearningCourseCategory, 'archive'>
   paymentLink: string
 }
 
-const learningFilterTabs: { key: LearningMaterialsFilter; label: string; tone: '#178ef0' | '#0098a3' | '#b842ef' }[] = [
+const renewalFilterTabs: { key: RenewalMaterialsFilter; label: string; tone: FilterTone }[] = [
   { key: 'all', label: 'Все материалы', tone: '#178ef0' },
   { key: 'courses', label: 'Курсы', tone: '#178ef0' },
   { key: 'projects', label: 'Проекты', tone: '#0098a3' },
   { key: 'other', label: 'Иное', tone: '#b842ef' },
+]
+
+const learningFilterTabs: { key: LearningMaterialsFilter; label: string; tone: FilterTone }[] = [
+  ...renewalFilterTabs,
+  { key: 'archive', label: 'Архив', tone: '#010307' },
 ]
 
 const authStore = useAuthStore()
@@ -98,7 +105,7 @@ function toLearningPanelCourse(p: ProductResponse): LearningPanelCourse {
     id: p.id,
     title: p.title,
     description: p.description ?? '',
-    category: mapProductTypeToCategory(p.product_type),
+    category: p.is_archived ? 'archive' : mapProductTypeToCategory(p.product_type),
     completedTopics: topicCounts.completedTopics,
     totalTopics: topicCounts.totalTopics,
     accessUntil: formatDeadline(progress?.deadline ?? null),
@@ -124,6 +131,12 @@ const isMockData = computed(
 
 const materialsFilter = ref<LearningMaterialsFilter>('all')
 
+watch(activeSection, (section) => {
+  if (section !== 'learning' && materialsFilter.value === 'archive') {
+    materialsFilter.value = 'all'
+  }
+})
+
 const learningView = ref<LearningViewMode>('list')
 const selectedCourseId = ref<string | null>(null)
 const selectedTopicId = ref<string | null>(null)
@@ -139,31 +152,40 @@ const visibleLearningCourses = computed(() =>
 )
 
 const filteredLearningCourses = computed(() => {
-  if (materialsFilter.value === 'all') {
-    return visibleLearningCourses.value
+  if (materialsFilter.value === 'archive') {
+    return visibleLearningCourses.value.filter((course) => course.category === 'archive')
   }
-  return visibleLearningCourses.value.filter((c) => c.category === materialsFilter.value)
+  return visibleLearningCourses.value.filter(
+    (course) =>
+      course.category !== 'archive' &&
+      (materialsFilter.value === 'all' || course.category === materialsFilter.value),
+  )
 })
 
 const hasLearningCourses = computed(() => visibleLearningCourses.value.length > 0)
 
 const renewalCards = computed<RenewalPanelCard[]>(() =>
-  realLearningCourses.value.filter((course) => isStudentProductVisible(course.status)).flatMap((course) => {
-    const options = productsStore.pricingByProductId[course.id]
-    if (!options?.length) return []
-    return options.map((option) => ({
-      id: `${course.id}:${option.id}`,
-      productId: course.id,
-      title: course.title,
-      description: formatRenewalPeriodLabel(option.period_months),
-      category: course.category,
-      paymentLink: option.payment_link,
-    }))
-  }),
+  realLearningCourses.value
+    .filter(
+      (course): course is LearningPanelCourse & { category: RenewalPanelCard['category'] } =>
+        isStudentProductVisible(course.status) && course.category !== 'archive',
+    )
+    .flatMap((course) => {
+      const options = productsStore.pricingByProductId[course.id]
+      if (!options?.length) return []
+      return options.map((option) => ({
+        id: `${course.id}:${option.id}`,
+        productId: course.id,
+        title: course.title,
+        description: formatRenewalPeriodLabel(option.period_months),
+        category: course.category,
+        paymentLink: option.payment_link,
+      }))
+    }),
 )
 
 const filteredRenewalCards = computed(() => {
-  if (materialsFilter.value === 'all') {
+  if (materialsFilter.value === 'all' || materialsFilter.value === 'archive') {
     return renewalCards.value
   }
   return renewalCards.value.filter((c) => c.category === materialsFilter.value)
@@ -479,7 +501,7 @@ watch(
             <template v-else>
               <div class="home-profile__learning-filters" role="navigation" aria-label="Фильтр курсов для продления">
                 <HomeProfileInfoTableItem
-                  v-for="tab in learningFilterTabs"
+                  v-for="tab in renewalFilterTabs"
                   :key="tab.key"
                   :label="tab.label"
                   :tone="tab.tone"
