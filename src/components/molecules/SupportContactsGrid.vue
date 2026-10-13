@@ -76,10 +76,7 @@ withDefaults(
     @media (max-width: 1023px) {
       font-size: clamp(
         var(--size-13),
-        calc(
-          var(--size-13) + (var(--size-15) - var(--size-13)) *
-            ((100vw - var(--size-430)) / (var(--size-1024) - var(--size-430)))
-        ),
+        #{fluid-calc(13px, 15px, 430px, 1024px)},
         var(--size-15)
       );
     }
@@ -95,10 +92,7 @@ withDefaults(
     @media (max-width: 1023px) {
       font-size: clamp(
         var(--size-13),
-        calc(
-          var(--size-13) + (var(--size-15) - var(--size-13)) *
-            ((100vw - var(--size-430)) / (var(--size-1024) - var(--size-430)))
-        ),
+        #{fluid-calc(13px, 15px, 430px, 1024px)},
         var(--size-15)
       );
     }
@@ -134,10 +128,7 @@ withDefaults(
       padding: var(--size-7) var(--size-40);
       font-size: clamp(
         var(--size-13),
-        calc(
-          var(--size-13) + (var(--size-15) - var(--size-13)) *
-            ((100vw - var(--size-430)) / (var(--size-1024) - var(--size-430)))
-        ),
+        #{fluid-calc(13px, 15px, 430px, 1024px)},
         var(--size-15)
       );
     }
@@ -155,10 +146,7 @@ withDefaults(
       margin-top: var(--sp-20);
       font-size: clamp(
         var(--size-10),
-        calc(
-          var(--size-10) + (var(--size-15) - var(--size-10)) *
-            ((100vw - var(--size-430)) / (var(--size-1024) - var(--size-430)))
-        ),
+        #{fluid-calc(10px, 15px, 430px, 1024px)},
         var(--size-15)
       );
     }

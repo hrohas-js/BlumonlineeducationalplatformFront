@@ -592,10 +592,7 @@ watch(
       font-weight: var(--font-light);
       font-size: clamp(
         var(--fs-15),
-        calc(
-          var(--fs-15) + (var(--size-20) - var(--fs-15)) *
-            ((100vw - var(--size-430)) / (var(--size-1024) - var(--size-430)))
-        ),
+        #{fluid-calc(15px, 20px, 430px, 1024px)},
         var(--size-20)
       );
       text-align: center;
@@ -662,10 +659,7 @@ watch(
       font-weight: var(--font-semi-bold);
       font-size: clamp(
         var(--size-15),
-        calc(
-          var(--size-15) + (var(--size-20) - var(--size-15)) *
-            ((100vw - var(--size-430)) / (var(--size-1024) - var(--size-430)))
-        ),
+        #{fluid-calc(15px, 20px, 430px, 1024px)},
         var(--size-20)
       );
     }
@@ -689,10 +683,7 @@ watch(
     font-weight: var(--font-semi-bold);
     font-size: clamp(
       var(--fs-15),
-      calc(
-        var(--fs-15) + (var(--fs-18) - var(--fs-15)) *
-          ((100vw - var(--size-430)) / (var(--size-1024) - var(--size-430)))
-      ),
+      #{fluid-calc(15px, 18px, 430px, 1024px)},
       var(--fs-18)
     );
     color: var(--fon-bloka);

@@ -1,3 +1,5 @@
+@use "sass:math";
+
 // ===== SCSS VARIABLES =====
 
 // Colors - SCSS Variables (Figma)
@@ -44,9 +46,14 @@ $font-extra-bold: 800;
 
 // ===== CSS CUSTOM PROPERTIES =====
 // These can be used in components and will be available globally
-// Fluid size helper: calc(min + (max - min) * ((100vw - vwMin) / (vwMax - vwMin)))
+// Fluid size helper: min + delta * (100vw - vwMin) / range.
+// И delta, и range — безразмерные числа. Аргументы — в px.
+// Деление длины на длину и умножение длины на длину Safari < 26 и Firefox < 158
+// отбрасывают целиком, вместе с объявлением, которое это calc() использует.
 @function fluid-calc($min, $max, $vw-min: 1024px, $vw-max: 1920px) {
-  @return calc(#{$min} + (#{$max} - #{$min}) * ((100vw - #{$vw-min}) / (#{$vw-max} - #{$vw-min})));
+  $delta: math.div($max - $min, 1px);
+  $range: math.div($vw-max - $vw-min, 1px);
+  @return calc(#{$min} + #{$delta} * ((100vw - #{$vw-min}) / #{$range}));
 }
 
 :root {

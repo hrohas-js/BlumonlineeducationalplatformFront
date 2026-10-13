@@ -26,9 +26,14 @@ defineProps<{
   font-family: var(--font-family);
   font-weight: var(--font-medium);
   font-size: var(--size-20);
+  box-sizing: border-box;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
   text-align: center;
   color: var(--fon-bloka);
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: break-word;
 
   &_courses {
     background: var(--dopolnitelnyy-tekst);

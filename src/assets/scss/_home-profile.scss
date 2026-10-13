@@ -122,6 +122,10 @@
   align-items: center;
   gap: var(--sp-20);
   margin-top: var(--sp-20);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 
   &_lesson {
     @media (max-width: 1023px) {
@@ -146,6 +150,9 @@
   border-radius: var(--radius-20);
   padding: var(--sp-40) var(--sp-60) var(--sp-38);
   box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 
   @media (max-width: 1023px) {
     padding: var(--sp-20);

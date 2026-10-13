@@ -23,12 +23,14 @@ interface Props {
   poster?: string
   qualities?: LessonVideoQuality[]
   watermarkText?: string
+  deferUntilPlay?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   poster: undefined,
   qualities: undefined,
   watermarkText: undefined,
+  deferUntilPlay: false,
 })
 
 const rootRef = ref<HTMLElement | null>(null)
@@ -67,6 +69,9 @@ const draggingProgress = ref(false)
 const draggingVolume = ref(false)
 
 const activeQualityIndex = ref(0)
+const playbackSrc = ref('')
+const playRequested = ref(false)
+const buffering = ref(!props.deferUntilPlay && Boolean(props.src))
 
 const qualitiesList = computed(() => props.qualities ?? [])
 
@@ -77,6 +82,11 @@ const currentSrc = computed(() => {
     return qualitiesList.value[activeQualityIndex.value].src
   }
   return props.src
+})
+
+const mediaSrc = computed(() => {
+  if (props.deferUntilPlay) return playbackSrc.value
+  return currentSrc.value
 })
 
 const SPEED_OPTIONS: { label: string; value: number }[] = [
@@ -108,6 +118,8 @@ let overlayTimer: ReturnType<typeof setTimeout> | null = null
 let singleTapTimer: ReturnType<typeof setTimeout> | null = null
 let lastTapAt = 0
 let lastTapX = 0
+let suppressPauseBufferingClear = false
+let clearBufferingWhenReady = false
 
 function sliderRatioToVolume(ratio: number): number {
   return Math.pow(ratio, VOLUME_CURVE_EXP)
@@ -169,13 +181,90 @@ function syncFromVideo() {
   }
 }
 
+function onBufferingStart() {
+  const v = videoRef.value
+  if (!v || v.paused) return
+  buffering.value = true
+}
+
+function clearBuffering() {
+  buffering.value = false
+  clearBufferingWhenReady = false
+}
+
+function onPlaying() {
+  clearBuffering()
+  syncFromVideo()
+}
+
+function onCanPlay() {
+  const v = videoRef.value
+  if (!v) return
+  if (!v.paused || clearBufferingWhenReady || !playRequested.value) {
+    clearBuffering()
+  }
+  syncFromVideo()
+}
+
+function onSeeked() {
+  const v = videoRef.value
+  if (!v || v.paused) return
+  if (v.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
+    clearBuffering()
+  }
+  syncFromVideo()
+}
+
+function onPause() {
+  if (!suppressPauseBufferingClear) {
+    const wasPlaying = playRequested.value
+    playRequested.value = false
+    const v = videoRef.value
+    const awaitingInitialLoad =
+      !wasPlaying &&
+      !props.deferUntilPlay &&
+      Boolean(mediaSrc.value) &&
+      (v?.readyState ?? 0) < HTMLMediaElement.HAVE_FUTURE_DATA
+    if (!awaitingInitialLoad) clearBuffering()
+  }
+  syncFromVideo()
+}
+
+async function startPlayback() {
+  playRequested.value = true
+  const needsAttach = props.deferUntilPlay && !playbackSrc.value
+  if (needsAttach) {
+    if (!currentSrc.value) {
+      playRequested.value = false
+      return
+    }
+    playbackSrc.value = currentSrc.value
+    buffering.value = true
+    await nextTick()
+  }
+  const v = videoRef.value
+  if (!v) {
+    playRequested.value = false
+    buffering.value = false
+    return
+  }
+  if (v.readyState < HTMLMediaElement.HAVE_FUTURE_DATA) {
+    buffering.value = true
+  }
+  try {
+    await v.play()
+  } catch {
+    playRequested.value = false
+    buffering.value = false
+  }
+}
+
 function togglePlay() {
   const v = videoRef.value
   if (!v) return
-  if (v.paused) {
-    void v.play().catch(() => {
-      /* autoplay / decode */
-    })
+  const needsAttach = props.deferUntilPlay && !playbackSrc.value
+  if (needsAttach || v.paused) {
+    void startPlayback()
   } else {
     v.pause()
   }
@@ -366,18 +455,39 @@ function setPlaybackRate(rate: number) {
 }
 
 async function selectQuality(index: number) {
-  if (!qualitiesList.value[index]) return
+  const next = qualitiesList.value[index]
+  if (!next) return
   const v = videoRef.value
   const t = v?.currentTime ?? 0
-  activeQualityIndex.value = index
+  const shouldLoad = !props.deferUntilPlay || Boolean(playbackSrc.value)
   openMenu.value = null
+  if (shouldLoad) {
+    suppressPauseBufferingClear = true
+    clearBufferingWhenReady = true
+    buffering.value = true
+  }
+  activeQualityIndex.value = index
+  if (props.deferUntilPlay && playbackSrc.value) {
+    playbackSrc.value = next.src
+  }
   await nextTick()
+  suppressPauseBufferingClear = false
   const el = videoRef.value
-  if (!el) return
+  if (!el) {
+    clearBuffering()
+    return
+  }
+  if (el.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
+    clearBuffering()
+  }
   const restore = () => {
     el.currentTime = Math.min(t, Number.isFinite(el.duration) ? el.duration : t)
   }
-  el.addEventListener('loadedmetadata', restore, { once: true })
+  if (el.readyState >= HTMLMediaElement.HAVE_METADATA) {
+    restore()
+  } else {
+    el.addEventListener('loadedmetadata', restore, { once: true })
+  }
 }
 
 function toggleSpeedMenu() {
@@ -473,6 +583,10 @@ watch(
   () => props.src,
   () => {
     activeQualityIndex.value = 0
+    playbackSrc.value = ''
+    playRequested.value = false
+    buffering.value = !props.deferUntilPlay && Boolean(props.src)
+    clearBufferingWhenReady = false
     openMenu.value = null
     volumePopoverOpen.value = false
     paused.value = true
@@ -491,6 +605,15 @@ watch(
 )
 
 onMounted(() => {
+  const v = videoRef.value
+  if (
+    v &&
+    !playRequested.value &&
+    !props.deferUntilPlay &&
+    v.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA
+  ) {
+    buffering.value = false
+  }
   document.addEventListener('fullscreenchange', onFullscreenChange)
   document.addEventListener('pointerdown', onDocumentPointerDown, true)
   document.addEventListener('click', onDocumentClick, true)
@@ -517,23 +640,30 @@ defineExpose({
     tabindex="0"
     role="region"
     aria-label="Видеоплеер урока"
+    :aria-busy="buffering"
     @keydown="onKeydown"
   >
     <video
       ref="videoRef"
       class="lesson-video-player__video"
-      :key="currentSrc"
-      :src="currentSrc"
+      :key="mediaSrc || 'deferred'"
+      :src="mediaSrc || undefined"
       :poster="poster"
       playsinline
-      preload="metadata"
+      :preload="!mediaSrc ? 'none' : props.deferUntilPlay ? 'metadata' : 'auto'"
       disablepictureinpicture
       controlslist="nodownload noremoteplayback"
       @play="syncFromVideo"
-      @pause="syncFromVideo"
+      @pause="onPause"
+      @playing="onPlaying"
       @timeupdate="syncFromVideo"
       @loadedmetadata="syncFromVideo"
+      @canplay="onCanPlay"
+      @waiting="onBufferingStart"
+      @stalled="onBufferingStart"
+      @seeked="onSeeked"
       @volumechange="syncFromVideo"
+      @error="clearBuffering"
     />
 
     <LessonVideoWatermarkOverlay
@@ -573,7 +703,7 @@ defineExpose({
           class="lesson-video-player__play-big"
           :class="{
             'lesson-video-player__play-big_visible':
-              overlayFeedback === 'play' || overlayFeedback === 'pause',
+              !buffering && (overlayFeedback === 'play' || overlayFeedback === 'pause'),
           }"
           :aria-label="paused ? 'Воспроизвести' : 'Пауза'"
           tabindex="-1"
@@ -592,6 +722,16 @@ defineExpose({
           <span class="lesson-video-player__skip-num">15</span>
         </button>
       </div>
+    </div>
+
+    <div
+      v-if="buffering"
+      class="lesson-video-player__buffering"
+      role="status"
+      aria-live="polite"
+    >
+      <span class="lesson-video-player__spinner" aria-hidden="true" />
+      <span class="lesson-video-player__buffering-label">Загрузка видео</span>
     </div>
 
     <div class="lesson-video-player__chrome" @click.stop>
@@ -800,6 +940,39 @@ $lesson-player-chrome-bg: #010307;
     height: 100%;
     object-fit: cover;
     background: var(--black);
+  }
+
+  &__buffering {
+    position: absolute;
+    inset: 0;
+    bottom: 49px;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.35);
+    pointer-events: none;
+  }
+
+  &__spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid rgba(255, 255, 255, 0.35);
+    border-top-color: var(--white);
+    border-radius: 50%;
+    animation: lesson-video-player-spin 0.6s linear infinite;
+  }
+
+  &__buffering-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 
   &__fs-hint {
@@ -1163,9 +1336,16 @@ $lesson-player-chrome-bg: #010307;
   object-fit: contain;
 }
 
+@keyframes lesson-video-player-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (max-width: 1023px) {
   .lesson-video-player {
-    &__overlay {
+    &__overlay,
+    &__buffering {
       bottom: 41px;
     }
 

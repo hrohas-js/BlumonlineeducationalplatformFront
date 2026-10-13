@@ -142,7 +142,7 @@ onBeforeUnmount(() => {
           role="region"
           aria-label="Предпросмотр видео"
         >
-          <LessonVideoPlayer :src="videoSrc" />
+          <LessonVideoPlayer :src="videoSrc" defer-until-play />
         </div>
 
         <div
