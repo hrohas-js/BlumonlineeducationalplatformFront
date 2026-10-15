@@ -56,11 +56,11 @@ function queryString(value: unknown): string {
 const existingStudentId = computed(() => queryString(route.query.studentId).trim())
 const isExistingStudentMode = computed(() => existingStudentId.value.length > 0)
 
-const validatedScope = computed<AdminStudentsSectionScope | null>(() =>
-  isAdminStudentsSectionParam(sectionId.value) && sectionId.value !== 'archive'
-    ? sectionId.value
-    : null,
-)
+const validatedScope = computed<AdminStudentsSectionScope | null>(() => {
+  if (!isAdminStudentsSectionParam(sectionId.value)) return null
+  if (sectionId.value === 'archive' && !isExistingStudentMode.value) return null
+  return sectionId.value
+})
 
 const returnSectionId = computed<AdminStudentsSectionScope>(() => {
   const raw = queryString(route.query.returnSectionId)

@@ -276,6 +276,37 @@ $font-extra-bold: 800;
   --opacity-full: 1;
 }
 
+// На узком экране calc(100vw - 1280px) отрицательный. WebView Telegram
+// отбрасывает такое значение и вместе с ним padding/margin/gap, где оно стоит.
+@media (max-width: 1023px) {
+  :root {
+    --sp-0: 0px;
+    --sp-4: 4px;
+    --sp-6: 6px;
+    --sp-8: 8px;
+    --sp-9: 9px;
+    --sp-10: 10px;
+    --sp-12: 12px;
+    --sp-15: 15px;
+    --sp-16: 16px;
+    --sp-17: 17px;
+    --sp-20: 20px;
+    --sp-24: 24px;
+    --sp-32: 32px;
+    --sp-38: 38px;
+    --sp-40: 40px;
+    --sp-50: 50px;
+    --sp-60: 30px;
+    --sp-64: 64px;
+    --sp-69: 69px;
+    --sp-72: 72px;
+    --sp-80: 80px;
+    --sp-86: 86px;
+    --sp-88: 88px;
+    --sp-99: 99px;
+  }
+}
+
 @media (min-width: 1024px) {
   :root {
     --sp-60: #{fluid-calc(30px, 60px, 1024px, 1280px)};

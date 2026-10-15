@@ -64,10 +64,7 @@ const toggleExpanded = () => {
   expanded.value = !expanded.value
 }
 
-const canAddToProduct = computed(() => props.sectionKey !== 'archive')
-
 const onAddToProduct = () => {
-  if (!canAddToProduct.value) return
   emit('add-to-product', { sectionKey: props.sectionKey })
 }
 
@@ -134,10 +131,7 @@ const onGeneralAccess = (productId: string) => {
           class="admin-student-profile-category-section__panel"
           :style="{ '--student-profile-panel-border': borderColor }"
         >
-          <div
-            v-if="canAddToProduct"
-            class="admin-student-profile-category-section__panel-head"
-          >
+          <div class="admin-student-profile-category-section__panel-head">
             <button
               type="button"
               class="admin-student-profile-category-section__add-btn"

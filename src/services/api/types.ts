@@ -245,6 +245,10 @@ export interface ModuleResponse {
   order_index: number
   /** Дедлайн (общий) для конкретной темы/модуля. */
   access_duration?: string | null
+  /** Персональный дедлайн ученика по этой теме (ISO date / datetime). `null` — бессрочно. */
+  deadline?: string | null
+  /** Сколько дней осталось по персональному дедлайну темы. */
+  days_left?: number | null
   lessons: LessonResponse[]
   created_at: string
   updated_at: string

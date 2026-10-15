@@ -196,7 +196,7 @@ function moduleToTopic(
   return {
     id: module.id,
     title: module.title.trim(),
-    accessUntil: formatAccessUntil(progress?.deadline ?? null),
+    accessUntil: formatAccessUntil(module.deadline ?? null),
     isCompleted: moduleProgress
       ? isProgressModuleCompleted({
           passed: moduleProgress.passed,

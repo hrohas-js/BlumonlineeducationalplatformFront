@@ -18,7 +18,8 @@ interface Props {
 
 interface Emits {
   (e: 'close'): void
-  (e: 'save', payload: { newDeadlineDisplay: string }): void
+  /** `null` — сбросить уже заданный дедлайн в бессрочный. */
+  (e: 'save', payload: { newDeadlineDisplay: string | null }): void
 }
 
 const props = defineProps<Props>()
@@ -62,6 +63,11 @@ const onOverlayClick = (event: MouseEvent) => {
 const onApply = () => {
   const iso = newDeadlineIso.value.trim()
   if (!iso) {
+    if (deadlineRuLabelToIso(props.currentDeadlineDisplay)) {
+      emit('save', { newDeadlineDisplay: null })
+      closeModal()
+      return
+    }
     showInputError.value = true
     return
   }

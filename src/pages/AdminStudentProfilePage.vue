@@ -163,7 +163,6 @@ const modalInitialAccessStatus = computed<StudentAccessStatusValue>(() => {
 
 const onAddToProduct = (payload: { sectionKey: AdminMaterialSectionId }) => {
   if (!student.value || !validatedScope.value) return
-  if (payload.sectionKey === 'archive') return
   void router.push({
     name: 'admin-materials-students-add',
     params: { sectionId: payload.sectionKey },
@@ -231,18 +230,29 @@ const onDeadlineModalClose = () => {
   deadlineModalCurrentLabel.value = ''
 }
 
-const onDeadlineModalSave = async (payload: { newDeadlineDisplay: string }) => {
+const UNLIMITED_DEADLINE_LABEL = 'без дедлайна'
+
+const onDeadlineModalSave = async (payload: { newDeadlineDisplay: string | null }) => {
   const sk = deadlineModalSectionKey.value
   const pid = deadlineModalProductId.value
   if (!sk || !pid) return
-  const iso = deadlineRuLabelToIso(payload.newDeadlineDisplay)
-  if (!iso) {
-    notify({ type: 'warning', message: 'Укажите дату в формате ДД.ММ.ГГГГ' })
-    return
+
+  let deadline: string | null
+  let deadlineLabel: string
+  if (payload.newDeadlineDisplay === null) {
+    deadline = null
+    deadlineLabel = UNLIMITED_DEADLINE_LABEL
+  } else {
+    const iso = deadlineRuLabelToIso(payload.newDeadlineDisplay)
+    if (!iso) {
+      notify({ type: 'warning', message: 'Укажите дату в формате ДД.ММ.ГГГГ' })
+      return
+    }
+    deadline = `${iso}T00:00:00Z`
+    deadlineLabel = payload.newDeadlineDisplay
   }
-  const result = await adminStore.updateStudentAccess(studentId.value, pid, {
-    deadline: `${iso}T00:00:00Z`,
-  })
+
+  const result = await adminStore.updateStudentAccess(studentId.value, pid, { deadline })
   if (!result.success) {
     notify({ type: 'error', message: result.error || 'Не удалось обновить дедлайн' })
     return
@@ -250,7 +260,7 @@ const onDeadlineModalSave = async (payload: { newDeadlineDisplay: string }) => {
   const key = productAccessCompositeKey(sk, pid)
   productDeadlineLabels.value = {
     ...productDeadlineLabels.value,
-    [key]: payload.newDeadlineDisplay,
+    [key]: deadlineLabel,
   }
   notify({ type: 'success', message: 'Дедлайн обновлён' })
   onDeadlineModalClose()
