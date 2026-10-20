@@ -33,6 +33,8 @@ export interface LearningCourseTopic {
   id: string
   title: string
   accessUntil: string | null
+  /** Персональный или общий дедлайн уже истёк. */
+  accessExpired?: boolean
   isCompleted: boolean
   videos: LearningTopicVideo[]
   /** Видео урока без subsection_id, не попавшие ни в один подраздел. */

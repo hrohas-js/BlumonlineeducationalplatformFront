@@ -232,20 +232,24 @@ const selectAll = () => {
 }
 
 .admin-add-students-products-step__row {
+  display: flex;
+  align-items: center;
   margin: 0;
 }
 
 .admin-add-students-products-step__checkbox-label {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: var(--sp-12);
+  width: fit-content;
   max-width: 100%;
   cursor: pointer;
 }
 
 .admin-add-students-products-step__checkbox-wrap {
   position: relative;
-  flex-shrink: 0;
+  display: flex;
+  flex: 0 0 25px;
   width: 25px;
   height: 25px;
 }
@@ -264,6 +268,7 @@ const selectAll = () => {
 }
 
 .admin-add-students-products-step__checkbox-ui {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -278,13 +283,18 @@ const selectAll = () => {
 }
 
 .admin-add-students-products-step__checkbox-ui_checked {
-  border: none;
+  border-color: var(--knopka);
   background-color: var(--knopka);
 }
 
 .admin-add-students-products-step__checkbox-check {
+  position: absolute;
+  top: 50%;
+  left: 50%;
   display: block;
-  flex-shrink: 0;
+  width: 10px;
+  height: 9px;
+  transform: translate(-50%, -50%);
 }
 
 .admin-add-students-products-step__product-title {

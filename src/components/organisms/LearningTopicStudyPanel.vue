@@ -8,6 +8,7 @@ import LearningTopicFilesList from '@/components/molecules/LearningTopicFilesLis
 import LearningTopicSubsectionVideosList from '@/components/molecules/LearningTopicSubsectionVideosList.vue'
 import LearningTopicVideoBlock from '@/components/molecules/LearningTopicVideoBlock.vue'
 import LessonVideoPlaybackModal from '@/components/organisms/LessonVideoPlaybackModal.vue'
+import { STUDENT_PRODUCT_BLOCKED_MESSAGE } from '@/constants/studentProductAccess'
 import { getNextTopicId } from '@/utils/mapProductToLearningDetail'
 import type { LearningCourseDetail, LearningTopicVideo } from '@/types/learning-course'
 
@@ -70,6 +71,10 @@ const subsections = computed(() => topic.value?.subsections ?? [])
 const ungroupedVideos = computed(() => topic.value?.ungroupedVideos ?? [])
 
 const hasLessonSubsections = computed(() => subsections.value.length > 0)
+
+const emptyLabel = computed(() =>
+  topic.value?.accessExpired ? STUDENT_PRODUCT_BLOCKED_MESSAGE : 'Здесь пока пусто',
+)
 
 const hasMedia = computed(() => {
   if (props.lessonLayout) {
@@ -226,7 +231,7 @@ function onClosePlayback() {
         />
       </template>
     </template>
-    <p v-else class="learning-topic-study-panel__empty">Здесь пока пусто</p>
+    <p v-else class="learning-topic-study-panel__empty">{{ emptyLabel }}</p>
 
     <footer class="learning-topic-study-panel__footer">
       <LearningTopicCompleteToggle

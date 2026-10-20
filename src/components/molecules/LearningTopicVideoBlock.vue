@@ -118,7 +118,7 @@ function onChapterClick(timeSeconds: number) {
     display: flex;
     flex-direction: column;
 
-    :deep(.lesson-video-player) {
+    :deep(.lesson-video-player:not(.lesson-video-player_expanded)) {
       height: 100%;
       aspect-ratio: unset;
     }

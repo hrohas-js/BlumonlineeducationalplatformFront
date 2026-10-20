@@ -413,6 +413,32 @@ export interface AdminStudentsExportQuery {
   is_archived?: boolean
 }
 
+export type AdminStudentsListOrder = 'asc' | 'desc'
+
+export interface AdminStudentsListQuery extends AdminStudentsExportQuery {
+  search?: string
+  order?: AdminStudentsListOrder
+  skip?: number
+  limit?: number
+}
+
+export interface AdminStudentsDirectoryItem {
+  user_id: string
+  email: string
+  first_name: string
+  last_name: string
+  phone: string | null
+  avatar_url: string | null
+  products_count: number
+}
+
+export interface AdminStudentsDirectoryResponse {
+  items: AdminStudentsDirectoryItem[]
+  total: number
+  skip: number
+  limit: number
+}
+
 export interface AdminStudentsCsvFile {
   blob: Blob
   contentDisposition: string | null

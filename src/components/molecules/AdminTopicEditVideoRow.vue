@@ -319,7 +319,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
 
-  :deep(.lesson-video-player) {
+  :deep(.lesson-video-player:not(.lesson-video-player_expanded)) {
     width: 100%;
     height: 100%;
     aspect-ratio: unset;

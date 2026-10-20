@@ -64,7 +64,9 @@ const openMenu = ref<'speed' | 'quality' | null>(null)
 const volumePopoverOpen = ref(false)
 const closeVolumeAfterDrag = ref(false)
 const fullscreenHint = ref(false)
-const isFullscreen = ref(false)
+const isNativeFullscreen = ref(false)
+const isPseudoFullscreen = ref(false)
+const isFullscreen = computed(() => isNativeFullscreen.value || isPseudoFullscreen.value)
 const draggingProgress = ref(false)
 const draggingVolume = ref(false)
 
@@ -114,12 +116,26 @@ const volumeSliderPct = computed(() => {
 })
 
 let hintTimer: ReturnType<typeof setTimeout> | null = null
+let savedHtmlOverflow: string | null = null
+let savedScrollY = 0
+let savedBodyStyles: {
+  position: string
+  top: string
+  left: string
+  right: string
+  width: string
+  overflow: string
+} | null = null
 let overlayTimer: ReturnType<typeof setTimeout> | null = null
 let singleTapTimer: ReturnType<typeof setTimeout> | null = null
 let lastTapAt = 0
 let lastTapX = 0
 let suppressPauseBufferingClear = false
 let clearBufferingWhenReady = false
+let bufferingDelayTimer: ReturnType<typeof setTimeout> | null = null
+let lastProgressTime = -1
+
+const BUFFERING_CONFIRM_MS = 300
 
 function sliderRatioToVolume(ratio: number): number {
   return Math.pow(ratio, VOLUME_CURVE_EXP)
@@ -181,15 +197,46 @@ function syncFromVideo() {
   }
 }
 
+function cancelBufferingDelay() {
+  if (bufferingDelayTimer) {
+    clearTimeout(bufferingDelayTimer)
+    bufferingDelayTimer = null
+  }
+}
+
 function onBufferingStart() {
   const v = videoRef.value
-  if (!v || v.paused) return
-  buffering.value = true
+  if (!v || v.paused || bufferingDelayTimer) return
+  bufferingDelayTimer = setTimeout(() => {
+    bufferingDelayTimer = null
+    const current = videoRef.value
+    if (!current || current.paused) return
+    if (current.readyState < HTMLMediaElement.HAVE_FUTURE_DATA) {
+      buffering.value = true
+    }
+  }, BUFFERING_CONFIRM_MS)
 }
 
 function clearBuffering() {
+  cancelBufferingDelay()
   buffering.value = false
   clearBufferingWhenReady = false
+}
+
+function onTimeUpdate() {
+  const v = videoRef.value
+  syncFromVideo()
+  if (!v || v.paused) return
+  if (lastProgressTime < 0) {
+    lastProgressTime = v.currentTime
+    return
+  }
+  if (v.currentTime === lastProgressTime) return
+  lastProgressTime = v.currentTime
+  cancelBufferingDelay()
+  if (!clearBufferingWhenReady) {
+    buffering.value = false
+  }
 }
 
 function onPlaying() {
@@ -198,6 +245,7 @@ function onPlaying() {
 }
 
 function onCanPlay() {
+  cancelBufferingDelay()
   const v = videoRef.value
   if (!v) return
   if (!v.paused || clearBufferingWhenReady || !playRequested.value) {
@@ -207,6 +255,7 @@ function onCanPlay() {
 }
 
 function onSeeked() {
+  cancelBufferingDelay()
   const v = videoRef.value
   if (!v || v.paused) return
   if (v.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
@@ -462,6 +511,7 @@ async function selectQuality(index: number) {
   const shouldLoad = !props.deferUntilPlay || Boolean(playbackSrc.value)
   openMenu.value = null
   if (shouldLoad) {
+    cancelBufferingDelay()
     suppressPauseBufferingClear = true
     clearBufferingWhenReady = true
     buffering.value = true
@@ -499,23 +549,147 @@ function toggleQualityMenu() {
   openMenu.value = openMenu.value === 'quality' ? null : 'quality'
 }
 
+type WebkitFullscreenElement = HTMLElement & {
+  webkitRequestFullscreen?: () => Promise<void> | void
+}
+
+type WebkitFullscreenDocument = Document & {
+  webkitFullscreenElement?: Element | null
+  webkitExitFullscreen?: () => Promise<void> | void
+}
+
+function getFullscreenElement(): Element | null {
+  const doc = document as WebkitFullscreenDocument
+  return document.fullscreenElement ?? doc.webkitFullscreenElement ?? null
+}
+
+function lockPageScroll() {
+  if (savedHtmlOverflow !== null) return
+  savedHtmlOverflow = document.documentElement.style.overflow
+  document.documentElement.style.overflow = 'hidden'
+  savedScrollY = window.scrollY
+  const body = document.body
+  savedBodyStyles = {
+    position: body.style.position,
+    top: body.style.top,
+    left: body.style.left,
+    right: body.style.right,
+    width: body.style.width,
+    overflow: body.style.overflow,
+  }
+  body.style.position = 'fixed'
+  body.style.top = `-${savedScrollY}px`
+  body.style.left = '0'
+  body.style.right = '0'
+  body.style.width = '100%'
+  body.style.overflow = 'hidden'
+}
+
+function unlockPageScroll() {
+  if (savedHtmlOverflow === null) return
+  document.documentElement.style.overflow = savedHtmlOverflow
+  savedHtmlOverflow = null
+  const body = document.body
+  if (savedBodyStyles) {
+    body.style.position = savedBodyStyles.position
+    body.style.top = savedBodyStyles.top
+    body.style.left = savedBodyStyles.left
+    body.style.right = savedBodyStyles.right
+    body.style.width = savedBodyStyles.width
+    body.style.overflow = savedBodyStyles.overflow
+    savedBodyStyles = null
+  }
+  window.scrollTo(0, savedScrollY)
+}
+
+function resumePlaybackIfNeeded(video: HTMLVideoElement | null, wasPlaying: boolean) {
+  if (!wasPlaying || !video) return
+  void nextTick(() => {
+    if (!video.paused) return
+    void video.play().catch(() => {
+      /* ignore */
+    })
+  })
+}
+
+function enterPseudoFullscreen() {
+  const video = videoRef.value
+  const wasPlaying = Boolean(video && !video.paused)
+  isPseudoFullscreen.value = true
+  lockPageScroll()
+  resumePlaybackIfNeeded(video, wasPlaying)
+}
+
+function exitPseudoFullscreen(resume = false) {
+  const video = videoRef.value
+  const wasPlaying = Boolean(resume && isPseudoFullscreen.value && video && !video.paused)
+  isPseudoFullscreen.value = false
+  unlockPageScroll()
+  resumePlaybackIfNeeded(video, wasPlaying)
+}
+
+function requestElementFullscreen(el: HTMLElement): Promise<void> | void | null {
+  const target = el as WebkitFullscreenElement
+  if (typeof el.requestFullscreen === 'function') {
+    return el.requestFullscreen()
+  }
+  if (typeof target.webkitRequestFullscreen === 'function') {
+    return target.webkitRequestFullscreen()
+  }
+  return null
+}
+
+function exitDocumentFullscreen(): Promise<void> | void | null {
+  const doc = document as WebkitFullscreenDocument
+  if (document.fullscreenElement && typeof document.exitFullscreen === 'function') {
+    return document.exitFullscreen()
+  }
+  if (doc.webkitFullscreenElement && typeof doc.webkitExitFullscreen === 'function') {
+    return doc.webkitExitFullscreen()
+  }
+  return null
+}
+
 async function toggleFullscreen() {
-  const el = rootRef.value
-  if (!el) return
-  try {
-    if (!document.fullscreenElement) {
-      await el.requestFullscreen()
-    } else {
-      await document.exitFullscreen()
+  if (isPseudoFullscreen.value) {
+    exitPseudoFullscreen(true)
+    return
+  }
+
+  if (getFullscreenElement()) {
+    try {
+      const exiting = exitDocumentFullscreen()
+      if (exiting) await exiting
+    } catch {
+      /* ignore */
     }
+    return
+  }
+
+  const root = rootRef.value
+  if (!root) return
+
+  const entering = requestElementFullscreen(root)
+  if (entering === null) {
+    enterPseudoFullscreen()
+    return
+  }
+
+  try {
+    await entering
   } catch {
-    /* ignore */
+    enterPseudoFullscreen()
+    return
+  }
+
+  if (getFullscreenElement() !== root) {
+    enterPseudoFullscreen()
   }
 }
 
 function onFullscreenChange() {
-  const fs = Boolean(document.fullscreenElement && rootRef.value === document.fullscreenElement)
-  isFullscreen.value = fs
+  const fs = getFullscreenElement() === rootRef.value
+  isNativeFullscreen.value = fs
   const showEscHint = window.matchMedia('(hover: hover) and (pointer: fine)').matches
   if (fs && showEscHint) {
     fullscreenHint.value = true
@@ -582,6 +756,9 @@ function onKeydown(e: KeyboardEvent) {
 watch(
   () => props.src,
   () => {
+    cancelBufferingDelay()
+    lastProgressTime = -1
+    exitPseudoFullscreen()
     activeQualityIndex.value = 0
     playbackSrc.value = ''
     playRequested.value = false
@@ -615,14 +792,18 @@ onMounted(() => {
     buffering.value = false
   }
   document.addEventListener('fullscreenchange', onFullscreenChange)
+  document.addEventListener('webkitfullscreenchange', onFullscreenChange)
   document.addEventListener('pointerdown', onDocumentPointerDown, true)
   document.addEventListener('click', onDocumentClick, true)
 })
 
 onUnmounted(() => {
   document.removeEventListener('fullscreenchange', onFullscreenChange)
+  document.removeEventListener('webkitfullscreenchange', onFullscreenChange)
   document.removeEventListener('pointerdown', onDocumentPointerDown, true)
   document.removeEventListener('click', onDocumentClick, true)
+  exitPseudoFullscreen()
+  cancelBufferingDelay()
   if (hintTimer) clearTimeout(hintTimer)
   clearOverlayTimers()
 })
@@ -634,9 +815,11 @@ defineExpose({
 </script>
 
 <template>
+  <Teleport to="body" :disabled="!isPseudoFullscreen">
   <div
     ref="rootRef"
     class="lesson-video-player"
+    :class="{ 'lesson-video-player_expanded': isPseudoFullscreen }"
     tabindex="0"
     role="region"
     aria-label="Видеоплеер урока"
@@ -656,11 +839,10 @@ defineExpose({
       @play="syncFromVideo"
       @pause="onPause"
       @playing="onPlaying"
-      @timeupdate="syncFromVideo"
+      @timeupdate="onTimeUpdate"
       @loadedmetadata="syncFromVideo"
       @canplay="onCanPlay"
       @waiting="onBufferingStart"
-      @stalled="onBufferingStart"
       @seeked="onSeeked"
       @volumechange="syncFromVideo"
       @error="clearBuffering"
@@ -916,6 +1098,7 @@ defineExpose({
       </div>
     </div>
   </div>
+  </Teleport>
 </template>
 
 <style lang="scss" scoped>
@@ -940,6 +1123,39 @@ $lesson-player-chrome-bg: #010307;
     height: 100%;
     object-fit: cover;
     background: var(--black);
+  }
+
+  &:fullscreen,
+  &:-webkit-full-screen {
+    border-radius: 0;
+    aspect-ratio: auto;
+    width: 100%;
+    height: 100%;
+
+    .lesson-video-player__video {
+      object-fit: contain;
+    }
+  }
+
+  &_expanded {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    width: 100%;
+    height: 100dvh;
+    max-height: none;
+    aspect-ratio: auto;
+    border-radius: 0;
+    box-sizing: border-box;
+    padding:
+      env(safe-area-inset-top)
+      env(safe-area-inset-right)
+      env(safe-area-inset-bottom)
+      env(safe-area-inset-left);
+
+    .lesson-video-player__video {
+      object-fit: contain;
+    }
   }
 
   &__buffering {
@@ -1330,10 +1546,6 @@ $lesson-player-chrome-bg: #010307;
     font-size: 12px;
     opacity: 0.9;
   }
-}
-
-:fullscreen .lesson-video-player__video {
-  object-fit: contain;
 }
 
 @keyframes lesson-video-player-spin {

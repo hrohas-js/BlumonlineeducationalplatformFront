@@ -13,6 +13,7 @@ import type {
   ProductDetailResponse,
   ProductProgressResponse,
 } from '@/services/api/types'
+import { isDeadlinePassed } from '@/utils/deadlineAlert'
 import { mapFileResponseToLearningTopicFile } from '@/utils/learningTopicFile'
 
 function mapProductTypeToCategory(productType: string): LearningCourseCategory {
@@ -197,6 +198,9 @@ function moduleToTopic(
     id: module.id,
     title: module.title.trim(),
     accessUntil: formatAccessUntil(module.deadline ?? null),
+    accessExpired:
+      isDeadlinePassed(module.deadline, module.days_left) ||
+      isDeadlinePassed(progress?.deadline, progress?.days_left),
     isCompleted: moduleProgress
       ? isProgressModuleCompleted({
           passed: moduleProgress.passed,

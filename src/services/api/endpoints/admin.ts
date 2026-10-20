@@ -44,6 +44,8 @@ import type {
   AdminStudentProductsResponse,
   AdminStudentsListResponse,
   AdminStudentsExportQuery,
+  AdminStudentsListQuery,
+  AdminStudentsDirectoryResponse,
   AdminStudentsCsvFile,
   AdminBulkStudentsRequest,
   AdminBulkStudentsResponse,
@@ -480,6 +482,13 @@ export const adminService = {
     return api.get<AdminStudentProductsResponse>(ADMIN_ENDPOINTS.studentProducts(userId), {
       params: { skip, limit },
     })
+  },
+
+  async listAllStudents(
+    query?: AdminStudentsListQuery,
+  ): ApiServiceResponse<AdminStudentsDirectoryResponse> {
+    const api = useApi()
+    return api.get<AdminStudentsDirectoryResponse>(ADMIN_ENDPOINTS.students, { params: query })
   },
 
   async listStudents(

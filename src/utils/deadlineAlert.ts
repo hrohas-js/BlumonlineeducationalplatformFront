@@ -11,18 +11,27 @@ export interface DeadlineAlertItem {
 }
 
 export function resolveDaysLeft(progress: ProductProgressResponse): number | null {
-  if (progress.days_left != null) {
-    return progress.days_left
-  }
-  if (!progress.deadline) {
-    return null
-  }
-  const end = new Date(progress.deadline)
-  if (Number.isNaN(end.getTime())) {
-    return null
-  }
-  const diffMs = end.getTime() - Date.now()
-  return Math.ceil(diffMs / 86_400_000)
+  return daysLeftUntil(progress.deadline, progress.days_left)
+}
+
+/** Срок уже прошёл. Ноль дней — ещё последний день доступа. */
+export function isDeadlinePassed(
+  deadline: string | null | undefined,
+  daysLeft?: number | null,
+): boolean {
+  const left = daysLeftUntil(deadline, daysLeft)
+  return left != null && left < 0
+}
+
+function daysLeftUntil(
+  deadline: string | null | undefined,
+  daysLeft?: number | null,
+): number | null {
+  if (daysLeft != null) return daysLeft
+  if (!deadline) return null
+  const end = new Date(deadline)
+  if (Number.isNaN(end.getTime())) return null
+  return Math.ceil((end.getTime() - Date.now()) / 86_400_000)
 }
 
 export function formatDaysLeftRu(days: number): string {

@@ -1,28 +1,31 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/components/layouts/AppLayout.vue'
 import AdminCopyableText from '@/components/molecules/AdminCopyableText.vue'
 import AdminMaterialsStudentsToolbar from '@/components/organisms/AdminMaterialsStudentsToolbar.vue'
 import {
-  ADMIN_STUDENTS_SCOPE_ALL,
   getAdminStudentsScopeTitle,
-  isAdminMaterialSectionId,
   isAdminStudentsSectionParam,
   type AdminStudentsSectionScope,
 } from '@/constants/adminMaterials'
-import type { AdminStudentRow } from '@/utils/adminMockStudents'
-import { useAdminStore } from '@/stores/admin'
-import { adminService } from '@/services/api/endpoints/admin'
-import { studentsScopeToExportQuery } from '@/utils/adminProductType'
+import { useDebouncedRef } from '@/composables/useDebouncedRef'
 import { useNotification } from '@/composables/useNotification'
+import { adminService } from '@/services/api/endpoints/admin'
+import type { AdminStudentsDirectoryItem } from '@/services/api/types'
+import type { AdminStudentRow } from '@/utils/adminMockStudents'
+import { studentsScopeToExportQuery } from '@/utils/adminProductType'
+
+const STUDENTS_PAGE_LIMIT = 1000
 
 const route = useRoute()
 const router = useRouter()
-const adminStore = useAdminStore()
 const { notify } = useNotification()
 const loading = ref(true)
 const exporting = ref(false)
+const rows = ref<AdminStudentRow[]>([])
+const usersTotal = ref(0)
+let loadRequestId = 0
 
 const sectionId = computed(() => route.params.sectionId as string)
 const validatedStudentsScope = computed<AdminStudentsSectionScope | null>(() =>
@@ -30,93 +33,81 @@ const validatedStudentsScope = computed<AdminStudentsSectionScope | null>(() =>
 )
 const categoryTitle = computed(() => getAdminStudentsScopeTitle(sectionId.value) ?? '')
 const searchQuery = ref('')
+const debouncedSearch = useDebouncedRef(searchQuery, 300)
 const sortAscending = ref(true)
-const declaredUserCount = ref<number | null>(null)
 
-const sourceRows = computed<AdminStudentRow[]>(() => {
-  const scope = validatedStudentsScope.value
-  if (!scope) return []
-  const aggregated = adminStore.aggregatedStudents[scope] ?? []
-  return aggregated.map((r) => ({
-    id: r.user_id,
-    name: r.name,
-    email: r.email,
-    productsCount: r.productIds.length,
-    avatarUrl: null,
-  }))
-})
+function studentDisplayName(item: AdminStudentsDirectoryItem): string {
+  const name = [item.first_name, item.last_name].filter(Boolean).join(' ').trim()
+  return name || item.email
+}
 
-const filteredRows = computed(() => {
-  const q = searchQuery.value.trim().toLowerCase()
-  if (!q) return sourceRows.value
-  return sourceRows.value.filter(
-    (row) =>
-      row.email.toLowerCase().includes(q) ||
-      row.name.toLowerCase().includes(q),
-  )
-})
-
-const displayRows = computed(() => {
-  const rows = [...filteredRows.value]
-  rows.sort((a, b) => {
-    const cmp = a.name.localeCompare(b.name, 'ru', { sensitivity: 'base' })
-    return sortAscending.value ? cmp : -cmp
-  })
-  return rows
-})
-
-const toolbarUserCount = computed(() => {
-  if (sectionId.value === ADMIN_STUDENTS_SCOPE_ALL) {
-    return sourceRows.value.length
-  }
-  if (declaredUserCount.value != null) return declaredUserCount.value
-  return sourceRows.value.length
-})
-
-const readDeclaredCountFromHistory = () => {
-  const state = window.history.state as { usersCount?: unknown } | undefined
-  if (typeof state?.usersCount === 'number' && Number.isFinite(state.usersCount)) {
-    declaredUserCount.value = state.usersCount
-  } else {
-    declaredUserCount.value = null
+function toStudentRow(item: AdminStudentsDirectoryItem): AdminStudentRow {
+  return {
+    id: item.user_id,
+    name: studentDisplayName(item),
+    email: item.email,
+    productsCount: item.products_count,
+    avatarUrl: item.avatar_url,
   }
 }
 
+const toolbarUserCount = computed(() => usersTotal.value)
+
 async function loadStudents() {
-  loading.value = true
+  const requestId = ++loadRequestId
   const scope = validatedStudentsScope.value
   if (!scope) {
     loading.value = false
     return
   }
-  if (scope === ADMIN_STUDENTS_SCOPE_ALL) {
-    await adminStore.aggregateAllSections()
-  } else if (isAdminMaterialSectionId(scope)) {
-    await adminStore.aggregateStudentsForSection(scope)
+  loading.value = true
+  const search = debouncedSearch.value.trim()
+  const scopeQuery = studentsScopeToExportQuery(scope)
+  let skip = 0
+  let total = Infinity
+  const items: AdminStudentsDirectoryItem[] = []
+
+  while (items.length < total) {
+    const result = await adminService.listAllStudents({
+      ...scopeQuery,
+      ...(search ? { search } : {}),
+      order: sortAscending.value ? 'asc' : 'desc',
+      skip,
+      limit: STUDENTS_PAGE_LIMIT,
+    })
+    if (requestId !== loadRequestId) return
+    if (!result.success || !result.data) {
+      loading.value = false
+      notify({
+        type: 'error',
+        message: result.error || 'Не удалось загрузить список учеников',
+      })
+      return
+    }
+    items.push(...result.data.items)
+    total = result.data.total
+    skip += STUDENTS_PAGE_LIMIT
+    if (result.data.items.length === 0) break
   }
+
+  if (requestId !== loadRequestId) return
+  rows.value = items.map(toStudentRow)
+  usersTotal.value = Number.isFinite(total) ? total : items.length
   loading.value = false
 }
 
-onMounted(() => {
-  if (sectionId.value === ADMIN_STUDENTS_SCOPE_ALL) {
-    declaredUserCount.value = null
-  } else {
-    readDeclaredCountFromHistory()
-  }
-  void loadStudents()
-})
+watch(
+  [validatedStudentsScope, debouncedSearch, sortAscending],
+  () => {
+    void loadStudents()
+  },
+  { immediate: true },
+)
 
 watch(sectionId, (id) => {
   if (!isAdminStudentsSectionParam(id)) {
     void router.replace({ name: 'admin-materials' })
-    return
   }
-  if (id === ADMIN_STUDENTS_SCOPE_ALL) {
-    declaredUserCount.value = null
-  } else {
-    readDeclaredCountFromHistory()
-  }
-  void loadStudents()
 })
 
 const toggleNameSort = () => {
@@ -216,7 +207,7 @@ function filenameFromContentDisposition(header: string | null, fallback: string)
           </div>
 
           <ul class="admin-materials-students-page__list" aria-label="Список учеников">
-            <li v-for="row in displayRows" :key="row.id" class="admin-materials-students-page__row-item">
+            <li v-for="row in rows" :key="row.id" class="admin-materials-students-page__row-item">
               <RouterLink
                 class="admin-materials-students-page__row"
                 :to="{
@@ -272,7 +263,7 @@ function filenameFromContentDisposition(header: string | null, fallback: string)
             </li>
           </ul>
 
-          <p v-if="displayRows.length === 0" class="admin-materials-students-page__empty">Нет учеников по запросу</p>
+          <p v-if="!loading && rows.length === 0" class="admin-materials-students-page__empty">Нет учеников по запросу</p>
         </div>
       </div>
     </section>
