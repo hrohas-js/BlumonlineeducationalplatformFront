@@ -159,8 +159,8 @@ export interface ProductListResponse {
 /** Вариант продления курса/темы: срок, цена и ссылка на оплату. */
 export interface ProductPricingOption {
   id: string
-  module_id: string
-  module_title: string
+  module_id: string | null
+  module_title: string | null
   period_months: number
   price: string
   payment_link: string
@@ -249,6 +249,8 @@ export interface ModuleResponse {
   deadline?: string | null
   /** Сколько дней осталось по персональному дедлайну темы. */
   days_left?: number | null
+  /** Персональный доступ к теме. Нет поля — тема открыта. */
+  is_open?: boolean
   lessons: LessonResponse[]
   created_at: string
   updated_at: string
@@ -269,6 +271,8 @@ export interface ModuleProgressResponse {
   title: string
   passed?: boolean
   passed_at?: string | null
+  /** Персональный доступ к теме. Нет поля — тема открыта. */
+  is_open?: boolean
   lessons: LessonWithProgress[]
 }
 

@@ -54,7 +54,7 @@ const emit = defineEmits<Emits>()
     <!-- Figma 477:2284 / 477:2286 — button_удалить -->
     <BaseButton
       class="admin-active-extension-card__delete"
-      variant="danger"
+      variant="outline"
       size="small"
       shape="rounded"
       text="Удалить"
@@ -66,15 +66,18 @@ const emit = defineEmits<Emits>()
 <style lang="scss" scoped>
 .admin-active-extension-card-wrap {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   align-items: flex-start;
   gap: var(--sp-20);
   width: 100%;
   max-width: 387px;
+  height: 100%;
 }
 
 .admin-active-extension-card {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   align-items: flex-start;
   gap: var(--sp-20);
@@ -96,6 +99,15 @@ const emit = defineEmits<Emits>()
   min-height: 38px;
 }
 
+.admin-active-extension-card__topic,
+.admin-active-extension-card__badge {
+  flex: 1 1 0;
+  width: calc(50% - var(--sp-10) / 2);
+  max-width: calc(50% - var(--sp-10) / 2);
+  min-width: 0;
+  box-sizing: border-box;
+}
+
 .admin-active-extension-card__topic {
   margin: 0;
   font-family: var(--font-family);
@@ -103,11 +115,12 @@ const emit = defineEmits<Emits>()
   font-size: var(--size-15);
   line-height: normal;
   color: #010307;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: break-word;
 }
 
 .admin-active-extension-card__badge {
-  flex-shrink: 0;
-  box-sizing: border-box;
   padding: var(--sp-10);
   border-radius: var(--radius-10);
   border: 3px solid #178ef0;
@@ -118,6 +131,8 @@ const emit = defineEmits<Emits>()
   line-height: normal;
   color: var(--white);
   text-align: center;
+  white-space: normal;
+  overflow-wrap: break-word;
 }
 
 .admin-active-extension-card__text {
@@ -131,6 +146,7 @@ const emit = defineEmits<Emits>()
 
 :deep(.admin-active-extension-card__pay.base-button) {
   height: auto;
+  margin-top: auto;
   gap: var(--size-5);
   padding: var(--size-5);
   border-color: var(--knopka);
@@ -170,10 +186,27 @@ const emit = defineEmits<Emits>()
   height: auto;
   min-height: 34px;
   padding: var(--size-5) var(--sp-10);
+  background-color: var(--white);
+  border-color: var(--knopka);
   font-family: var(--font-family);
   font-weight: var(--font-semi-bold);
   font-size: var(--size-20);
   line-height: normal;
+  color: #010307;
+}
+
+:deep(.admin-active-extension-card__delete.base-button_outline:hover:not(.base-button_disabled)) {
+  background-color: var(--text-accent);
+  border-color: var(--text-accent);
+  color: var(--white);
+  transform: none;
+}
+
+:deep(.admin-active-extension-card__delete.base-button_outline:active:not(.base-button_disabled)) {
+  background-color: color-mix(in srgb, var(--text-accent) 88%, #000);
+  border-color: color-mix(in srgb, var(--text-accent) 88%, #000);
+  color: var(--white);
+  transform: none;
 }
 
 @media (max-width: 1023px) {

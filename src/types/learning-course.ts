@@ -35,6 +35,8 @@ export interface LearningCourseTopic {
   accessUntil: string | null
   /** Персональный или общий дедлайн уже истёк. */
   accessExpired?: boolean
+  /** Доступ к теме закрыт администратором (`is_open === false`). */
+  accessClosed?: boolean
   isCompleted: boolean
   videos: LearningTopicVideo[]
   /** Видео урока без subsection_id, не попавшие ни в один подраздел. */

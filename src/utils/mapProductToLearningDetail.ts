@@ -193,14 +193,16 @@ function moduleToTopic(
 ): LearningCourseTopic {
   const moduleProgress = progress?.modules.find((m) => m.module_id === module.id)
   const lessons = [...module.lessons].sort((a, b) => a.order_index - b.order_index)
+  const accessClosed = module.is_open === false || moduleProgress?.is_open === false
 
-  return {
+  const topic: LearningCourseTopic = {
     id: module.id,
     title: module.title.trim(),
     accessUntil: formatAccessUntil(module.deadline ?? null),
     accessExpired:
       isDeadlinePassed(module.deadline, module.days_left) ||
       isDeadlinePassed(progress?.deadline, progress?.days_left),
+    accessClosed,
     isCompleted: moduleProgress
       ? isProgressModuleCompleted({
           passed: moduleProgress.passed,
@@ -213,6 +215,15 @@ function moduleToTopic(
               : moduleProgress.lessons,
         })
       : false,
+    videos: [],
+    ungroupedVideos: [],
+    subsections: [],
+  }
+
+  if (accessClosed) return topic
+
+  return {
+    ...topic,
     ...splitModuleDescription(module.description),
     videos: lessons.flatMap((lesson) => {
       const lp = moduleProgress?.lessons.find((l) => l.id === lesson.id)

@@ -76,6 +76,7 @@ const emit = defineEmits<Emits>()
 .admin-product-active-extensions-section__grid {
   display: flex;
   flex-wrap: wrap;
+  align-items: stretch;
   justify-content: center;
   gap: var(--sp-20);
   width: 100%;
@@ -84,7 +85,9 @@ const emit = defineEmits<Emits>()
 .admin-product-active-extensions-section__cell {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
+  width: 100%;
+  max-width: 387px;
 }
 
 @media (max-width: 1023px) {

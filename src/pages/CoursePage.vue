@@ -233,6 +233,8 @@ function mergePassedIntoProgress(
 
 async function onCompleteTopic(topicId: string, completed: boolean) {
   if (isEntryClosed.value || !product.value) return
+  const topic = learningDetail.value?.topics.find((item) => item.id === topicId)
+  if (topic?.accessClosed) return
   const module = product.value.modules.find((item) => item.id === topicId)
   if (!module) return
 

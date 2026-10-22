@@ -59,6 +59,7 @@ type RenewalPanelCard = {
   id: string
   productId: string
   title: string
+  topicLabel: string
   description: string
   category: Exclude<LearningCourseCategory, 'archive'>
   paymentLink: string
@@ -177,6 +178,7 @@ const renewalCards = computed<RenewalPanelCard[]>(() =>
         id: `${course.id}:${option.id}`,
         productId: course.id,
         title: course.title,
+        topicLabel: option.module_title?.trim() || 'Все темы',
         description: formatRenewalPeriodLabel(option.period_months),
         category: course.category,
         paymentLink: option.payment_link,
@@ -526,7 +528,10 @@ watch(
                   </template>
 
                   <template #description="{ description }">
-                    <LearningCourseCardDescription :description="description" />
+                    <div class="home-profile__renewal-copy">
+                      <p class="home-profile__renewal-topic">{{ card.topicLabel }}</p>
+                      <LearningCourseCardDescription :description="description" />
+                    </div>
                   </template>
 
                   <template #footer>
@@ -687,6 +692,25 @@ watch(
       var(--fs-18)
     );
     color: var(--fon-bloka);
+  }
+}
+
+.home-profile__renewal-copy {
+  :deep(.learning-course-card-description) {
+    margin-top: var(--sp-10);
+  }
+}
+
+.home-profile__renewal-topic {
+  margin: var(--sp-20) 0 0;
+  font-family: var(--font-family);
+  font-weight: var(--font-medium);
+  font-size: var(--size-15);
+  color: var(--osnovnoy-tekst);
+  overflow-wrap: break-word;
+
+  @media (max-width: 1023px) {
+    font-size: var(--size-13);
   }
 }
 

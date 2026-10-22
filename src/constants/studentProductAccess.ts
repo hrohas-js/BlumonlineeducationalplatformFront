@@ -3,6 +3,9 @@ import type { AdminStudentAccessStatus } from '@/services/api/types'
 /** Надпись ученику, когда доступ к продукту заблокирован администратором. */
 export const STUDENT_PRODUCT_BLOCKED_MESSAGE = 'Нет доступа, обратитесь к администратору'
 
+/** Надпись ученику, когда администратор закрыл доступ к конкретной теме. */
+export const STUDENT_TOPIC_CLOSED_MESSAGE = 'Нет доступа. Обратитесь к администратору'
+
 /** Надпись ученику, когда доступ к продукту поставлен на паузу. */
 export const STUDENT_PRODUCT_PAUSED_MESSAGE = 'Доступ на паузе'
 

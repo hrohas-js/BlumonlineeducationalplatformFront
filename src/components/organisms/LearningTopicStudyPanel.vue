@@ -8,7 +8,7 @@ import LearningTopicFilesList from '@/components/molecules/LearningTopicFilesLis
 import LearningTopicSubsectionVideosList from '@/components/molecules/LearningTopicSubsectionVideosList.vue'
 import LearningTopicVideoBlock from '@/components/molecules/LearningTopicVideoBlock.vue'
 import LessonVideoPlaybackModal from '@/components/organisms/LessonVideoPlaybackModal.vue'
-import { STUDENT_PRODUCT_BLOCKED_MESSAGE } from '@/constants/studentProductAccess'
+import { STUDENT_PRODUCT_BLOCKED_MESSAGE, STUDENT_TOPIC_CLOSED_MESSAGE } from '@/constants/studentProductAccess'
 import { getNextTopicId } from '@/utils/mapProductToLearningDetail'
 import type { LearningCourseDetail, LearningTopicVideo } from '@/types/learning-course'
 
@@ -150,6 +150,12 @@ function onClosePlayback() {
       />
     </header>
 
+    <p v-if="topic.accessClosed" class="learning-topic-study-panel__empty">
+      {{ STUDENT_TOPIC_CLOSED_MESSAGE }}
+    </p>
+
+    <template v-else>
+
     <template v-if="lessonLayout">
       <div
         v-if="topic.materialsHtml"
@@ -248,6 +254,7 @@ function onClosePlayback() {
       :error="playbackVideo ? videoErrorById?.[playbackVideo.id] : undefined"
       @close="onClosePlayback"
     />
+    </template>
   </section>
 </template>
 
