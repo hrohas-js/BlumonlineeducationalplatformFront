@@ -9,7 +9,6 @@ import type {
   AdminMaterialCatalogCard,
 } from '@/utils/adminMaterialCatalog'
 import type { ProductResponse, ProductDetailResponse } from '@/services/api/types'
-import type { AggregatedAdminStudentRow } from '@/stores/admin'
 import { accessDurationToRuLabel } from '@/utils/adminDateInput'
 import { formatDaysWord } from '@/utils/pluralizeRu'
 
@@ -27,14 +26,13 @@ export function productDeadlineSuffix(product: ProductResponse): string {
 export function productToCardItem(
   product: ProductResponse,
   detail?: ProductDetailResponse | null,
-  studentsCount = 0
 ): AdminMaterialCardItem {
   const topicsCount = product.modules_count ?? detail?.modules?.length ?? 0
   return {
     id: product.id,
     title: product.title,
     topicsCount,
-    usersCount: studentsCount,
+    usersCount: product.students_count ?? 0,
     deadlineSuffix: productDeadlineSuffix(product),
   }
 }
@@ -42,7 +40,7 @@ export function productToCardItem(
 export function buildSectionConfig(
   sectionId: AdminMaterialSectionId,
   products: ProductResponse[],
-  studentRows: AggregatedAdminStudentRow[] | undefined,
+  sectionStudentsCount: number,
   detailsById: Record<string, ProductDetailResponse>
 ): AdminCategorySectionConfig {
   const sectionMeta = ADMIN_MATERIAL_SECTION_LIST.find((s) => s.id === sectionId)!
@@ -52,27 +50,18 @@ export function buildSectionConfig(
     other: 'other',
     archive: 'archive',
   }
-  const studentCountByProduct = new Map<string, number>()
-  if (studentRows) {
-    for (const row of studentRows) {
-      for (const pid of row.productIds) {
-        studentCountByProduct.set(pid, (studentCountByProduct.get(pid) ?? 0) + 1)
-      }
-    }
-  }
   const cards: AdminMaterialCatalogCard[] = products.map((p) => ({
-    ...productToCardItem(p, detailsById[p.id], studentCountByProduct.get(p.id) ?? 0),
+    ...productToCardItem(p, detailsById[p.id]),
     edit: {
       description: p.description ?? '',
       topics: [],
       activeExtensions: [],
     },
   }))
-  const uniqueStudents = studentRows?.length ?? 0
   return {
     sectionId,
     title: sectionMeta.title,
-    usersCount: uniqueStudents,
+    usersCount: sectionStudentsCount,
     foldersCount: products.length,
     borderColor: ADMIN_MATERIAL_SECTION_BORDER_COLORS[sectionId],
     accentKey: accentMap[sectionId],

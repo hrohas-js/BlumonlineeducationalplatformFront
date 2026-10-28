@@ -40,7 +40,6 @@ const route = useRoute()
 const router = useRouter()
 
 type LearningMaterialsFilter = 'all' | 'courses' | 'projects' | 'other' | 'archive'
-type RenewalMaterialsFilter = Exclude<LearningMaterialsFilter, 'archive'>
 type FilterTone = '#178ef0' | '#0098a3' | '#b842ef' | '#010307'
 
 type LearningPanelCourse = {
@@ -61,19 +60,15 @@ type RenewalPanelCard = {
   title: string
   topicLabel: string
   description: string
-  category: Exclude<LearningCourseCategory, 'archive'>
+  category: LearningCourseCategory
   paymentLink: string
 }
 
-const renewalFilterTabs: { key: RenewalMaterialsFilter; label: string; tone: FilterTone }[] = [
+const learningFilterTabs: { key: LearningMaterialsFilter; label: string; tone: FilterTone }[] = [
   { key: 'all', label: 'Все материалы', tone: '#178ef0' },
   { key: 'courses', label: 'Курсы', tone: '#178ef0' },
   { key: 'projects', label: 'Проекты', tone: '#0098a3' },
   { key: 'other', label: 'Иное', tone: '#b842ef' },
-]
-
-const learningFilterTabs: { key: LearningMaterialsFilter; label: string; tone: FilterTone }[] = [
-  ...renewalFilterTabs,
   { key: 'archive', label: 'Архив', tone: '#010307' },
 ]
 
@@ -132,12 +127,6 @@ const isMockData = computed(
 
 const materialsFilter = ref<LearningMaterialsFilter>('all')
 
-watch(activeSection, (section) => {
-  if (section !== 'learning' && materialsFilter.value === 'archive') {
-    materialsFilter.value = 'all'
-  }
-})
-
 const learningView = ref<LearningViewMode>('list')
 const selectedCourseId = ref<string | null>(null)
 const selectedTopicId = ref<string | null>(null)
@@ -167,10 +156,7 @@ const hasLearningCourses = computed(() => visibleLearningCourses.value.length > 
 
 const renewalCards = computed<RenewalPanelCard[]>(() =>
   realLearningCourses.value
-    .filter(
-      (course): course is LearningPanelCourse & { category: RenewalPanelCard['category'] } =>
-        isStudentProductVisible(course.status) && course.category !== 'archive',
-    )
+    .filter((course) => isStudentProductVisible(course.status))
     .flatMap((course) => {
       const options = productsStore.pricingByProductId[course.id]
       if (!options?.length) return []
@@ -187,10 +173,14 @@ const renewalCards = computed<RenewalPanelCard[]>(() =>
 )
 
 const filteredRenewalCards = computed(() => {
-  if (materialsFilter.value === 'all' || materialsFilter.value === 'archive') {
-    return renewalCards.value
+  if (materialsFilter.value === 'archive') {
+    return renewalCards.value.filter((card) => card.category === 'archive')
   }
-  return renewalCards.value.filter((c) => c.category === materialsFilter.value)
+  return renewalCards.value.filter(
+    (card) =>
+      card.category !== 'archive' &&
+      (materialsFilter.value === 'all' || card.category === materialsFilter.value),
+  )
 })
 
 const hasRenewalCards = computed(() => renewalCards.value.length > 0)
@@ -503,7 +493,7 @@ watch(
             <template v-else>
               <div class="home-profile__learning-filters" role="navigation" aria-label="Фильтр курсов для продления">
                 <HomeProfileInfoTableItem
-                  v-for="tab in renewalFilterTabs"
+                  v-for="tab in learningFilterTabs"
                   :key="tab.key"
                   :label="tab.label"
                   :tone="tab.tone"

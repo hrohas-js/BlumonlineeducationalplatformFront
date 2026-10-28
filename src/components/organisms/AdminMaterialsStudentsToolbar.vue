@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import {
   ADMIN_MATERIAL_SECTION_LIST,
@@ -7,80 +7,150 @@ import {
   type AdminStudentsSectionScope,
 } from '@/constants/adminMaterials'
 
+export interface AdminStudentsToolbarProduct {
+  id: string
+  title: string
+}
+
 interface Props {
   categoryTitle: string
   sectionId: AdminStudentsSectionScope
   usersCount: number
   exporting?: boolean
+  products?: AdminStudentsToolbarProduct[]
+  selectedProductId?: string | null
+  productsLoading?: boolean
+  productsError?: string | null
 }
 
 interface Emits {
   (e: 'add-student'): void
   (e: 'export-csv'): void
+  (e: 'select-product', productId: string): void
 }
 
-defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  products: () => [],
+  selectedProductId: null,
+  productsLoading: false,
+  productsError: null,
+})
 
 const emit = defineEmits<Emits>()
 const searchQuery = defineModel<string>('searchQuery', { default: '' })
 
 const router = useRouter()
-const menuOpen = ref(false)
-const menuWrapRef = ref<HTMLElement | null>(null)
-const closeTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const sectionMenuOpen = ref(false)
+const productMenuOpen = ref(false)
+const sectionMenuWrapRef = ref<HTMLElement | null>(null)
+const productMenuWrapRef = ref<HTMLElement | null>(null)
+const sectionCloseTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const productCloseTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 
 const CLOSE_DELAY_MS = 180
 
-const cancelCloseMenu = () => {
-  if (closeTimer.value != null) {
-    clearTimeout(closeTimer.value)
-    closeTimer.value = null
+const showProductMenu = computed(() => props.sectionId !== ADMIN_STUDENTS_SCOPE_ALL)
+
+const productTriggerLabel = computed(() => {
+  const selected = props.products.find((product) => product.id === props.selectedProductId)
+  return selected?.title || 'Выберите продукт'
+})
+
+const anyMenuOpen = computed(() => sectionMenuOpen.value || productMenuOpen.value)
+
+const cancelCloseTimer = (timer: typeof sectionCloseTimer) => {
+  if (timer.value != null) {
+    clearTimeout(timer.value)
+    timer.value = null
   }
 }
 
-const scheduleCloseMenu = () => {
-  cancelCloseMenu()
-  closeTimer.value = setTimeout(() => {
-    menuOpen.value = false
-    closeTimer.value = null
+const scheduleClose = (open: typeof sectionMenuOpen, timer: typeof sectionCloseTimer) => {
+  cancelCloseTimer(timer)
+  timer.value = setTimeout(() => {
+    open.value = false
+    timer.value = null
   }, CLOSE_DELAY_MS)
 }
 
-const openMenu = () => {
-  cancelCloseMenu()
-  menuOpen.value = true
+const openSectionMenu = () => {
+  cancelCloseTimer(sectionCloseTimer)
+  cancelCloseTimer(productCloseTimer)
+  productMenuOpen.value = false
+  sectionMenuOpen.value = true
 }
 
-const toggleMenu = () => {
-  menuOpen.value = !menuOpen.value
+const openProductMenu = () => {
+  cancelCloseTimer(productCloseTimer)
+  cancelCloseTimer(sectionCloseTimer)
+  sectionMenuOpen.value = false
+  productMenuOpen.value = true
+}
+
+const toggleSectionMenu = () => {
+  if (sectionMenuOpen.value) {
+    sectionMenuOpen.value = false
+    return
+  }
+  openSectionMenu()
+}
+
+const toggleProductMenu = () => {
+  if (productMenuOpen.value) {
+    productMenuOpen.value = false
+    return
+  }
+  openProductMenu()
+}
+
+const scheduleCloseSectionMenu = () => {
+  scheduleClose(sectionMenuOpen, sectionCloseTimer)
+}
+
+const scheduleCloseProductMenu = () => {
+  scheduleClose(productMenuOpen, productCloseTimer)
+}
+
+const onSectionMenuFocusOut = (event: FocusEvent) => {
+  onMenuWrapFocusOut(event, sectionMenuWrapRef.value, scheduleCloseSectionMenu)
+}
+
+const onProductMenuFocusOut = (event: FocusEvent) => {
+  onMenuWrapFocusOut(event, productMenuWrapRef.value, scheduleCloseProductMenu)
 }
 
 const goToAdmin = () => {
   void router.push({ name: 'admin-materials' })
 }
 
-const onMenuWrapFocusOut = (event: FocusEvent) => {
+const onMenuWrapFocusOut = (event: FocusEvent, wrap: HTMLElement | null, close: () => void) => {
   const next = event.relatedTarget as Node | null
-  if (menuWrapRef.value?.contains(next)) return
-  scheduleCloseMenu()
+  if (wrap?.contains(next)) return
+  close()
+}
+
+const closeMenuIfOutside = (
+  open: typeof sectionMenuOpen,
+  wrap: HTMLElement | null,
+  target: Node | null,
+) => {
+  if (!open.value || !wrap || !target || wrap.contains(target)) return
+  open.value = false
 }
 
 const onDocumentPointerDown = (event: MouseEvent | PointerEvent) => {
-  if (!menuOpen.value) return
-  const el = menuWrapRef.value
   const target = event.target as Node | null
-  if (el && target && !el.contains(target)) {
-    menuOpen.value = false
-  }
+  closeMenuIfOutside(sectionMenuOpen, sectionMenuWrapRef.value, target)
+  closeMenuIfOutside(productMenuOpen, productMenuWrapRef.value, target)
 }
 
 const onDocumentKeydown = (event: KeyboardEvent) => {
-  if (event.key === 'Escape' && menuOpen.value) {
-    menuOpen.value = false
-  }
+  if (event.key !== 'Escape') return
+  sectionMenuOpen.value = false
+  productMenuOpen.value = false
 }
 
-watch(menuOpen, async (open) => {
+watch(anyMenuOpen, (open) => {
   if (open) {
     document.addEventListener('pointerdown', onDocumentPointerDown, true)
     document.addEventListener('keydown', onDocumentKeydown, true)
@@ -91,20 +161,27 @@ watch(menuOpen, async (open) => {
 })
 
 onUnmounted(() => {
-  cancelCloseMenu()
+  cancelCloseTimer(sectionCloseTimer)
+  cancelCloseTimer(productCloseTimer)
   document.removeEventListener('pointerdown', onDocumentPointerDown, true)
   document.removeEventListener('keydown', onDocumentKeydown, true)
 })
 
 const onSectionNavigate = () => {
-  menuOpen.value = false
-  cancelCloseMenu()
+  sectionMenuOpen.value = false
+  cancelCloseTimer(sectionCloseTimer)
 }
 
 const onMenuItemClick = () => {
   void nextTick(() => {
     onSectionNavigate()
   })
+}
+
+const onProductSelect = (productId: string) => {
+  productMenuOpen.value = false
+  cancelCloseTimer(productCloseTimer)
+  emit('select-product', productId)
 }
 </script>
 
@@ -134,26 +211,26 @@ const onMenuItemClick = () => {
     <div class="admin-materials-students-toolbar__row">
       <div class="admin-materials-students-toolbar__breadcrumbs">
         <div
-          ref="menuWrapRef"
+          ref="sectionMenuWrapRef"
           class="admin-materials-students-toolbar__dropdown-wrap"
-          @mouseenter="openMenu"
-          @mouseleave="scheduleCloseMenu"
-          @focusin="openMenu"
-          @focusout="onMenuWrapFocusOut"
+          @mouseenter="openSectionMenu"
+          @mouseleave="scheduleCloseSectionMenu"
+          @focusin="openSectionMenu"
+          @focusout="onSectionMenuFocusOut"
         >
           <button
             type="button"
             class="admin-materials-students-toolbar__crumb admin-materials-students-toolbar__crumb_trigger"
-            :aria-expanded="menuOpen"
+            :aria-expanded="sectionMenuOpen"
             aria-haspopup="menu"
             aria-controls="admin-materials-section-menu"
-            @click="toggleMenu"
+            @click="toggleSectionMenu"
           >
             {{ categoryTitle }}
           </button>
 
           <div
-            v-show="menuOpen"
+            v-show="sectionMenuOpen"
             id="admin-materials-section-menu"
             class="admin-materials-students-toolbar__menu"
             role="menu"
@@ -166,7 +243,7 @@ const onMenuItemClick = () => {
               }"
               role="menuitem"
               replace
-              :to="{ name: 'admin-materials-students', params: { sectionId: ADMIN_STUDENTS_SCOPE_ALL } }"
+              :to="{ name: 'admin-materials-students', params: { sectionId: ADMIN_STUDENTS_SCOPE_ALL }, query: {} }"
               @click="onMenuItemClick"
             >
               <span class="admin-materials-students-toolbar__menu-item-icon" aria-hidden="true">
@@ -190,7 +267,7 @@ const onMenuItemClick = () => {
               :class="{ 'admin-materials-students-toolbar__menu-item_active': sec.id === sectionId }"
               role="menuitem"
               replace
-              :to="{ name: 'admin-materials-students', params: { sectionId: sec.id } }"
+              :to="{ name: 'admin-materials-students', params: { sectionId: sec.id }, query: {} }"
               @click="onMenuItemClick"
             >
               <span class="admin-materials-students-toolbar__menu-item-icon" aria-hidden="true">
@@ -209,18 +286,76 @@ const onMenuItemClick = () => {
           </div>
         </div>
 
-        <span class="admin-materials-students-toolbar__arrow" aria-hidden="true">
-          <svg width="30" height="8" viewBox="0 0 30 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path
-              d="M0 4h22M22 0l6 4-6 4"
-              stroke="currentColor"
-              stroke-width="1.2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </span>
-        <span class="admin-materials-students-toolbar__crumb">Ученики</span>
+        <template v-if="showProductMenu">
+          <span class="admin-materials-students-toolbar__arrow" aria-hidden="true">
+            <svg width="30" height="8" viewBox="0 0 30 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M0 4h22M22 0l6 4-6 4"
+                stroke="currentColor"
+                stroke-width="1.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </span>
+          <div
+            ref="productMenuWrapRef"
+            class="admin-materials-students-toolbar__dropdown-wrap"
+            @mouseenter="openProductMenu"
+            @mouseleave="scheduleCloseProductMenu"
+            @focusin="openProductMenu"
+            @focusout="onProductMenuFocusOut"
+          >
+            <button
+              type="button"
+              class="admin-materials-students-toolbar__crumb admin-materials-students-toolbar__crumb_trigger"
+              :aria-expanded="productMenuOpen"
+              aria-haspopup="menu"
+              aria-controls="admin-materials-product-menu"
+              @click="toggleProductMenu"
+            >
+              {{ productTriggerLabel }}
+            </button>
+
+            <div
+              v-show="productMenuOpen"
+              id="admin-materials-product-menu"
+              class="admin-materials-students-toolbar__menu"
+              role="menu"
+              aria-label="Выбор продукта"
+            >
+              <p v-if="productsLoading" class="admin-materials-students-toolbar__menu-status">Загружаем…</p>
+              <p v-else-if="productsError" class="admin-materials-students-toolbar__menu-status">{{ productsError }}</p>
+              <p v-else-if="products.length === 0" class="admin-materials-students-toolbar__menu-status">Нет продуктов</p>
+              <template v-else>
+              <button
+                v-for="product in products"
+                :key="product.id"
+                type="button"
+                class="admin-materials-students-toolbar__menu-item"
+                :class="{
+                  'admin-materials-students-toolbar__menu-item_active': product.id === selectedProductId,
+                }"
+                role="menuitem"
+                @click="onProductSelect(product.id)"
+              >
+                <span class="admin-materials-students-toolbar__menu-item-icon" aria-hidden="true">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M7 17L17 7M17 7h-6M17 7v6"
+                      stroke="currentColor"
+                      stroke-width="1.2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+                <span class="admin-materials-students-toolbar__menu-item-text">{{ product.title }}</span>
+              </button>
+              </template>
+            </div>
+          </div>
+        </template>
       </div>
 
       <div class="admin-materials-students-toolbar__center">
@@ -462,6 +597,14 @@ const onMenuItemClick = () => {
   white-space: nowrap;
 }
 
+.admin-materials-students-toolbar__menu-status {
+  margin: 0;
+  font-family: var(--font-family);
+  font-weight: var(--font-semi-bold);
+  font-size: var(--size-20);
+  color: var(--osnovnoy-tekst);
+}
+
 .admin-materials-students-toolbar__menu-item_active {
   color: #178ef0;
 
@@ -641,7 +784,8 @@ const onMenuItemClick = () => {
     font-size: var(--size-15);
   }
 
-  .admin-materials-students-toolbar__menu-item-text {
+  .admin-materials-students-toolbar__menu-item-text,
+  .admin-materials-students-toolbar__menu-status {
     font-size: var(--size-15);
   }
 

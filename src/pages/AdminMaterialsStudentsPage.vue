@@ -6,17 +6,20 @@ import AdminCopyableText from '@/components/molecules/AdminCopyableText.vue'
 import AdminMaterialsStudentsToolbar from '@/components/organisms/AdminMaterialsStudentsToolbar.vue'
 import {
   getAdminStudentsScopeTitle,
+  isAdminMaterialSectionId,
   isAdminStudentsSectionParam,
+  type AdminMaterialSectionId,
   type AdminStudentsSectionScope,
 } from '@/constants/adminMaterials'
 import { useDebouncedRef } from '@/composables/useDebouncedRef'
 import { useNotification } from '@/composables/useNotification'
 import { adminService } from '@/services/api/endpoints/admin'
-import type { AdminStudentsDirectoryItem } from '@/services/api/types'
+import type { AdminStudentItem, AdminStudentsDirectoryItem, ProductResponse } from '@/services/api/types'
 import type { AdminStudentRow } from '@/utils/adminMockStudents'
-import { studentsScopeToExportQuery } from '@/utils/adminProductType'
+import { sectionIdToProductType, studentsScopeToExportQuery } from '@/utils/adminProductType'
 
 const STUDENTS_PAGE_LIMIT = 1000
+const PRODUCT_STUDENTS_PAGE_LIMIT = 100
 
 const route = useRoute()
 const router = useRouter()
@@ -25,7 +28,12 @@ const loading = ref(true)
 const exporting = ref(false)
 const rows = ref<AdminStudentRow[]>([])
 const usersTotal = ref(0)
+const sectionProducts = ref<ProductResponse[]>([])
+const productsLoading = ref(false)
+const productsError = ref<string | null>(null)
 let loadRequestId = 0
+let productsRequestId = 0
+let productStudentsCache: { productId: string; rows: AdminStudentRow[] } | null = null
 
 const sectionId = computed(() => route.params.sectionId as string)
 const validatedStudentsScope = computed<AdminStudentsSectionScope | null>(() =>
@@ -36,7 +44,28 @@ const searchQuery = ref('')
 const debouncedSearch = useDebouncedRef(searchQuery, 300)
 const sortAscending = ref(true)
 
-function studentDisplayName(item: AdminStudentsDirectoryItem): string {
+const queryProductId = computed(() => {
+  const raw = route.query.product
+  return typeof raw === 'string' && raw ? raw : null
+})
+
+const selectedProductId = computed(() => {
+  const id = queryProductId.value
+  const scope = validatedStudentsScope.value
+  if (!id || !scope || !isAdminMaterialSectionId(scope) || productsLoading.value) return null
+  if (!sectionProducts.value.some((product) => product.id === id)) return null
+  return id
+})
+
+const selectedProduct = computed(
+  () => sectionProducts.value.find((product) => product.id === selectedProductId.value) ?? null,
+)
+
+const toolbarProducts = computed(() =>
+  sectionProducts.value.map((product) => ({ id: product.id, title: product.title })),
+)
+
+function studentDisplayName(item: { first_name: string; last_name: string; email: string }): string {
   const name = [item.first_name, item.last_name].filter(Boolean).join(' ').trim()
   return name || item.email
 }
@@ -51,15 +80,93 @@ function toStudentRow(item: AdminStudentsDirectoryItem): AdminStudentRow {
   }
 }
 
+function toProductStudentRow(item: AdminStudentItem): AdminStudentRow {
+  return {
+    id: item.user_id,
+    name: studentDisplayName(item),
+    email: item.email,
+    productsCount: null,
+    avatarUrl: null,
+  }
+}
+
+function applyProductStudentView() {
+  if (!productStudentsCache) return
+  const search = debouncedSearch.value.trim().toLowerCase()
+  const filtered = search
+    ? productStudentsCache.rows.filter(
+        (row) =>
+          row.name.toLowerCase().includes(search) || row.email.toLowerCase().includes(search),
+      )
+    : productStudentsCache.rows
+  const sorted = [...filtered].sort((a, b) => {
+    const compared = a.name.localeCompare(b.name, 'ru')
+    return sortAscending.value ? compared : -compared
+  })
+  rows.value = sorted
+  usersTotal.value = sorted.length
+  loading.value = false
+}
+
 const toolbarUserCount = computed(() => usersTotal.value)
 
-async function loadStudents() {
-  const requestId = ++loadRequestId
-  const scope = validatedStudentsScope.value
-  if (!scope) {
-    loading.value = false
+async function loadSectionProducts(section: AdminMaterialSectionId) {
+  const requestId = ++productsRequestId
+  productsLoading.value = true
+  productsError.value = null
+  const productType = sectionIdToProductType(section)
+  const result = await adminService.listProducts({
+    ...(productType ? { product_type: productType } : {}),
+    is_archived: section === 'archive',
+    skip: 0,
+    limit: 100,
+  })
+  if (requestId !== productsRequestId) return
+  productsLoading.value = false
+  if (!result.success || !result.data) {
+    sectionProducts.value = []
+    productsError.value = result.error || 'Не удалось загрузить продукты'
     return
   }
+  sectionProducts.value = result.data.items
+}
+
+async function loadProductStudents(productId: string) {
+  if (productStudentsCache?.productId === productId) {
+    loadRequestId += 1
+    applyProductStudentView()
+    return
+  }
+  const requestId = ++loadRequestId
+  loading.value = true
+  let skip = 0
+  let total = Infinity
+  const items: AdminStudentItem[] = []
+
+  while (items.length < total) {
+    const result = await adminService.listStudents(productId, skip, PRODUCT_STUDENTS_PAGE_LIMIT)
+    if (requestId !== loadRequestId) return
+    if (!result.success || !result.data) {
+      loading.value = false
+      notify({
+        type: 'error',
+        message: result.error || 'Не удалось загрузить список учеников',
+      })
+      return
+    }
+    items.push(...result.data.items)
+    total = result.data.total
+    skip += PRODUCT_STUDENTS_PAGE_LIMIT
+    if (result.data.items.length === 0) break
+  }
+
+  if (requestId !== loadRequestId) return
+  productStudentsCache = { productId, rows: items.map(toProductStudentRow) }
+  applyProductStudentView()
+}
+
+async function loadDirectoryStudents(scope: AdminStudentsSectionScope) {
+  const requestId = ++loadRequestId
   loading.value = true
   const search = debouncedSearch.value.trim()
   const scopeQuery = studentsScopeToExportQuery(scope)
@@ -91,18 +198,58 @@ async function loadStudents() {
   }
 
   if (requestId !== loadRequestId) return
+  productStudentsCache = null
   rows.value = items.map(toStudentRow)
   usersTotal.value = Number.isFinite(total) ? total : items.length
   loading.value = false
 }
 
+async function loadStudents() {
+  const scope = validatedStudentsScope.value
+  if (!scope) {
+    loading.value = false
+    return
+  }
+  if (isAdminMaterialSectionId(scope) && productsLoading.value && queryProductId.value) {
+    loading.value = true
+    return
+  }
+  const productId = selectedProductId.value
+  if (productId) {
+    await loadProductStudents(productId)
+    return
+  }
+  await loadDirectoryStudents(scope)
+}
+
 watch(
-  [validatedStudentsScope, debouncedSearch, sortAscending],
+  validatedStudentsScope,
+  (scope) => {
+    productStudentsCache = null
+    if (!scope || !isAdminMaterialSectionId(scope)) {
+      productsRequestId += 1
+      sectionProducts.value = []
+      productsLoading.value = false
+      productsError.value = null
+      return
+    }
+    void loadSectionProducts(scope)
+  },
+  { immediate: true },
+)
+
+watch(
+  [validatedStudentsScope, debouncedSearch, sortAscending, selectedProductId],
   () => {
     void loadStudents()
   },
   { immediate: true },
 )
+
+watch(productsLoading, (isLoading) => {
+  if (isLoading || !queryProductId.value || selectedProductId.value) return
+  void loadStudents()
+})
 
 watch(sectionId, (id) => {
   if (!isAdminStudentsSectionParam(id)) {
@@ -127,12 +274,37 @@ const onAddStudent = () => {
   })
 }
 
+const onSelectProduct = (productId: string) => {
+  const scope = validatedStudentsScope.value
+  if (!scope || !isAdminMaterialSectionId(scope)) return
+  void router.replace({
+    name: 'admin-materials-students',
+    params: { sectionId: scope },
+    query: { product: productId },
+  })
+}
+
 const onExportCsv = async () => {
   if (exporting.value) return
   const scope = validatedStudentsScope.value
   if (!scope) return
   exporting.value = true
   try {
+    const product = selectedProduct.value
+    if (product) {
+      const result = await adminService.exportStudentsCsv(product.id)
+      if (!result.success || !result.data) {
+        notify({ type: 'error', message: result.error || 'Не удалось выгрузить' })
+        return
+      }
+      const url = URL.createObjectURL(result.data)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `students-${csvNamePart(product.title)}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+      return
+    }
     const result = await adminService.exportAllStudentsCsv(studentsScopeToExportQuery(scope))
     if (!result.success || !result.data) {
       notify({ type: 'error', message: result.error || 'Не удалось выгрузить' })
@@ -150,6 +322,11 @@ const onExportCsv = async () => {
   } finally {
     exporting.value = false
   }
+}
+
+function csvNamePart(title: string): string {
+  const safe = title.replace(/[/\\?%*:|"<>]/g, '').trim()
+  return safe || 'product'
 }
 
 function filenameFromContentDisposition(header: string | null, fallback: string): string {
@@ -184,8 +361,13 @@ function filenameFromContentDisposition(header: string | null, fallback: string)
           :section-id="validatedStudentsScope"
           :users-count="toolbarUserCount"
           :exporting="exporting"
+          :products="toolbarProducts"
+          :selected-product-id="selectedProductId"
+          :products-loading="productsLoading"
+          :products-error="productsError"
           @add-student="onAddStudent"
           @export-csv="onExportCsv"
+          @select-product="onSelectProduct"
         />
 
         <div v-if="validatedStudentsScope" class="admin-materials-students-page__sheet">
@@ -258,7 +440,7 @@ function filenameFromContentDisposition(header: string | null, fallback: string)
                     />
                   </div>
                 </div>
-                <span class="admin-materials-students-page__products-count">{{ row.productsCount }}</span>
+                <span class="admin-materials-students-page__products-count">{{ row.productsCount ?? '—' }}</span>
               </RouterLink>
             </li>
           </ul>

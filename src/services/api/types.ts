@@ -139,6 +139,8 @@ export interface ProductResponse {
   access_duration?: string | null
   /** Количество модулей/тем в продукте (список admin products). */
   modules_count?: number
+  /** Количество учеников продукта (список admin products). */
+  students_count?: number
   /** Общий дедлайн продукта (ISO date / datetime). */
   deadline?: string | null
   /** Срок доступа в днях, если задан относительный период вместо даты. */

@@ -8,36 +8,57 @@ import {
   ADMIN_MATERIAL_SECTION_LIST,
   type AdminMaterialSectionId,
 } from '@/constants/adminMaterials'
+import { adminService } from '@/services/api/endpoints/admin'
 import { useAdminStore } from '@/stores/admin'
 import { useAuthStore } from '@/stores/auth'
 import { buildSectionConfig } from '@/utils/adminCatalogAdapter'
 import type { AdminCategorySectionConfig } from '@/utils/adminMaterialCatalog'
+import { studentsScopeToExportQuery } from '@/utils/adminProductType'
 
 const router = useRouter()
 const adminStore = useAdminStore()
 const authStore = useAuthStore()
 
 const loading = ref(true)
+const studentsCountError = ref<string | null>(null)
 const sectionConfigs = ref<AdminCategorySectionConfig[]>([])
 
 const adminDisplayName = computed(() => authStore.studentNameBadgeLabel)
 
+async function loadSection(sectionId: AdminMaterialSectionId): Promise<AdminCategorySectionConfig | null> {
+  const [productsResult, studentsResult] = await Promise.all([
+    adminStore.fetchProductsForSection(sectionId),
+    adminService.listAllStudents({
+      ...studentsScopeToExportQuery(sectionId),
+      skip: 0,
+      limit: 1,
+    }),
+  ])
+
+  if (!productsResult.success) return null
+
+  let sectionStudentsCount = 0
+  if (studentsResult.success && studentsResult.data) {
+    sectionStudentsCount = studentsResult.data.total
+  } else if (!studentsCountError.value) {
+    studentsCountError.value = studentsResult.error || 'Не удалось загрузить количество учеников'
+  }
+
+  return buildSectionConfig(
+    sectionId,
+    productsResult.data,
+    sectionStudentsCount,
+    adminStore.productDetails,
+  )
+}
+
 async function loadSections() {
   loading.value = true
-  const configs: AdminCategorySectionConfig[] = []
-  for (const section of ADMIN_MATERIAL_SECTION_LIST) {
-    const agg = await adminStore.aggregateStudentsForSection(section.id as AdminMaterialSectionId)
-    const products = adminStore.productsBySection[section.id] ?? []
-    configs.push(
-      buildSectionConfig(
-        section.id,
-        products,
-        agg.success ? agg.data : undefined,
-        adminStore.productDetails
-      )
-    )
-  }
-  sectionConfigs.value = configs
+  studentsCountError.value = null
+  const results = await Promise.all(
+    ADMIN_MATERIAL_SECTION_LIST.map((section) => loadSection(section.id)),
+  )
+  sectionConfigs.value = results.filter((config): config is AdminCategorySectionConfig => config !== null)
   loading.value = false
 }
 
@@ -76,21 +97,24 @@ const onOpenStudents = (section: AdminCategorySectionConfig) => {
         <p v-if="loading" class="admin-materials-page__loading">Загружаем материалы…</p>
         <p v-else-if="adminStore.error" class="admin-materials-page__error">{{ adminStore.error }}</p>
 
-        <ul v-else class="admin-materials-page__list">
-          <AdminMaterialsCategorySection
-            v-for="section in sectionConfigs"
-            :key="section.sectionId"
-            :section-id="section.sectionId"
-            :title="section.title"
-            :users-count="section.usersCount"
-            :folders-count="section.foldersCount"
-            :border-color="section.borderColor"
-            :accent-key="section.accentKey"
-            :cards="section.cards"
-            @edit-card="(cardId) => onEditMaterialCard(section.sectionId, cardId)"
-            @open-students="onOpenStudents(section)"
-          />
-        </ul>
+        <template v-else>
+          <p v-if="studentsCountError" class="admin-materials-page__error">{{ studentsCountError }}</p>
+          <ul class="admin-materials-page__list">
+            <AdminMaterialsCategorySection
+              v-for="section in sectionConfigs"
+              :key="section.sectionId"
+              :section-id="section.sectionId"
+              :title="section.title"
+              :users-count="section.usersCount"
+              :folders-count="section.foldersCount"
+              :border-color="section.borderColor"
+              :accent-key="section.accentKey"
+              :cards="section.cards"
+              @edit-card="(cardId) => onEditMaterialCard(section.sectionId, cardId)"
+              @open-students="onOpenStudents(section)"
+            />
+          </ul>
+        </template>
       </div>
     </section>
   </AppLayout>

@@ -11,7 +11,7 @@ export interface AdminStudentRow {
   id: string
   name: string
   email: string
-  productsCount: number
+  productsCount: number | null
   avatarUrl?: string | null
 }
 
@@ -31,7 +31,7 @@ export function mockStudentsForAdminSection(sectionId: AdminMaterialSectionId): 
   return STUDENT_TEMPLATES.map((row, i) => ({
     ...row,
     id: `${sectionId}-${i + 1}`,
-    productsCount: ((row.productsCount + i + offset) % 9) + 1,
+    productsCount: (((row.productsCount ?? 0) + i + offset) % 9) + 1,
   }))
 }
 
