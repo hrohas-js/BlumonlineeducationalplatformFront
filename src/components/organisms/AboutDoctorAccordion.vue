@@ -199,13 +199,23 @@ watch(
     font-size: var(--size-25);
     text-align: right;
     color: var(--osnovnoy-tekst);
+
+    @media (max-width: 1024px) {
+      font-size: var(--size-15);
+    }
   }
 
   &__icon {
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
     line-height: 0;
+
+    @media (max-width: 1024px) {
+      width: var(--size-20);
+      height: var(--size-20);
+    }
   }
 
   &__icon-rect-fill {
