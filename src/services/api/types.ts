@@ -136,6 +136,8 @@ export interface ProductResponse {
   created_by: string
   is_published: boolean
   is_archived?: boolean
+  /** Завершённый курс из GET /products/my-courses?completed=true. */
+  is_completed?: boolean
   access_duration?: string | null
   /** Количество модулей/тем в продукте (список admin products). */
   modules_count?: number

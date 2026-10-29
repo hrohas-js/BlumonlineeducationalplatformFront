@@ -72,7 +72,9 @@ const draggingVolume = ref(false)
 
 const activeQualityIndex = ref(0)
 const playbackSrc = ref('')
-const playRequested = ref(false)
+const userPaused = ref(false)
+const playbackStarted = ref(false)
+const playRequested = ref(!props.deferUntilPlay && Boolean(props.src))
 const buffering = ref(!props.deferUntilPlay && Boolean(props.src))
 
 const qualitiesList = computed(() => props.qualities ?? [])
@@ -117,6 +119,7 @@ const volumeSliderPct = computed(() => {
 
 let hintTimer: ReturnType<typeof setTimeout> | null = null
 let savedHtmlOverflow: string | null = null
+let scrollLockMode: 'none' | 'ios' | 'fixed' = 'none'
 let savedScrollY = 0
 let savedBodyStyles: {
   position: string
@@ -134,6 +137,8 @@ let suppressPauseBufferingClear = false
 let clearBufferingWhenReady = false
 let bufferingDelayTimer: ReturnType<typeof setTimeout> | null = null
 let lastProgressTime = -1
+let playAttemptToken = 0
+let playInFlight = false
 
 const BUFFERING_CONFIRM_MS = 300
 
@@ -240,15 +245,79 @@ function onTimeUpdate() {
 }
 
 function onPlaying() {
+  playbackStarted.value = true
   clearBuffering()
   syncFromVideo()
+}
+
+function isNotAllowedError(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && 'name' in error && error.name === 'NotAllowedError'
+}
+
+function abandonPlayback() {
+  playRequested.value = false
+  clearBuffering()
+}
+
+async function playWithMuteFallback(video: HTMLVideoElement): Promise<void> {
+  if (playInFlight || userPaused.value) return
+  playInFlight = true
+  const token = ++playAttemptToken
+  playRequested.value = true
+  try {
+    await video.play()
+    if (token !== playAttemptToken && userPaused.value && !video.paused) {
+      video.pause()
+    }
+  } catch (error) {
+    if (token !== playAttemptToken) return
+    if (userPaused.value) {
+      abandonPlayback()
+      return
+    }
+    if (!video.muted && isNotAllowedError(error)) {
+      video.muted = true
+      muted.value = true
+      try {
+        await video.play()
+        if (token !== playAttemptToken && userPaused.value && !video.paused) {
+          video.pause()
+        }
+        return
+      } catch {
+        if (token !== playAttemptToken) return
+        abandonPlayback()
+        return
+      }
+    }
+    if (video.readyState < HTMLMediaElement.HAVE_FUTURE_DATA && !isNotAllowedError(error)) {
+      return
+    }
+    abandonPlayback()
+  } finally {
+    if (token === playAttemptToken) playInFlight = false
+  }
+}
+
+function queueAutoplay() {
+  if (props.deferUntilPlay || userPaused.value || !currentSrc.value) return
+  playRequested.value = true
+  buffering.value = true
+  const v = videoRef.value
+  if (!v) return
+  void playWithMuteFallback(v)
 }
 
 function onCanPlay() {
   cancelBufferingDelay()
   const v = videoRef.value
   if (!v) return
-  if (!v.paused || clearBufferingWhenReady || !playRequested.value) {
+  if (playRequested.value && v.paused && !userPaused.value) {
+    void playWithMuteFallback(v)
+    syncFromVideo()
+    return
+  }
+  if (!v.paused || clearBufferingWhenReady) {
     clearBuffering()
   }
   syncFromVideo()
@@ -265,33 +334,49 @@ function onSeeked() {
 }
 
 function onPause() {
-  if (!suppressPauseBufferingClear) {
-    const wasPlaying = playRequested.value
-    playRequested.value = false
-    const v = videoRef.value
-    const awaitingInitialLoad =
-      !wasPlaying &&
-      !props.deferUntilPlay &&
-      Boolean(mediaSrc.value) &&
-      (v?.readyState ?? 0) < HTMLMediaElement.HAVE_FUTURE_DATA
-    if (!awaitingInitialLoad) clearBuffering()
+  if (suppressPauseBufferingClear) {
+    syncFromVideo()
+    return
   }
+  const v = videoRef.value
+  const startupPause = !playbackStarted.value && playRequested.value && !userPaused.value
+  if (startupPause) {
+    syncFromVideo()
+    return
+  }
+  playRequested.value = false
+  const awaitingInitialLoad =
+    !playbackStarted.value &&
+    !userPaused.value &&
+    !props.deferUntilPlay &&
+    Boolean(mediaSrc.value) &&
+    (v?.readyState ?? 0) < HTMLMediaElement.HAVE_FUTURE_DATA
+  if (!awaitingInitialLoad) clearBuffering()
   syncFromVideo()
 }
 
-async function startPlayback() {
+function onMediaError() {
+  playAttemptToken += 1
+  playInFlight = false
+  playRequested.value = false
+  clearBuffering()
+}
+
+function startPlayback() {
+  userPaused.value = false
   playRequested.value = true
+  const v = videoRef.value
   const needsAttach = props.deferUntilPlay && !playbackSrc.value
   if (needsAttach) {
-    if (!currentSrc.value) {
+    if (!currentSrc.value || !v) {
       playRequested.value = false
+      buffering.value = false
       return
     }
     playbackSrc.value = currentSrc.value
+    v.src = currentSrc.value
     buffering.value = true
-    await nextTick()
   }
-  const v = videoRef.value
   if (!v) {
     playRequested.value = false
     buffering.value = false
@@ -300,12 +385,7 @@ async function startPlayback() {
   if (v.readyState < HTMLMediaElement.HAVE_FUTURE_DATA) {
     buffering.value = true
   }
-  try {
-    await v.play()
-  } catch {
-    playRequested.value = false
-    buffering.value = false
-  }
+  void playWithMuteFallback(v)
 }
 
 function togglePlay() {
@@ -313,8 +393,12 @@ function togglePlay() {
   if (!v) return
   const needsAttach = props.deferUntilPlay && !playbackSrc.value
   if (needsAttach || v.paused) {
-    void startPlayback()
+    userPaused.value = false
+    startPlayback()
   } else {
+    userPaused.value = true
+    playAttemptToken += 1
+    playInFlight = false
     v.pause()
   }
 }
@@ -335,6 +419,9 @@ function seekTo(seconds: number) {
 function pausePlayback() {
   const v = videoRef.value
   if (!v) return
+  userPaused.value = true
+  playAttemptToken += 1
+  playInFlight = false
   v.pause()
   paused.value = true
 }
@@ -563,11 +650,16 @@ function getFullscreenElement(): Element | null {
   return document.fullscreenElement ?? doc.webkitFullscreenElement ?? null
 }
 
+function isIOSDevice(): boolean {
+  const ua = navigator.userAgent
+  if (/iPad|iPhone|iPod/.test(ua)) return true
+  return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1
+}
+
 function lockPageScroll() {
-  if (savedHtmlOverflow !== null) return
+  if (scrollLockMode !== 'none') return
   savedHtmlOverflow = document.documentElement.style.overflow
   document.documentElement.style.overflow = 'hidden'
-  savedScrollY = window.scrollY
   const body = document.body
   savedBodyStyles = {
     position: body.style.position,
@@ -577,18 +669,29 @@ function lockPageScroll() {
     width: body.style.width,
     overflow: body.style.overflow,
   }
+  if (isIOSDevice()) {
+    body.style.overflow = 'hidden'
+    scrollLockMode = 'ios'
+    return
+  }
+  savedScrollY = window.scrollY
   body.style.position = 'fixed'
   body.style.top = `-${savedScrollY}px`
   body.style.left = '0'
   body.style.right = '0'
   body.style.width = '100%'
   body.style.overflow = 'hidden'
+  scrollLockMode = 'fixed'
 }
 
 function unlockPageScroll() {
-  if (savedHtmlOverflow === null) return
-  document.documentElement.style.overflow = savedHtmlOverflow
-  savedHtmlOverflow = null
+  if (scrollLockMode === 'none') return
+  const mode = scrollLockMode
+  scrollLockMode = 'none'
+  if (savedHtmlOverflow !== null) {
+    document.documentElement.style.overflow = savedHtmlOverflow
+    savedHtmlOverflow = null
+  }
   const body = document.body
   if (savedBodyStyles) {
     body.style.position = savedBodyStyles.position
@@ -599,7 +702,9 @@ function unlockPageScroll() {
     body.style.overflow = savedBodyStyles.overflow
     savedBodyStyles = null
   }
-  window.scrollTo(0, savedScrollY)
+  if (mode === 'fixed') {
+    window.scrollTo(0, savedScrollY)
+  }
 }
 
 function resumePlaybackIfNeeded(video: HTMLVideoElement | null, wasPlaying: boolean) {
@@ -612,18 +717,68 @@ function resumePlaybackIfNeeded(video: HTMLVideoElement | null, wasPlaying: bool
   })
 }
 
+function syncPseudoFullscreenBox() {
+  const root = rootRef.value
+  if (!root || !isPseudoFullscreen.value) return
+  const viewport = window.visualViewport
+  const top = viewport?.offsetTop ?? 0
+  const left = viewport?.offsetLeft ?? 0
+  const width = viewport?.width ?? window.innerWidth
+  const height = viewport?.height ?? window.innerHeight
+  root.style.top = `${top}px`
+  root.style.left = `${left}px`
+  root.style.right = 'auto'
+  root.style.bottom = 'auto'
+  root.style.width = `${width}px`
+  root.style.height = `${height}px`
+}
+
+function clearPseudoFullscreenBox() {
+  const root = rootRef.value
+  if (!root) return
+  root.style.top = ''
+  root.style.left = ''
+  root.style.right = ''
+  root.style.bottom = ''
+  root.style.width = ''
+  root.style.height = ''
+}
+
+function bindPseudoFullscreenViewport() {
+  window.visualViewport?.addEventListener('resize', syncPseudoFullscreenBox)
+  window.visualViewport?.addEventListener('scroll', syncPseudoFullscreenBox)
+  window.addEventListener('orientationchange', syncPseudoFullscreenBox)
+  window.addEventListener('resize', syncPseudoFullscreenBox)
+}
+
+function unbindPseudoFullscreenViewport() {
+  window.visualViewport?.removeEventListener('resize', syncPseudoFullscreenBox)
+  window.visualViewport?.removeEventListener('scroll', syncPseudoFullscreenBox)
+  window.removeEventListener('orientationchange', syncPseudoFullscreenBox)
+  window.removeEventListener('resize', syncPseudoFullscreenBox)
+}
+
 function enterPseudoFullscreen() {
   const video = videoRef.value
   const wasPlaying = Boolean(video && !video.paused)
   isPseudoFullscreen.value = true
   lockPageScroll()
-  resumePlaybackIfNeeded(video, wasPlaying)
+  bindPseudoFullscreenViewport()
+  void nextTick(() => {
+    syncPseudoFullscreenBox()
+    resumePlaybackIfNeeded(video, wasPlaying)
+  })
 }
 
 function exitPseudoFullscreen(resume = false) {
   const video = videoRef.value
-  const wasPlaying = Boolean(resume && isPseudoFullscreen.value && video && !video.paused)
+  const wasExpanded = isPseudoFullscreen.value
+  const wasPlaying = Boolean(resume && wasExpanded && video && !video.paused)
   isPseudoFullscreen.value = false
+  if (wasExpanded) {
+    unbindPseudoFullscreenViewport()
+    clearPseudoFullscreenBox()
+  }
   unlockPageScroll()
   resumePlaybackIfNeeded(video, wasPlaying)
 }
@@ -653,6 +808,11 @@ function exitDocumentFullscreen(): Promise<void> | void | null {
 async function toggleFullscreen() {
   if (isPseudoFullscreen.value) {
     exitPseudoFullscreen(true)
+    return
+  }
+
+  if (isIOSDevice()) {
+    enterPseudoFullscreen()
     return
   }
 
@@ -761,8 +921,12 @@ watch(
     exitPseudoFullscreen()
     activeQualityIndex.value = 0
     playbackSrc.value = ''
-    playRequested.value = false
-    buffering.value = !props.deferUntilPlay && Boolean(props.src)
+    playAttemptToken += 1
+    playInFlight = false
+    userPaused.value = false
+    playbackStarted.value = false
+    playRequested.value = !props.deferUntilPlay && Boolean(props.src)
+    buffering.value = playRequested.value
     clearBufferingWhenReady = false
     openMenu.value = null
     volumePopoverOpen.value = false
@@ -770,6 +934,9 @@ watch(
     currentTime.value = 0
     duration.value = 0
     overlayFeedback.value = null
+    void nextTick(() => {
+      queueAutoplay()
+    })
   }
 )
 
@@ -782,15 +949,7 @@ watch(
 )
 
 onMounted(() => {
-  const v = videoRef.value
-  if (
-    v &&
-    !playRequested.value &&
-    !props.deferUntilPlay &&
-    v.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA
-  ) {
-    buffering.value = false
-  }
+  queueAutoplay()
   document.addEventListener('fullscreenchange', onFullscreenChange)
   document.addEventListener('webkitfullscreenchange', onFullscreenChange)
   document.addEventListener('pointerdown', onDocumentPointerDown, true)
@@ -829,7 +988,6 @@ defineExpose({
     <video
       ref="videoRef"
       class="lesson-video-player__video"
-      :key="mediaSrc || 'deferred'"
       :src="mediaSrc || undefined"
       :poster="poster"
       playsinline
@@ -845,7 +1003,7 @@ defineExpose({
       @waiting="onBufferingStart"
       @seeked="onSeeked"
       @volumechange="syncFromVideo"
-      @error="clearBuffering"
+      @error="onMediaError"
     />
 
     <LessonVideoWatermarkOverlay
@@ -1141,12 +1299,13 @@ $lesson-player-chrome-bg: #010307;
     position: fixed;
     inset: 0;
     z-index: 10000;
-    width: 100%;
-    height: 100dvh;
+    width: auto;
+    height: auto;
     max-height: none;
     aspect-ratio: auto;
     border-radius: 0;
     box-sizing: border-box;
+    background: var(--black);
     padding:
       env(safe-area-inset-top)
       env(safe-area-inset-right)
@@ -1581,5 +1740,27 @@ $lesson-player-chrome-bg: #010307;
       min-width: 24px;
     }
   }
+}
+</style>
+
+<style lang="scss">
+.lesson-video-player:fullscreen,
+.lesson-video-player:-webkit-full-screen {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  aspect-ratio: auto;
+  border-radius: 0;
+  background: var(--black);
+}
+
+.lesson-video-player:fullscreen::backdrop,
+.lesson-video-player:-webkit-full-screen::backdrop {
+  background: var(--black);
+}
+
+.lesson-video-player:fullscreen .lesson-video-player__video,
+.lesson-video-player:-webkit-full-screen .lesson-video-player__video {
+  object-fit: contain;
 }
 </style>

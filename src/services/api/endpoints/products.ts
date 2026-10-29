@@ -45,10 +45,15 @@ export const productsService = {
     return api.get<ProductPricingOption[]>(PRODUCT_ENDPOINTS.pricing(productId))
   },
 
-  /** GET /api/v1/products/my-courses — продукты, к которым у пользователя есть доступ */
-  async myCourses(): ApiServiceResponse<ProductResponse[]> {
+  /**
+   * GET /api/v1/products/my-courses.
+   * completed=true — завершённые курсы раздела «Архив». Без параметра — активные.
+   */
+  async myCourses(completed?: boolean): ApiServiceResponse<ProductResponse[]> {
     const api = useApi()
-    return api.get<ProductResponse[]>(PRODUCT_ENDPOINTS.myCourses)
+    return api.get<ProductResponse[]>(PRODUCT_ENDPOINTS.myCourses, {
+      ...(completed ? { params: { completed: true } } : {}),
+    })
   },
 
   /** POST /api/v1/products/lessons/{lesson_id}/complete */

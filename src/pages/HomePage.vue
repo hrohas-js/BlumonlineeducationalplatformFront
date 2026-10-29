@@ -101,7 +101,7 @@ function toLearningPanelCourse(p: ProductResponse): LearningPanelCourse {
     id: p.id,
     title: p.title,
     description: p.description ?? '',
-    category: p.is_archived ? 'archive' : mapProductTypeToCategory(p.product_type),
+    category: p.is_archived || p.is_completed ? 'archive' : mapProductTypeToCategory(p.product_type),
     completedTopics: topicCounts.completedTopics,
     totalTopics: topicCounts.totalTopics,
     accessUntil: formatDeadline(progress?.deadline ?? null),
@@ -110,8 +110,17 @@ function toLearningPanelCourse(p: ProductResponse): LearningPanelCourse {
   }
 }
 
+const studentProducts = computed<ProductResponse[]>(() => {
+  const byId = new Map<string, ProductResponse>()
+  for (const course of productsStore.myCourses) byId.set(course.id, course)
+  for (const course of productsStore.completedCourses) {
+    byId.set(course.id, { ...course, is_completed: true })
+  }
+  return [...byId.values()]
+})
+
 const realLearningCourses = computed<LearningPanelCourse[]>(() =>
-  productsStore.myCourses.map(toLearningPanelCourse)
+  studentProducts.value.map(toLearningPanelCourse)
 )
 
 /** В dev при пустом API — демо-курсы; в production только реальные данные. */
@@ -208,6 +217,10 @@ async function loadCourses() {
     // Не шумим уведомлением — просто оставим mock
     console.warn('[home] fetchMyCourses failed, falling back to mock:', result.error)
     return
+  }
+  const completed = await productsStore.fetchCompletedCourses()
+  if (!completed.success) {
+    console.warn('[home] fetchCompletedCourses failed:', completed.error)
   }
   void productsStore.fetchAllProgress()
 }
